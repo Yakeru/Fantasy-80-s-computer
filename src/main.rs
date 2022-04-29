@@ -48,21 +48,14 @@ fn main()-> Result<(), Error>
                 // Application update code.
     
                 // Queue a RedrawRequested event.
-                //
-                // You only need to call this if you've determined that you need to redraw, in
-                // applications which do not always need to. Applications that redraw continuously
-                // can just render here instead.
-                let frame = pixels.get_frame();
-
                 if last_refresh.elapsed().as_millis() >= 33
                 {
-                    draw(frame, apply_effect);
+                    //let frame = pixels.get_frame();
+                    draw(pixels.get_frame(), apply_effect);
+                    pixels.render().expect("Pixels render oups");
+                    window.request_redraw();
                     last_refresh = Instant::now();
-                }
-                pixels.render().expect("Pixels render oups");
-                window.request_redraw(); 
-
-                
+                } 
             }
             _ => ()
         }
@@ -81,33 +74,82 @@ fn draw(frame_buffer: &mut[u8], apply_effect: bool)
     let mut random = rand::thread_rng();
     let chunk_size: u32 = WIDTH * (HEIGHT/48);
     
-    let mut r: u8 = random.gen_range(0..255);
-    let mut g: u8 = random.gen_range(0..255);
-    let mut b: u8 = random.gen_range(0..255);
-    
+    let mut rgb_color: (u8, u8, u8) = (0,0,0);
+    rgb_color.0 = random.gen_range(0..255);
+    rgb_color.1 = random.gen_range(0..255);
+    rgb_color.2 = random.gen_range(0..255);
+
     let mut pixel_count: u32 = 0;
     let mut line_count: u32 = 0;
     let mut sub_pixel_count = 0;
 
     for pixel in frame_buffer.chunks_exact_mut(4) 
     {
+        pixel[3] = 255;
+
         if pixel_count % chunk_size == 0 
         {
-            r = random.gen_range(0..255);
-            g = random.gen_range(0..255);
-            b = random.gen_range(0..255);
+            rgb_color.0 = random.gen_range(0..255);
+            rgb_color.1 = random.gen_range(0..255);
+            rgb_color.2 = random.gen_range(0..255);
         }
-
-        pixel[0] = r;
-        pixel[1] = g;
-        pixel[2] = b;
-        pixel[3] = 255;
 
         if apply_effect
         {
-            crt_effect(pixel, sub_pixel_count, line_count)
+            match sub_pixel_count {
+                0 => 
+                {
+                    pixel[0] = rgb_color.0;
+                    pixel[1] = 0;
+                    pixel[2] = 0;
+                },
+                1 => 
+                {
+                    pixel[0] = 0;
+                    pixel[1] = rgb_color.1;
+                    pixel[2] = 0;
+                },
+                2 =>
+                {
+                    pixel[0] = 0;
+                    pixel[1] = 0;
+                    pixel[2] = rgb_color.2;
+                },
+                3_u32..=u32::MAX => {}
+            }
+            
+            if line_count % 4 == 0
+            {
+                match sub_pixel_count {
+                    0 => 
+                    {
+                        pixel[0] = if rgb_color.0 <= 20 {0} else {rgb_color.0 - 20};
+                        pixel[1] = 0;
+                        pixel[2] = 0;
+                    },
+                    1 => 
+                    {
+                        pixel[0] = 0;
+                        pixel[1] = if rgb_color.1 <= 20 {0} else {rgb_color.1 - 20};
+                        pixel[2] = 0;
+                    },
+                    2 =>
+                    {
+                        pixel[0] = 0;
+                        pixel[1] = 0;
+                        pixel[2] = if rgb_color.2 <= 20 {0} else {rgb_color.2 - 20};
+                    },
+                    3_u32..=u32::MAX => {}
+                }
+            }
         }
-
+        else
+        {
+            pixel[0] = rgb_color.0;
+            pixel[1] = rgb_color.1;
+            pixel[2] = rgb_color.2;
+        }
+        
         pixel_count += 1;
         sub_pixel_count = if sub_pixel_count == 2 { 0 } else { sub_pixel_count + 1 };
 
@@ -118,51 +160,5 @@ fn draw(frame_buffer: &mut[u8], apply_effect: bool)
         }
     }
 
-    println!("draw time {}ms", last_refresh.elapsed().as_millis());
-}
-
-fn crt_effect(pixel: &mut[u8], sub_pixel_count: u32, line_count: u32) 
-{
-    //CRT effect
-    if sub_pixel_count == 0
-    {
-        pixel[1] = 0;
-        pixel[2] = 0;
-    }
-
-    if sub_pixel_count == 1
-    {
-        pixel[0] = 0;
-        pixel[2] = 0;
-    }
-
-    if sub_pixel_count == 2
-    {
-        pixel[0] = 0;
-        pixel[1] = 0;
-    }
-    
-    if line_count % 4 == 0
-    {
-        if sub_pixel_count == 0
-        {
-            pixel[0] = if pixel[0] <= 20 {0} else {pixel[0]-20};
-            pixel[1] = 0;
-            pixel[2] = 0;
-        }
-
-        if sub_pixel_count == 1
-        {
-            pixel[0] = 0;
-            pixel[1] = if pixel[1] <= 20 {0} else {pixel[1]-20};
-            pixel[2] = 0;
-        }
-
-        if sub_pixel_count == 2
-        {
-            pixel[0] = 0;
-            pixel[1] = 0;
-            pixel[2] = if pixel[2] <= 20 {0} else {pixel[2]-20};
-        }
-    }
+    println!("draw time {}us", last_refresh.elapsed().as_micros());
 }
