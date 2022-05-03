@@ -19,9 +19,9 @@ const HEIGHT: u32 = 960;
 const VIRTUAL_WIDTH: u32 = 426;  //426*3 = 1278 draw one black line on each side of screen for perfect *3 scale
 const VIRTUAL_HEIGHT: u32 = 240; //240*4 = 960
 
-const FPS: u128 = 16; //ms per frame, so 16 = 60fps, 32 = 30fps, 1000 = 1fps
+const FPS: u128 = 32; //ms per frame, so 16 = 60fps, 32 = 30fps, 1000 = 1fps
 
-const BORDER: u32 = 100;
+const BORDER: u32 = 20;
 const BKG_COLOR: (u8, u8, u8) = (0, 0, 254);
 
 
@@ -30,8 +30,8 @@ fn main()-> Result<(), Error> {
 
     let mut color_map: [(u8, u8, u8); 32];
 
-    let mut horizontal_multiplier: usize = 3;
-    let mut vertical_multiplier: usize = 4;
+    let mut horizontal_multiplier: usize = 1;
+    let mut vertical_multiplier: usize = 1;
     let mut crt_effet_on: bool = false;
 
     let event_loop = EventLoop::new();
@@ -73,10 +73,11 @@ fn main()-> Result<(), Error> {
                 if last_refresh.elapsed().as_millis() >= FPS {
                     let render_time: Instant = Instant::now();
                     clear_frame_buffer(pixels.get_frame());
+                    draw_loading_border(virtual_frame_buffer.get_frame());
                     upscale_virtualfb_to_pixelfb(virtual_frame_buffer.get_frame(), pixels.get_frame(), horizontal_multiplier, vertical_multiplier);
                     
                     if crt_effet_on {
-                        apply_crt_effect(pixels.get_frame());
+                        apply_crt_effect(pixels.get_frame(), 50);
                     }
                     //draw_loading_border(pixels.get_frame());
                     //draw_background(pixels.get_frame());
@@ -144,63 +145,56 @@ fn clear_frame_buffer(frame_buffer: &mut[u8]) {
     }
 }
 
-// fn draw_loading_border(frame_buffer: &mut[u8]) {
-//     let mut random = rand::thread_rng();
-//     let mut rgb_color: (u8, u8, u8) = (0,0,0);
-//     rgb_color.0 = random.gen_range(0..255);
-//     rgb_color.1 = random.gen_range(0..255);
-//     rgb_color.2 = random.gen_range(0..255);
+fn draw_loading_border(frame_buffer: &mut[u8]) {
+    let mut random = rand::thread_rng();
+    let mut rgb_color: u8 = 0;
+    rgb_color = random.gen_range(0..8);
 
-//     let mut screen_pixel_count: u32 = 0;
-//     let mut line_count: u32 = 0;
+    let mut line_pixel_count: u32 = 0;
+    let mut line_count: u32 = 0;
 
-//     for pixel in frame_buffer.chunks_exact_mut(4) {
-//         pixel[3] = 255;
+    for pixel in frame_buffer.chunks_exact_mut(1) {
 
-//         if screen_pixel_count < BORDER || screen_pixel_count > WIDTH - BORDER || line_count < BORDER || line_count > HEIGHT - BORDER {
-//             if (line_count % (HEIGHT/48) == 0) && screen_pixel_count == 0 {
-//                 rgb_color.0 = random.gen_range(0..255);
-//                 rgb_color.1 = random.gen_range(0..255);
-//                 rgb_color.2 = random.gen_range(0..255);
-//             }
+        if line_pixel_count < BORDER || line_pixel_count > VIRTUAL_WIDTH - BORDER || line_count < BORDER || line_count > VIRTUAL_HEIGHT - BORDER {
+            if (line_count % (VIRTUAL_HEIGHT/48) == 0) && line_pixel_count == 0 {
+                rgb_color = random.gen_range(0..8);
+            }
 
-//             pixel[0] = rgb_color.0;
-//             pixel[1] = rgb_color.1;
-//             pixel[2] = rgb_color.2;
-//         }
+            pixel[0] = rgb_color;
+        }
     
-//         screen_pixel_count += 1;
+        line_pixel_count += 1;
 
-//         if screen_pixel_count == WIDTH {
-//             line_count += 1;
-//             screen_pixel_count = 0;
-//         }
-//     }
-// }
+        if line_pixel_count == VIRTUAL_WIDTH {
+            line_count += 1;
+            line_pixel_count = 0;
+        }
+    }
+}
 
-// fn draw_background(frame_buffer: &mut[u8]) {
+fn draw_background(frame_buffer: &mut[u8]) {
 
-//     let mut screen_pixel_count: u32 = 0;
-//     let mut line_count: u32 = 0;
+    let mut screen_pixel_count: u32 = 0;
+    let mut line_count: u32 = 0;
 
-//     for pixel in frame_buffer.chunks_exact_mut(4) {
+    for pixel in frame_buffer.chunks_exact_mut(4) {
 
-//         if screen_pixel_count >= BORDER && screen_pixel_count <= WIDTH - BORDER && line_count >= BORDER && line_count <= HEIGHT - BORDER {
-//             pixel[0] = BKG_COLOR.0;
-//             pixel[1] = BKG_COLOR.1;
-//             pixel[2] = BKG_COLOR.2;
-//         }
+        if screen_pixel_count >= BORDER && screen_pixel_count <= VIRTUAL_WIDTH - BORDER && line_count >= BORDER && line_count <= VIRTUAL_HEIGHT - BORDER {
+            pixel[0] = BKG_COLOR.0;
+            pixel[1] = BKG_COLOR.1;
+            pixel[2] = BKG_COLOR.2;
+        }
 
-//         screen_pixel_count += 1;
+        screen_pixel_count += 1;
 
-//         if screen_pixel_count == WIDTH {
-//             line_count += 1;
-//             screen_pixel_count = 0;
-//         }
-//     }
-// }
+        if screen_pixel_count == WIDTH {
+            line_count += 1;
+            screen_pixel_count = 0;
+        }
+    }
+}
 
-fn apply_crt_effect(frame_buffer: &mut[u8]) {
+fn apply_crt_effect(frame_buffer: &mut[u8], strength: u8) {
 
     let mut screen_pixel_count: u32 = 0;
     let mut line_count: u32 = 0;
@@ -227,19 +221,19 @@ fn apply_crt_effect(frame_buffer: &mut[u8]) {
         if line_count % 4 == 0 {
             match sub_pixel_count {
                 0 => {
-                    pixel[0] = if pixel[0] <= 20 {0} else {pixel[0] - 20};
+                    pixel[0] = if pixel[0] <= strength {0} else {pixel[0] - strength};
                     pixel[1] = 0;
                     pixel[2] = 0;
                 },
                 1 => {
                     pixel[0] = 0;
-                    pixel[1] = if pixel[1] <= 20 {0} else {pixel[1] - 20};
+                    pixel[1] = if pixel[1] <= strength {0} else {pixel[1] - strength};
                     pixel[2] = 0;
                 },
                 2 => {
                     pixel[0] = 0;
                     pixel[1] = 0;
-                    pixel[2] = if pixel[2] <= 20 {0} else {pixel[2] - 20};
+                    pixel[2] = if pixel[2] <= strength {0} else {pixel[2] - strength};
                 },
                 3_u32..=u32::MAX => {}
             }
@@ -320,23 +314,35 @@ fn draw_test_grid(virtual_fb: &mut[u8]) {
 
     for pixel in virtual_fb.chunks_exact_mut(1) {
 
-        if screen_pixel_count < 1 || screen_pixel_count > VIRTUAL_WIDTH - 1 || line_count < 1 || line_count > VIRTUAL_HEIGHT - 1 {
-            pixel[0] = 1;
-        }
-
-        if screen_pixel_count % 5 == 0 {
+        if screen_pixel_count % 3 == 0 {
             pixel[0] = 2;
         }
 
-        if screen_pixel_count % 10 == 0 {
-            pixel[0] = 1;
-        }
-
-        if line_count % 5 == 0 {
+        if screen_pixel_count % 7 == 0 {
             pixel[0] = 3;
         }
 
-        if line_count % 10 == 0 {
+        if screen_pixel_count % 11 == 0 {
+            pixel[0] = 4;
+        }
+
+        if screen_pixel_count % 13 == 0 {
+            pixel[0] = 1;
+        }
+
+        if line_count % 3 == 0 {
+            pixel[0] = 2;
+        }
+
+        if line_count % 7 == 0 {
+            pixel[0] = 3;
+        }
+
+        if line_count % 11 == 0 {
+            pixel[0] = 4;
+        }
+
+        if line_count % 13 == 0 {
             pixel[0] = 1;
         }
 
@@ -345,15 +351,15 @@ fn draw_test_grid(virtual_fb: &mut[u8]) {
         }
 
         if screen_pixel_count == 0 {
-            pixel[0] = 2;
+            pixel[0] = 1;
         }
 
         if screen_pixel_count == VIRTUAL_WIDTH - 1 {
-            pixel[0] = 3;
+            pixel[0] = 1;
         }
 
         if line_count == VIRTUAL_HEIGHT - 1 {
-            pixel[0] = 2;
+            pixel[0] = 1;
         }
 
         screen_pixel_count += 1;
@@ -396,7 +402,27 @@ fn upscale_virtualfb_to_pixelfb(virtual_fb: &mut[u8], pixels_frame: &mut[u8], in
                 rgb.1 = 254;
                 rgb.2 = 0;
             },
-            4.. => {
+            4 => {
+                rgb.0 = 0;
+                rgb.1 = 0;
+                rgb.2 = 254;
+            },
+            5 => {
+                rgb.0 = 254;
+                rgb.1 = 254;
+                rgb.2 = 0;
+            },
+            6 => {
+                rgb.0 = 0;
+                rgb.1 = 254;
+                rgb.2 = 254;
+            },
+            7 => {
+                rgb.0 = 254;
+                rgb.1 = 0;
+                rgb.2 = 254;
+            },
+            8.. => {
                 rgb.0 = 0;
                 rgb.1 = 0;
                 rgb.2 = 0;
