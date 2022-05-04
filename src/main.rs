@@ -11,8 +11,6 @@ use std::time::{
     Instant
 };
 
- 
-
 const WIDTH: u32 = 1280;
 const HEIGHT: u32 = 960;
 
@@ -22,17 +20,17 @@ const VIRTUAL_HEIGHT: u32 = 240; //240*4 = 960
 const FPS: u128 = 32; //ms per frame, so 16 = 60fps, 32 = 30fps, 1000 = 1fps
 
 const BORDER: u32 = 20;
-const BKG_COLOR: (u8, u8, u8) = (0, 0, 254);
-
-
+const BKG_COLOR: u8 = 4;
 
 fn main()-> Result<(), Error> {
 
-    let mut color_map: [(u8, u8, u8); 32];
+    //let mut color_map: [(u8, u8, u8); 32];
 
     let mut horizontal_multiplier: usize = 1;
     let mut vertical_multiplier: usize = 1;
     let mut crt_effet_on: bool = false;
+    let crt_scanline_strength: u8 = 30;
+    let crt_subpx_attenuation: u8 = 230;
 
     let event_loop = EventLoop::new();
     let builder = WindowBuilder::new()
@@ -52,7 +50,7 @@ fn main()-> Result<(), Error> {
     };
 
     let mut virtual_frame_buffer: VirtualFrameBuffer = VirtualFrameBuffer::new(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
-    draw_test_grid(virtual_frame_buffer.get_frame());
+    //draw_test_grid(virtual_frame_buffer.get_frame());
 
     let mut last_refresh: Instant = Instant::now();
 
@@ -72,17 +70,20 @@ fn main()-> Result<(), Error> {
                 // Queue a RedrawRequested event.
                 if last_refresh.elapsed().as_millis() >= FPS {
                     let render_time: Instant = Instant::now();
+
+                    //Draw stuff in virtual frame buffer
                     clear_frame_buffer(pixels.get_frame());
                     draw_loading_border(virtual_frame_buffer.get_frame());
-                    upscale_virtualfb_to_pixelfb(virtual_frame_buffer.get_frame(), pixels.get_frame(), horizontal_multiplier, vertical_multiplier);
+                    draw_background(virtual_frame_buffer.get_frame());
                     
+                    //Upscale into Pixels frame buffer
                     if crt_effet_on {
-                        apply_crt_effect(pixels.get_frame(), 50);
+                        upscale_3_by_4_with_crt_effect(virtual_frame_buffer.get_frame(), pixels.get_frame(), crt_scanline_strength, crt_subpx_attenuation);
+                    } else {
+                        upscale_virtualfb_to_pixelfb(virtual_frame_buffer.get_frame(), pixels.get_frame(), horizontal_multiplier, vertical_multiplier);
                     }
-                    //draw_loading_border(pixels.get_frame());
-                    //draw_background(pixels.get_frame());
                     
-                    println!("draw time {}us", render_time.elapsed().as_micros());
+                    println!("draw time {}us\tScanline strength {}\tSub-pixel strength {} ", render_time.elapsed().as_micros(), crt_scanline_strength, crt_subpx_attenuation);
                     pixels.render().expect("Pixels render oups");
                     window.request_redraw();
                     last_refresh = Instant::now();
@@ -101,33 +102,25 @@ fn main()-> Result<(), Error> {
 
             if input.key_pressed(VirtualKeyCode::Right) {
                 horizontal_multiplier += 1;
-                if horizontal_multiplier > 3 {
-                    horizontal_multiplier = 3
-                }
+                if horizontal_multiplier > 3 {horizontal_multiplier = 3}
                 return;
             }
 
             if input.key_pressed(VirtualKeyCode::Left) {
                 horizontal_multiplier -= 1;
-                if horizontal_multiplier < 1 {
-                    horizontal_multiplier = 1
-                }
+                if horizontal_multiplier < 1 {horizontal_multiplier = 1}
                 return;
             }
 
             if input.key_pressed(VirtualKeyCode::Down) {
                 vertical_multiplier += 1;
-                if vertical_multiplier > 4 {
-                    vertical_multiplier = 4
-                }
+                if vertical_multiplier > 4 {vertical_multiplier = 4}
                 return;
             }
 
             if input.key_pressed(VirtualKeyCode::Up) {
                 vertical_multiplier -= 1;
-                if vertical_multiplier < 1 {
-                    vertical_multiplier = 1
-                }
+                if vertical_multiplier < 1 {vertical_multiplier = 1}
                 return;
             }
 
@@ -147,8 +140,7 @@ fn clear_frame_buffer(frame_buffer: &mut[u8]) {
 
 fn draw_loading_border(frame_buffer: &mut[u8]) {
     let mut random = rand::thread_rng();
-    let mut rgb_color: u8 = 0;
-    rgb_color = random.gen_range(0..8);
+    let mut rgb_color: u8 = random.gen_range(0..8);
 
     let mut line_pixel_count: u32 = 0;
     let mut line_count: u32 = 0;
@@ -177,75 +169,17 @@ fn draw_background(frame_buffer: &mut[u8]) {
     let mut screen_pixel_count: u32 = 0;
     let mut line_count: u32 = 0;
 
-    for pixel in frame_buffer.chunks_exact_mut(4) {
+    for pixel in frame_buffer.chunks_exact_mut(1) {
 
         if screen_pixel_count >= BORDER && screen_pixel_count <= VIRTUAL_WIDTH - BORDER && line_count >= BORDER && line_count <= VIRTUAL_HEIGHT - BORDER {
-            pixel[0] = BKG_COLOR.0;
-            pixel[1] = BKG_COLOR.1;
-            pixel[2] = BKG_COLOR.2;
+            pixel[0] = BKG_COLOR;
         }
 
         screen_pixel_count += 1;
 
-        if screen_pixel_count == WIDTH {
+        if screen_pixel_count == VIRTUAL_WIDTH {
             line_count += 1;
             screen_pixel_count = 0;
-        }
-    }
-}
-
-fn apply_crt_effect(frame_buffer: &mut[u8], strength: u8) {
-
-    let mut screen_pixel_count: u32 = 0;
-    let mut line_count: u32 = 0;
-    let mut sub_pixel_count: u32 = 0;
-
-    for pixel in frame_buffer.chunks_exact_mut(4) {
-
-        match sub_pixel_count {
-            0 => {
-                pixel[1] = 0;
-                pixel[2] = 0;
-            },
-            1 => {
-                pixel[0] = 0;
-                pixel[2] = 0;
-            },
-            2 => {
-                pixel[0] = 0;
-                pixel[1] = 0;
-            },
-            3_u32..=u32::MAX => {}
-        }
-        
-        if line_count % 4 == 0 {
-            match sub_pixel_count {
-                0 => {
-                    pixel[0] = if pixel[0] <= strength {0} else {pixel[0] - strength};
-                    pixel[1] = 0;
-                    pixel[2] = 0;
-                },
-                1 => {
-                    pixel[0] = 0;
-                    pixel[1] = if pixel[1] <= strength {0} else {pixel[1] - strength};
-                    pixel[2] = 0;
-                },
-                2 => {
-                    pixel[0] = 0;
-                    pixel[1] = 0;
-                    pixel[2] = if pixel[2] <= strength {0} else {pixel[2] - strength};
-                },
-                3_u32..=u32::MAX => {}
-            }
-        }
-
-        screen_pixel_count += 1;
-        sub_pixel_count = if sub_pixel_count == 2 {0} else {sub_pixel_count + 1};
-
-        if screen_pixel_count == WIDTH {
-            line_count += 1;
-            screen_pixel_count = 0;
-            sub_pixel_count = 0;
         }
     }
 }
@@ -438,10 +372,118 @@ fn upscale_virtualfb_to_pixelfb(virtual_fb: &mut[u8], pixels_frame: &mut[u8], in
         for horizontal_copy in 0..integer_width_multiplier {
             for vertical_copy in 0..integer_height_multiplier {
                 let scaling_offset:usize = pixels_sub_pixel_count * horizontal_copy + WIDTH as usize * pixels_sub_pixel_count * vertical_copy;
-                pixels_frame[0 + global_offset + scaling_offset] = rgb.0;
-                pixels_frame[1 + global_offset + scaling_offset] = rgb.1;
-                pixels_frame[2 + global_offset + scaling_offset] = rgb.2;
-                pixels_frame[3 + global_offset + scaling_offset] = 254;
+                let final_offset: usize = global_offset + scaling_offset;
+                pixels_frame[0 + final_offset] = rgb.0;
+                pixels_frame[1 + final_offset] = rgb.1;
+                pixels_frame[2 + final_offset] = rgb.2;
+                pixels_frame[3 + final_offset] = 254;
+            }
+        }
+
+        virt_line_pixel_counter += 1;
+        if virt_line_pixel_counter == VIRTUAL_WIDTH as usize {
+            virt_line_pixel_counter = 0;
+            virt_line_counter += 1;
+        }
+    }
+}
+
+fn upscale_3_by_4_with_crt_effect(virtual_fb: &mut[u8], pixels_frame: &mut[u8], scan_strength: u8, sub_pixel_masking: u8) {
+    let mut virt_line_pixel_counter: usize = 0;
+    let mut virt_line_counter: usize = 0;
+    let pixels_sub_pixel_count = 4;
+
+    for pixel in virtual_fb {
+
+        //Temporary color index to RGB mapping
+        let mut rgb: (u8, u8, u8) = (0, 0, 0);
+        match pixel {
+            0 => {
+                rgb.0 = 0;
+                rgb.1 = 0;
+                rgb.2 = 0;
+            },
+            1 => {
+                rgb.0 = 254;
+                rgb.1 = 254;
+                rgb.2 = 254;
+            },
+            2 => {
+                rgb.0 = 254;
+                rgb.1 = 0;
+                rgb.2 = 0;
+            },
+            3 => {
+                rgb.0 = 0;
+                rgb.1 = 254;
+                rgb.2 = 0;
+            },
+            4 => {
+                rgb.0 = 0;
+                rgb.1 = 0;
+                rgb.2 = 254;
+            },
+            5 => {
+                rgb.0 = 254;
+                rgb.1 = 254;
+                rgb.2 = 0;
+            },
+            6 => {
+                rgb.0 = 0;
+                rgb.1 = 254;
+                rgb.2 = 254;
+            },
+            7 => {
+                rgb.0 = 254;
+                rgb.1 = 0;
+                rgb.2 = 254;
+            },
+            8.. => {
+                rgb.0 = 0;
+                rgb.1 = 0;
+                rgb.2 = 0;
+            }
+        }
+
+        //Offset between virtual frame buffer and pixel's frame buffer
+        //if scaling is applied, it represents the offset between virtual frame buffer's pixel and
+        //pixel's top-left corner of scalled pixel
+        let global_offset = pixels_sub_pixel_count * virt_line_pixel_counter * 3 
+        + WIDTH as usize * pixels_sub_pixel_count * virt_line_counter * 4;
+        
+        for horizontal_copy in 0..3 {
+            for vertical_copy in 0..4 {
+                let scaling_offset: usize = pixels_sub_pixel_count * horizontal_copy + WIDTH as usize * pixels_sub_pixel_count * vertical_copy;
+                let final_offset: usize = global_offset + scaling_offset;
+                let mut final_rgb: (u8, u8, u8) = rgb;
+
+                match horizontal_copy {
+                    0 => {
+                        if final_rgb.1 < sub_pixel_masking {final_rgb.1 = 0} else {final_rgb.1 -= sub_pixel_masking};
+                        if final_rgb.2 < sub_pixel_masking {final_rgb.2 = 0} else {final_rgb.2 -= sub_pixel_masking};
+                    },
+                    1 => {
+                        if final_rgb.0 < sub_pixel_masking {final_rgb.0 = 0} else {final_rgb.0 -= sub_pixel_masking};
+                        if final_rgb.2 < sub_pixel_masking {final_rgb.2 = 0} else {final_rgb.2 -= sub_pixel_masking};
+                    },
+                    2 => {
+                        if final_rgb.0 < sub_pixel_masking {final_rgb.0 = 0} else {final_rgb.0 -= sub_pixel_masking};
+                        if final_rgb.1 < sub_pixel_masking {final_rgb.1 = 0} else {final_rgb.1 -= sub_pixel_masking};
+                    },
+                    _ => {}
+                }
+
+                if vertical_copy == 3 {
+                    if final_rgb.0 < scan_strength {final_rgb.0 = 0} else {final_rgb.0 -= scan_strength};
+                    if final_rgb.1 < scan_strength {final_rgb.1 = 0} else {final_rgb.1 -= scan_strength};
+                    if final_rgb.2 < scan_strength {final_rgb.2 = 0} else {final_rgb.2 -= scan_strength};
+                } 
+
+                pixels_frame[0 + final_offset] = final_rgb.0;
+                pixels_frame[1 + final_offset] = final_rgb.1;
+                pixels_frame[2 + final_offset] = final_rgb.2;
+                pixels_frame[3 + final_offset] = 254;
+                
             }
         }
 
