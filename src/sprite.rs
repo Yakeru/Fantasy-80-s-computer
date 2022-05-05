@@ -1,13 +1,37 @@
+struct Position {
+    x: u32, 
+    y: u32
+}
+
+struct Size {
+    width: u8,
+    height: u8
+}
+
 struct Sprite {
-    struct position {
-        x: u32, 
-        y: u32
-    }
+    mut Position: position,
+    mut Size: size,
+    mut [u8] data
+}
 
-    struct size {
-        width: u8,
-        height: u8
-    }
+impl Sprite {
 
-    mut [u8;size.width*size.height] data;
+    fn new(w: u8, h: u8) -> Sprite {
+
+        let position = Position {
+            x: 0,
+            y: 0
+        } 
+
+        let size = Size {
+            width: width,
+            height: h
+        }
+
+        Sprite {
+            position: position,
+            size: size,
+            data:  
+        }
+    }
 }

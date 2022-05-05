@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <script type="text/javascript" src="script.js"></script>
+
+  <!-- HEAD -->
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <link rel="stylesheet" href="style.css">
+    <title>Character editor</title>
+  </head>
+
+  <!-- BODY -->
+  <body onload="init()">
+
+    <div class="header"><h1>Character Editor</h1></div>
+
+    <div class="content">
+
+      <div class="sprite">
+        <canvas  id="sprite" style="border:1px solid #000000;" width="320px" height="320px"></canvas>
+      </div>
+
+      <div class="drawingTools">
+        <canvas id="palette" style="border:1px solid #000000;" width="160px" height="80px"></canvas>
+        <div id="fill">
+          <button id="fill_button">Clear</button>
+        </div>
+      </div>
+
+      <div class="codeOutput">
+          Rust array:
+          <br>
+          <textarea id="rustArray" cols="50" rows="8"></textarea>
+          <button id="copy">Copy</button>
+      </div>
+
+    </div>
+
+  </body>
+</html>

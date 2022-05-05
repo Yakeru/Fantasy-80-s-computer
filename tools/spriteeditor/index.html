@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <script type="text/javascript" src="script.js"></script>
+
+  <!-- HEAD -->
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <link rel="stylesheet" href="style.css">
+    <title>Tonton Damien's super pixel-art editor !!!</title>
+  </head>
+
+  <!-- BODY -->
+  <body onload="init()">
+
+    <div class="header"><h1>Sprite Editor</h1></div>
+
+    <div class="content">
+
+      <div class="sprite">
+        <canvas  id="sprite" style="border:1px solid #000000;" width="500px" height="500px"></canvas>
+      </div>
+
+      <div class="drawingTools">
+        <canvas id="palette" style="border:1px solid #000000;" width="160px" height="160px"></canvas>
+        <div id="fill">
+          Remplir: <button id="fill_button"></button>
+        </div>
+      </div>
+
+    </div>
+
+  </body>
+</html>
