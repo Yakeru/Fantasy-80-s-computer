@@ -222,7 +222,7 @@ function printDrawingMatrixTuRustArray() {
       text += "0x" + binaryToHex(byte).result + ", "
   }
 
-  text = text.slice(0, text.length - 3);
+  text = text.slice(0, text.length - 2);
   text += "],";
 
   if(log) console.log(text);
