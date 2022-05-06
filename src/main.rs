@@ -1,10 +1,11 @@
 use winit::{
-    event::{Event, WindowEvent, VirtualKeyCode},
+    event::{Event, WindowEvent, VirtualKeyCode, KeyboardInput},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
     dpi::PhysicalSize
 };
 use winit_input_helper::WinitInputHelper;
+use winit_input_helper::TextChar;
 use pixels::{Error, Pixels, SurfaceTexture};
 use rand::Rng;
 use std::time::{
@@ -21,6 +22,99 @@ const FPS: u128 = 32; //ms per frame, so 16 = 60fps, 32 = 30fps, 1000 = 1fps
 
 const BORDER: u32 = 20;
 const BKG_COLOR: u8 = 4;
+const FRG_COLOR: u8 = 5;
+
+// enum character {
+//     character([u8;8]),
+//     None
+// }
+
+fn character_rom(character: &char) -> [u8;8] {
+
+    match character {
+        'A' => [0x18, 0x3C, 0x66, 0x66, 0x7E, 0x66, 0x66, 0x0],
+        'B' => [0xFC, 0x66, 0x66, 0x7C, 0x66, 0x66, 0xFC, 0x0],
+        'C' => [0x3C, 0x66, 0xC0, 0xC0, 0xC0, 0x66, 0x3C, 0x0],
+        'D' => [0xF8, 0x6C, 0x66, 0x66, 0x66, 0x6C, 0xF8, 0x0],
+        'E' => [0xFE, 0x62, 0x68, 0x78, 0x68, 0x62, 0xFE, 0x0],
+        'F' => [0xFE, 0x62, 0x68, 0x78, 0x68, 0x60, 0xF0, 0x0],
+        'G' => [0x3C, 0x66, 0xC0, 0xC0, 0xCE, 0xC6, 0x7E, 0x0],
+        'H' => [0x66, 0x66, 0x66, 0x7E, 0x66, 0x66, 0x66, 0x0],
+        'I' => [0x7E, 0x18, 0x18, 0x18, 0x18, 0x18, 0x7E, 0x0],
+        'J' => [0x1E, 0x0C, 0x0C, 0x0C, 0xCC, 0xCC, 0x78, 0x0],
+        'K' => [0xE6, 0x66, 0x6C, 0x78, 0x6C, 0x66, 0xE6, 0x0],
+        'L' => [0xF0, 0x60, 0x60, 0x60, 0x62, 0x66, 0xFE, 0x0],
+        'M' => [0xC6, 0xEE, 0xFE, 0xFE, 0xD6, 0xC6, 0xC6, 0x0],
+        'N' => [0xC6, 0xE6, 0xF6, 0xDE, 0xCE, 0xC6, 0xC6, 0x0],
+        'O' => [0x38, 0x6C, 0xC6, 0xC6, 0xC6, 0x6C, 0x38, 0x0],
+        'P' => [0xFC, 0x66, 0x66, 0x78, 0x60, 0x60, 0xF0, 0x0],
+        'Q' => [0x38, 0x6C, 0xC6, 0xC6, 0xDA, 0xCC, 0x76, 0x0],
+        'R' => [0xFC, 0x66, 0x66, 0x7C, 0x6C, 0x66, 0xE2, 0x0],
+        'S' => [0x3C, 0x66, 0x60, 0x3C, 0x06, 0x66, 0x3C, 0x0],
+        'T' => [0x7E, 0x5A, 0x18, 0x18, 0x18, 0x18, 0x3C, 0x0],
+        'U' => [0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x3C, 0x0],
+        'V' => [0x66, 0x66, 0x66, 0x66, 0x66, 0x3C, 0x18, 0x0],
+        'W' => [0xC6, 0xC6, 0xC6, 0xD6, 0xFE, 0xEE, 0xC6, 0x0],
+        'X' => [0xC6, 0x6C, 0x38, 0x38, 0x6C, 0xC6, 0xC6, 0x0],
+        'Y' => [0x66, 0x66, 0x66, 0x3C, 0x18, 0x18, 0x3C, 0x0],
+        'Z' => [0xFE, 0xC6, 0x8C, 0x18, 0x32, 0x66, 0xFE, 0x0],
+        'a' => [0x18, 0x3C, 0x66, 0x66, 0x7E, 0x66, 0x66, 0x0],
+        'b' => [0xFC, 0x66, 0x66, 0x7C, 0x66, 0x66, 0xFC, 0x0],
+        'c' => [0x3C, 0x66, 0xC0, 0xC0, 0xC0, 0x66, 0x3C, 0x0],
+        'd' => [0xF8, 0x6C, 0x66, 0x66, 0x66, 0x6C, 0xF8, 0x0],
+        'e' => [0xFE, 0x62, 0x68, 0x78, 0x68, 0x62, 0xFE, 0x0],
+        'f' => [0xFE, 0x62, 0x68, 0x78, 0x68, 0x60, 0xF0, 0x0],
+        'g' => [0x3C, 0x66, 0xC0, 0xC0, 0xCE, 0xC6, 0x7E, 0x0],
+        'h' => [0x66, 0x66, 0x66, 0x7E, 0x66, 0x66, 0x66, 0x0],
+        'i' => [0x7E, 0x18, 0x18, 0x18, 0x18, 0x18, 0x7E, 0x0],
+        'j' => [0x1E, 0x0C, 0x0C, 0x0C, 0xCC, 0xCC, 0x78, 0x0],
+        'k' => [0xE6, 0x66, 0x6C, 0x78, 0x6C, 0x66, 0xE6, 0x0],
+        'l' => [0xF0, 0x60, 0x60, 0x60, 0x62, 0x66, 0xFE, 0x0],
+        'm' => [0xC6, 0xEE, 0xFE, 0xFE, 0xD6, 0xC6, 0xC6, 0x0],
+        'n' => [0xC6, 0xE6, 0xF6, 0xDE, 0xCE, 0xC6, 0xC6, 0x0],
+        'o' => [0x38, 0x6C, 0xC6, 0xC6, 0xC6, 0x6C, 0x38, 0x0],
+        'p' => [0xFC, 0x66, 0x66, 0x78, 0x60, 0x60, 0xF0, 0x0],
+        'q' => [0x38, 0x6C, 0xC6, 0xC6, 0xDA, 0xCC, 0x76, 0x0],
+        'r' => [0xFC, 0x66, 0x66, 0x7C, 0x6C, 0x66, 0xE2, 0x0],
+        's' => [0x3C, 0x66, 0x60, 0x3C, 0x06, 0x66, 0x3C, 0x0],
+        't' => [0x7E, 0x5A, 0x18, 0x18, 0x18, 0x18, 0x3C, 0x0],
+        'u' => [0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x3C, 0x0],
+        'v' => [0x66, 0x66, 0x66, 0x66, 0x66, 0x3C, 0x18, 0x0],
+        'w' => [0xC6, 0xC6, 0xC6, 0xD6, 0xFE, 0xEE, 0xC6, 0x0],
+        'x' => [0xC6, 0x6C, 0x38, 0x38, 0x6C, 0xC6, 0xC6, 0x0],
+        'y' => [0x66, 0x66, 0x66, 0x3C, 0x18, 0x18, 0x3C, 0x0],
+        'z' => [0xFE, 0xC6, 0x8C, 0x18, 0x32, 0x66, 0xFE, 0x0],
+        ' ' => [0, 0, 0, 0, 0, 0, 0, 0],
+        '-' => [0, 0, 0, 0, 0, 0, 0, 0],
+        '_' => [0, 0, 0, 0, 0, 0, 0, 0],
+        '=' => [0, 0, 0, 0, 0, 0, 0, 0],
+        '+' => [0, 0, 0, 0, 0, 0, 0, 0],
+        '/' => [0, 0, 0, 0, 0, 0, 0, 0],
+        '\\' => [0, 0, 0, 0, 0, 0, 0, 0],
+        '.' => [0, 0, 0, 0, 0, 0, 0, 0],
+        '[' => [0, 0, 0, 0, 0, 0, 0, 0],
+        ']' => [0, 0, 0, 0, 0, 0, 0, 0],
+        '(' => [0, 0, 0, 0, 0, 0, 0, 0],
+        ')' => [0, 0, 0, 0, 0, 0, 0, 0],
+        '{' => [0, 0, 0, 0, 0, 0, 0, 0],
+        '}' => [0, 0, 0, 0, 0, 0, 0, 0],
+        '@' => [0, 0, 0, 0, 0, 0, 0, 0],
+        '&' => [0, 0, 0, 0, 0, 0, 0, 0],
+        '0' => [0, 0, 0, 0, 0, 0, 0, 0],
+        '1' => [0, 0, 0, 0, 0, 0, 0, 0],
+        '2' => [0, 0, 0, 0, 0, 0, 0, 0],
+        '3' => [0, 0, 0, 0, 0, 0, 0, 0],
+        '4' => [0, 0, 0, 0, 0, 0, 0, 0],
+        '5' => [0, 0, 0, 0, 0, 0, 0, 0],
+        '6' => [0, 0, 0, 0, 0, 0, 0, 0],
+        '7' => [0, 0, 0, 0, 0, 0, 0, 0],
+        '8' => [0, 0, 0, 0, 0, 0, 0, 0],
+        '9' => [0, 0, 0, 0, 0, 0, 0, 0],
+        _ => [0, 0, 0, 0, 0, 0, 0, 0]
+    }
+}
+
+
 
 fn main()-> Result<(), Error> {
 
@@ -40,7 +134,6 @@ fn main()-> Result<(), Error> {
         .with_resizable(false);
 
     let window = builder.build(&event_loop).expect("Window creation failed !");
-
     let mut input = WinitInputHelper::new();
     
     let mut pixels = {
@@ -50,31 +143,49 @@ fn main()-> Result<(), Error> {
     };
 
     let mut virtual_frame_buffer: VirtualFrameBuffer = VirtualFrameBuffer::new(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
-    //draw_test_grid(virtual_frame_buffer.get_frame());
+
+    let mut console_buffer: Vec<char> = Vec::new();
 
     let mut last_refresh: Instant = Instant::now();
 
     event_loop.run(move |event, _, control_flow| {
+
         *control_flow = ControlFlow::Poll;
+
+        if input.update(&event) {
+            if input.key_released(VirtualKeyCode::Escape) || input.quit() {
+                println!("The Escape key was pressed; stopping");
+                *control_flow = ControlFlow::Exit;
+                return;
+            }
+        }
+
         match event {
-            Event::WindowEvent {
-                event: WindowEvent::CloseRequested,
-                ..
-            } => {
-                println!("The close button was pressed; stopping");
-                *control_flow = ControlFlow::Exit
+
+            Event::WindowEvent { event, .. } => match event {
+                WindowEvent::CloseRequested => {
+                    println!("The close button was pressed; stopping");
+                    *control_flow = ControlFlow::Exit
+                }
+                WindowEvent::ReceivedCharacter(c) => {
+                    println!("{}", c);
+                    console_buffer.push(c);
+                }
+                _ => ()
             },
             Event::MainEventsCleared => {
                 // Application update code.
     
                 // Queue a RedrawRequested event.
                 if last_refresh.elapsed().as_millis() >= FPS {
+
                     let render_time: Instant = Instant::now();
 
                     //Draw stuff in virtual frame buffer
                     clear_frame_buffer(pixels.get_frame());
                     draw_loading_border(virtual_frame_buffer.get_frame());
                     draw_background(virtual_frame_buffer.get_frame());
+                    draw_shell(&console_buffer, virtual_frame_buffer.get_frame());
                     
                     //Upscale into Pixels frame buffer
                     // if crt_effet_on {
@@ -93,50 +204,52 @@ fn main()-> Result<(), Error> {
             }
             _ => ()
         }
-
-        if input.update(&event) {
-            // Close events
-            if input.key_pressed(VirtualKeyCode::Escape) || input.quit() {
-                *control_flow = ControlFlow::Exit;
-                println!("The Escape key was pressed; stopping");
-                return;
-            }
-
-            if input.key_pressed(VirtualKeyCode::Right) {
-                horizontal_multiplier += 1;
-                if horizontal_multiplier > 3 {horizontal_multiplier = 3}
-                return;
-            }
-
-            if input.key_pressed(VirtualKeyCode::Left) {
-                horizontal_multiplier -= 1;
-                if horizontal_multiplier < 1 {horizontal_multiplier = 1}
-                return;
-            }
-
-            if input.key_pressed(VirtualKeyCode::Down) {
-                vertical_multiplier += 1;
-                if vertical_multiplier > 4 {vertical_multiplier = 4}
-                return;
-            }
-
-            if input.key_pressed(VirtualKeyCode::Up) {
-                vertical_multiplier -= 1;
-                if vertical_multiplier < 1 {vertical_multiplier = 1}
-                return;
-            }
-
-            if input.key_pressed(VirtualKeyCode::Return) {
-                crt_effet_on = !crt_effet_on;
-                return;
-            }
-        }
     });
 }
 
 fn clear_frame_buffer(frame_buffer: &mut[u8]) {
     for value in frame_buffer.chunks_exact_mut(1) {
         value[0] = 0;
+    }
+}
+
+fn draw_shell(console_buffer: &Vec<char>, virtual_frame_buffer: &mut[u8]) {
+
+    let mut x_pos = BORDER;
+    let mut y_pos = BORDER;
+
+    for c in console_buffer {
+
+        let pic = character_rom(c);
+
+        for row_count in 0..8 {
+
+            let row = pic[row_count];
+            let row_in_binary = &format!("{:0>8b}", row);
+            let mut col_count = 0;
+
+            for c in row_in_binary.chars() {
+
+                match c {
+                    '0' => virtual_frame_buffer[x_pos as usize + col_count + (y_pos as usize + row_count ) * VIRTUAL_WIDTH as usize] = BKG_COLOR,
+                    '1' => virtual_frame_buffer[x_pos as usize + col_count + (y_pos as usize + row_count ) * VIRTUAL_WIDTH as usize] = FRG_COLOR,
+                    _ => ()
+                }
+                col_count += 1;
+            }
+        }
+
+        x_pos += 8;
+
+        if x_pos > 50 * 8 {
+            x_pos = BORDER;
+            y_pos += 8;
+        } 
+
+        if y_pos > 30 * 8 {
+            x_pos = BORDER;
+            y_pos = BORDER;
+        }
     }
 }
 
@@ -241,69 +354,6 @@ impl VirtualFrameBuffer {
 
     fn get_frame(&mut self) -> &mut [u8] {
         return &mut self.frame;
-    }
-}
-
-fn draw_test_grid(virtual_fb: &mut[u8]) {
-    let mut screen_pixel_count: u32 = 0;
-    let mut line_count: u32 = 0;
-
-    for pixel in virtual_fb.chunks_exact_mut(1) {
-
-        if screen_pixel_count % 3 == 0 {
-            pixel[0] = 2;
-        }
-
-        if screen_pixel_count % 7 == 0 {
-            pixel[0] = 3;
-        }
-
-        if screen_pixel_count % 11 == 0 {
-            pixel[0] = 4;
-        }
-
-        if screen_pixel_count % 13 == 0 {
-            pixel[0] = 1;
-        }
-
-        if line_count % 3 == 0 {
-            pixel[0] = 2;
-        }
-
-        if line_count % 7 == 0 {
-            pixel[0] = 3;
-        }
-
-        if line_count % 11 == 0 {
-            pixel[0] = 4;
-        }
-
-        if line_count % 13 == 0 {
-            pixel[0] = 1;
-        }
-
-        if line_count == 0 {
-            pixel[0] = 1;
-        }
-
-        if screen_pixel_count == 0 {
-            pixel[0] = 1;
-        }
-
-        if screen_pixel_count == VIRTUAL_WIDTH - 1 {
-            pixel[0] = 1;
-        }
-
-        if line_count == VIRTUAL_HEIGHT - 1 {
-            pixel[0] = 1;
-        }
-
-        screen_pixel_count += 1;
-
-        if screen_pixel_count == VIRTUAL_WIDTH {
-            line_count += 1;
-            screen_pixel_count = 0;
-        }
     }
 }
 
@@ -504,21 +554,3 @@ struct color {
     b: u8,
     name: String
 }
-
-
-    //black(u8, u8,u8,u8, String) = (0, 0, 0, 0, "black"),
-    //dark_blue(u8, u8,u8,u8, String) = (0, 0, 0, 0, "black")
-    // 2 		#7E2553 	126, 37, 83 	dark-purple
-    // 3 		#008751 	0, 135, 81 	dark-green
-    // 4 		#AB5236 	171, 82, 54 	brown
-    // 5 		#5F574F 	95, 87, 79 	dark-grey
-    // 6 		#C2C3C7 	194, 195, 199 	light-grey
-    // 7 		#FFF1E8 	255, 241, 232 	white
-    // 8 		#FF004D 	255, 0, 77 	red
-    // 9 		#FFA300 	255, 163, 0 	orange
-    // 10 		#FFEC27 	255, 236, 39 	yellow
-    // 11 		#00E436 	0, 228, 54 	green
-    // 12 		#29ADFF 	41, 173, 255 	blue
-    // 13 		#83769C 	131, 118, 156 	lavender
-    // 14 		#FF77A8 	255, 119, 168 	pink
-    // 15 		#FFCCAA 	255, 204, 170 	light-peach

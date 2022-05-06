@@ -54,6 +54,7 @@ function init() {
   drawColorPalette();
 
   document.getElementById("fill_button").addEventListener("click", fill);
+  document.getElementById("generate").addEventListener("click", generate);
   document.getElementById("copy").addEventListener("click", copyToClipboard);
 }
 
@@ -163,7 +164,6 @@ function draw(){
       }
     }
   }
-  printDrawingMatrixTuRustArray();
 }
 
 function paletteClick(event) {
@@ -186,14 +186,12 @@ function paletteClick(event) {
       if(log) console.log("    palette index: " + selectedPaletteIndex);
     }
   }
-
-  document.getElementById("fill_button").style.backgroundColor = selectedColor;
 }
 
 function fill() {
   if(log) console.log("Fill click !");
-  initDrawingMatrix(selectedPaletteIndex);
-  drawSpriteGrid(selectedColor);
+  initDrawingMatrix(0);
+  drawSpriteGrid(palette[0]);
 }
 
 //*************************************************************************
@@ -207,8 +205,14 @@ function rgbToHex(r, g, b) {
 }
 
 //Generate Rust array from drawing
+
+function generate() {
+  var newHex = printDrawingMatrixTuRustArray();
+  document.getElementById("rustArray").value += newHex + "\n";
+}
+
 function printDrawingMatrixTuRustArray() {
-  let text = "let xxx: [u8;8] = [";
+  let text = "'' => [";
 
   for (var y = 0; y < editor_height_px; y++) {
     var byte = "";
@@ -219,9 +223,7 @@ function printDrawingMatrixTuRustArray() {
   }
 
   text = text.slice(0, text.length - 3);
-  text += "];";
-
-  document.getElementById("rustArray").value = text;
+  text += "],";
 
   if(log) console.log(text);
   return text;
