@@ -11,15 +11,17 @@ use std::time::{
     Instant
 };
 
-use crate::characters::rom;
+// use crate::characters::rom;
 mod characters;
 
-use crate::virtual_frame_buffer::VirtualFrameBuffer;
-use crate::virtual_frame_buffer::CrtEffectRenderer;
+use crate::virtual_text_mode::{VirtualTextLayerFrameBuffer, TextLayerRenderer, TextModeChar};
+mod virtual_text_mode;
+
+use crate::virtual_frame_buffer::{VirtualFrameBuffer, CrtEffectRenderer};
 mod virtual_frame_buffer;
 
-use crate::sprite::Sprite;
-mod sprite;
+// use crate::sprite::Sprite;
+// mod sprite;
 
 use crate::shell::Shell;
 mod shell;
@@ -55,6 +57,9 @@ fn main()-> Result<(), Error> {
         Pixels::new(WIDTH, HEIGHT, surface_texture)?
     };
 
+    let mut virtual_text_layer_buffer = VirtualTextLayerFrameBuffer::new(TEXT_COLUMNS as u32, TEXT_ROWS as u32);
+    let text_renderer = TextLayerRenderer::new(TEXT_COLUMNS as u32, TEXT_ROWS as u32, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+
     let mut virtual_frame_buffer: VirtualFrameBuffer = VirtualFrameBuffer::new(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
     let crt_renderer: CrtEffectRenderer = CrtEffectRenderer::new(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, WIDTH, HEIGHT);
 
@@ -82,7 +87,17 @@ fn main()-> Result<(), Error> {
                     *control_flow = ControlFlow::Exit
                 }
                 WindowEvent::ReceivedCharacter(c) => {
-                    shell.send_character_to_shell(c);
+                    //shell.send_character_to_shell(c);
+                    let a_char = TextModeChar {
+                        c: c,
+                        background_color: BKG_COLOR,
+                        color: FRG_COLOR,
+                        flipp: false,
+                        blink: false
+                    };
+                    
+                    virtual_text_layer_buffer.push_character(a_char);
+
                 }
                 _ => ()
             },
@@ -92,15 +107,17 @@ fn main()-> Result<(), Error> {
                 // Queue a RedrawRequested event.
                 if last_refresh.elapsed().as_millis() >= FPS {
 
-                    //let render_time: Instant = Instant::now();
+                    let render_time: Instant = Instant::now();
 
                     //Draw stuff in virtual frame buffer
                     virtual_frame_buffer.clear_frame_buffer(BKG_COLOR);
                     draw_loading_border(virtual_frame_buffer.get_frame(), 20, 20);
-                    draw_shell_to_framebuffer(&shell, &mut virtual_frame_buffer);
+                    text_renderer.render(&virtual_text_layer_buffer, &mut virtual_frame_buffer);
+
+                    //Render virtual frame buffer to pixels's frame buffer
                     crt_renderer.render(virtual_frame_buffer.get_frame(), pixels.get_frame());
                     
-                    //println!("draw time {}us", render_time.elapsed().as_micros());
+                    println!("draw time {}us", render_time.elapsed().as_micros());
                     pixels.render().expect("Pixels render oups");
                     window.request_redraw();
                     last_refresh = Instant::now();
@@ -133,76 +150,6 @@ fn draw_loading_border(frame_buffer: &mut[u8], vert_size: u8, horiz_size: u8) {
         if line_pixel_count == VIRTUAL_WIDTH {
             line_count += 1;
             line_pixel_count = 0;
-        }
-    }
-}
-
-pub fn draw_shell_to_framebuffer(shell: &Shell, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-
-    let horizontal_border: u32 = (virtual_frame_buffer.get_width() as u32 - shell.get_nb_columns() as u32 * shell::CHARACTER_WIDTH as u32) / 2;
-    let vertical_border: u32 = (virtual_frame_buffer.get_height() - shell.get_nb_rows() as u32 * shell::CHARACTER_HEIGHT as u32) / 2;
-
-    let mut x_pos = horizontal_border;
-    let mut y_pos = vertical_border;
-
-    let mut shell_row_count = 0;
-    let mut shell_col_count = 0;
-
-    for c in shell.get_buffer() {
-
-        let pic = rom(c);
-
-        for row_count in 0..8 {
-
-            let row = pic[row_count];
-            let row_in_binary = &format!("{:0>8b}", row);
-            let mut character_sprite_col_count = 0;
-
-            for c in row_in_binary.chars() {
-
-                match c {
-                    '0' => virtual_frame_buffer.get_frame()[x_pos as usize + character_sprite_col_count + (y_pos as usize + row_count ) * VIRTUAL_WIDTH as usize] = BKG_COLOR,
-                    '1' => virtual_frame_buffer.get_frame()[x_pos as usize + character_sprite_col_count + (y_pos as usize + row_count ) * VIRTUAL_WIDTH as usize] = FRG_COLOR,
-                    _ => ()
-                }
-                character_sprite_col_count += 1;
-            }
-        }
-
-        shell_col_count += 1;
-        x_pos += shell::CHARACTER_WIDTH as u32;
-
-        if shell_col_count == shell.get_nb_columns() as u32 {
-            shell_col_count = 0;
-            shell_row_count += 1;
-            x_pos = horizontal_border;
-            y_pos += shell::CHARACTER_HEIGHT as u32;
-        } 
-
-        if shell_row_count == shell.get_nb_rows() as u32 {
-            shell_col_count = 0;
-            shell_row_count = 0;
-            x_pos = horizontal_border;
-            y_pos = vertical_border;
-        }
-
-        //Draw cursor
-        let cursor = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
-        for row_count in 0..8 {
-
-            let row = cursor[row_count];
-            let row_in_binary = &format!("{:0>8b}", row);
-            let mut col_count = 0;
-
-            for c in row_in_binary.chars() {
-
-                match c {
-                    '0' => virtual_frame_buffer.get_frame()[x_pos as usize + col_count + (y_pos as usize + row_count ) * VIRTUAL_WIDTH as usize] = BKG_COLOR,
-                    '1' => virtual_frame_buffer.get_frame()[x_pos as usize + col_count + (y_pos as usize + row_count ) * VIRTUAL_WIDTH as usize] = FRG_COLOR,
-                    _ => ()
-                }
-                col_count += 1;
-            }
         }
     }
 }

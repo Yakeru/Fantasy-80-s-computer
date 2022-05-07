@@ -55,7 +55,7 @@ pub struct CrtEffectRenderer {
     render_horiz_upscale: u8,
     render_vert_upscale: u8,
     scan_line_strength: u8,
-    sub_pixel_attenuation: u8
+    sub_pixel_attenuation: u8,
 }
 
 //Specifically for this project, the output frame buffer must be at least 3x wider and 4x higher to apply the CRT effect
@@ -72,7 +72,7 @@ impl CrtEffectRenderer {
             render_vert_upscale: 4,
             output_nb_of_values_per_pixel: 4,
             scan_line_strength: 35,
-            sub_pixel_attenuation: 230
+            sub_pixel_attenuation: 230,
         }
     }
 
