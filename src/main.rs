@@ -1,5 +1,5 @@
 use winit::{
-    event::{Event, WindowEvent, VirtualKeyCode},
+    event::{Event, WindowEvent, VirtualKeyCode, KeyboardInput},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
     dpi::PhysicalSize
@@ -10,6 +10,7 @@ use rand::Rng;
 use std::time::{
     Instant
 };
+use std::io::{self, Write};
 
 // use crate::characters::rom;
 mod characters;
@@ -34,8 +35,8 @@ const VIRTUAL_HEIGHT: u32 = 240; //240*4 = 960
 
 const FPS: u128 = 16; //ms per frame, so 16 = 60fps, 32 = 30fps, 1000 = 1fps
 
-const BKG_COLOR: u8 = 4;
-const FRG_COLOR: u8 = 5;
+const DEFAULT_BKG_COLOR: u8 = 4;
+const DEFAULT_COLOR: u8 = 5;
 const TEXT_COLUMNS: u8 = 40;
 const TEXT_ROWS: u8 = 25;
 
@@ -57,13 +58,15 @@ fn main()-> Result<(), Error> {
         Pixels::new(WIDTH, HEIGHT, surface_texture)?
     };
 
+    let mut text_color = DEFAULT_COLOR;
+    let mut text_bkg_color = DEFAULT_BKG_COLOR;
     let mut virtual_text_layer_buffer = VirtualTextLayerFrameBuffer::new(TEXT_COLUMNS as u32, TEXT_ROWS as u32);
     let text_renderer = TextLayerRenderer::new(TEXT_COLUMNS as u32, TEXT_ROWS as u32, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
 
     let mut virtual_frame_buffer: VirtualFrameBuffer = VirtualFrameBuffer::new(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
     let crt_renderer: CrtEffectRenderer = CrtEffectRenderer::new(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, WIDTH, HEIGHT);
 
-    let mut shell: Shell = Shell::new(5000, TEXT_COLUMNS, TEXT_ROWS);
+    //let mut shell: Shell = Shell::new(5000, TEXT_COLUMNS, TEXT_ROWS);
 
     let mut last_refresh: Instant = Instant::now();
 
@@ -77,6 +80,22 @@ fn main()-> Result<(), Error> {
                 *control_flow = ControlFlow::Exit;
                 return;
             }
+
+            if input.key_released(VirtualKeyCode::Left) {
+                if text_color == 7 {text_color = 0} else {text_color += 1}
+            }
+
+            if input.key_released(VirtualKeyCode::Right) {
+                if text_color == 0 {text_color = 7} else {text_color -= 1}
+            }
+
+            if input.key_released(VirtualKeyCode::Up) {
+                if text_bkg_color == 7 {text_bkg_color = 0} else {text_bkg_color += 1}
+            }
+
+            if input.key_released(VirtualKeyCode::Down) {
+                if text_bkg_color == 0 {text_bkg_color = 7} else {text_bkg_color -= 1}
+            }
         }
 
         match event {
@@ -87,17 +106,15 @@ fn main()-> Result<(), Error> {
                     *control_flow = ControlFlow::Exit
                 }
                 WindowEvent::ReceivedCharacter(c) => {
-                    //shell.send_character_to_shell(c);
-                    let a_char = TextModeChar {
-                        c: c,
-                        background_color: BKG_COLOR,
-                        color: FRG_COLOR,
-                        flipp: false,
-                        blink: false
-                    };
                     
-                    virtual_text_layer_buffer.push_character(a_char);
+                    print!("{}", c);
+                    io::stdout().flush().unwrap();
 
+                    if c == 0x08 as char { //0x08 is unicode for Backspace
+                        virtual_text_layer_buffer.pop_char();
+                    } else {
+                        virtual_text_layer_buffer.push_char(c, text_color, text_bkg_color, false);
+                    }
                 }
                 _ => ()
             },
@@ -107,17 +124,17 @@ fn main()-> Result<(), Error> {
                 // Queue a RedrawRequested event.
                 if last_refresh.elapsed().as_millis() >= FPS {
 
-                    let render_time: Instant = Instant::now();
+                    //let render_time: Instant = Instant::now();
 
                     //Draw stuff in virtual frame buffer
-                    virtual_frame_buffer.clear_frame_buffer(BKG_COLOR);
-                    draw_loading_border(virtual_frame_buffer.get_frame(), 20, 20);
+                    virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
+                    //draw_loading_border(virtual_frame_buffer.get_frame(), 20, 20);
                     text_renderer.render(&virtual_text_layer_buffer, &mut virtual_frame_buffer);
 
                     //Render virtual frame buffer to pixels's frame buffer
                     crt_renderer.render(virtual_frame_buffer.get_frame(), pixels.get_frame());
                     
-                    println!("draw time {}us", render_time.elapsed().as_micros());
+                    //println!("draw time {}us", render_time.elapsed().as_micros());
                     pixels.render().expect("Pixels render oups");
                     window.request_redraw();
                     last_refresh = Instant::now();

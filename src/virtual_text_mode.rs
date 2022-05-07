@@ -4,6 +4,7 @@ use crate::characters::rom;
 //Struct describing all the settings one character can have in text mode
 //"flipp" tells the renderer to flip the color and background of that character
 //"blink" tells the renderer to automatically flip the color and background of that character at a set interval, useful for blinking warning messages
+#[derive(Copy, Clone)]
 pub struct TextModeChar {
     pub c: char,
     pub background_color: u8,
@@ -37,7 +38,32 @@ impl VirtualTextLayerFrameBuffer {
     }
 
     pub fn push_character(&mut self, tmchar: TextModeChar) {
-        self.characters.push(tmchar);
+        if self.characters.len() == self.character_columns as usize * self.character_rows as usize {
+            for i in 0..self.characters.len() -1 {
+                self.characters[i] = self.characters[i+1];
+            }
+            self.characters.pop();
+            self.characters.push(tmchar);
+        } else {
+            self.characters.push(tmchar);
+        }
+    }
+
+    pub fn push_char(&mut self, c: char, color: u8, back_color: u8, blink: bool) {
+
+        let a_char = TextModeChar {
+            c: c,
+            background_color: back_color,
+            color: color,
+            flipp: false,
+            blink: blink
+        };
+
+        self.push_character(a_char);
+    }
+
+    pub fn pop_char(&mut self) {
+        self.characters.pop();
     }
 }
 
