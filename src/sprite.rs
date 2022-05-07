@@ -1,37 +1,30 @@
-struct Position {
-    x: u32, 
-    y: u32
-}
-
-struct Size {
-    width: u8,
-    height: u8
-}
-
-struct Sprite {
-    mut Position: position,
-    mut Size: size,
-    mut [u8] data
+pub struct Sprite {
+    x: usize,
+    y: usize,
+    size_x: u8,
+    size_y: u8,
+    visible: bool,
+    image: Vec<u8>
 }
 
 impl Sprite {
 
-    fn new(w: u8, h: u8) -> Sprite {
+    pub fn new() -> Sprite { 
 
-        let position = Position {
-            x: 0,
-            y: 0
-        } 
+        let size: usize = 8 * 8;
+        let mut new_image = Vec::new();
 
-        let size = Size {
-            width: width,
-            height: h
-        }
+        // for _value in 0..size {
+        //     new_image.push(0);
+        // }
 
         Sprite {
-            position: position,
-            size: size,
-            data:  
+            x: 0,
+            y: 0,
+            size_x: 8,
+            size_y: 8,
+            visible: false,
+            image: new_image
         }
     }
 }
