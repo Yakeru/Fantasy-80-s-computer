@@ -1,3 +1,4 @@
+use crate::color_palettes::default_color_palette;
 
 //Contains a list of u8 values corresponding to values from a color palette.
 //So just one u8 per pixel, R G and B values are retrieved from the palette.
@@ -87,55 +88,8 @@ impl CrtEffectRenderer {
         for pixel in input_frame {
 
             //Temporary color index to RGB mapping
-            let mut rgb: (u8, u8, u8) = (0, 0, 0);
-            match pixel {
-                0 => {
-                    rgb.0 = 0;
-                    rgb.1 = 0;
-                    rgb.2 = 0;
-                },
-                1 => {
-                    rgb.0 = 254;
-                    rgb.1 = 254;
-                    rgb.2 = 254;
-                },
-                2 => {
-                    rgb.0 = 254;
-                    rgb.1 = 0;
-                    rgb.2 = 0;
-                },
-                3 => {
-                    rgb.0 = 0;
-                    rgb.1 = 254;
-                    rgb.2 = 0;
-                },
-                4 => {
-                    rgb.0 = 0;
-                    rgb.1 = 0;
-                    rgb.2 = 254;
-                },
-                5 => {
-                    rgb.0 = 254;
-                    rgb.1 = 254;
-                    rgb.2 = 0;
-                },
-                6 => {
-                    rgb.0 = 0;
-                    rgb.1 = 254;
-                    rgb.2 = 254;
-                },
-                7 => {
-                    rgb.0 = 254;
-                    rgb.1 = 0;
-                    rgb.2 = 254;
-                },
-                8.. => {
-                    rgb.0 = 0;
-                    rgb.1 = 0;
-                    rgb.2 = 0;
-                }
-            }
-
+            let rgb: (u8, u8, u8) = default_color_palette(pixel);
+            
             //Offset between virtual frame buffer and pixel's frame buffer
             //if scaling is applied, it represents the offset between virtual frame buffer's pixel and
             //pixel's top-left corner of scalled pixel

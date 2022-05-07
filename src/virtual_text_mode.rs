@@ -1,9 +1,9 @@
 use crate::virtual_frame_buffer::VirtualFrameBuffer;
-use crate::characters::rom;
+use crate::characters_rom::rom;
 
 //Struct describing all the settings one character can have in text mode
-//"flipp" tells the renderer to flip the color and background of that character
-//"blink" tells the renderer to automatically flip the color and background of that character at a set interval, useful for blinking warning messages
+//TODO implement "flipp" tells the renderer to flip the color and background of that character
+//TODO implement "blink" tells the renderer to automatically flip the color and background of that character at a set interval, useful for blinking warning messages
 #[derive(Copy, Clone)]
 pub struct TextModeChar {
     pub c: char,

@@ -12,20 +12,15 @@ use std::time::{
 };
 use std::io::{self, Write};
 
-// use crate::characters::rom;
-mod characters;
-
-use crate::virtual_text_mode::{VirtualTextLayerFrameBuffer, TextLayerRenderer, TextModeChar};
+mod characters_rom;
 mod virtual_text_mode;
-
-use crate::virtual_frame_buffer::{VirtualFrameBuffer, CrtEffectRenderer};
 mod virtual_frame_buffer;
-
-// use crate::sprite::Sprite;
-// mod sprite;
-
-use crate::shell::Shell;
+mod color_palettes;
+mod boot_rom;
 mod shell;
+
+use crate::virtual_text_mode::{VirtualTextLayerFrameBuffer, TextLayerRenderer};
+use crate::virtual_frame_buffer::{VirtualFrameBuffer, CrtEffectRenderer};
 
 const WIDTH: u32 = 1280;
 const HEIGHT: u32 = 960;
