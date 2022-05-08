@@ -65,6 +65,22 @@ impl VirtualTextLayerFrameBuffer {
     pub fn pop_char(&mut self) {
         self.characters.pop();
     }
+
+    pub fn clear(&mut self) {
+        while self.characters.len() > 0 {
+            self.pop_char();
+        }
+    }
+
+    pub fn scroll_up(&mut self) {
+        for i in self.character_columns as usize..self.characters.len() as usize {
+            self.characters[i - self.character_columns as usize] = self.characters[i];
+        }
+
+        for _i in 0..self.character_columns as usize {
+            self.pop_char();
+        }
+    }
 }
 
 pub struct TextLayerRenderer {

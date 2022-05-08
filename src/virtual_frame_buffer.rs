@@ -104,6 +104,7 @@ impl CrtEffectRenderer {
                         let final_offset: usize = global_offset + scaling_offset;
                         let mut final_rgb: (u8, u8, u8) = rgb;
 
+                        //Use 3 consecutive pixels as the 3 sub components of a single pixel
                         match horizontal_copy {
                             0 => {
                                 if final_rgb.1 < self.sub_pixel_attenuation {final_rgb.1 = 0} else {final_rgb.1 -= self.sub_pixel_attenuation};
@@ -120,6 +121,7 @@ impl CrtEffectRenderer {
                             _ => {}
                         }
 
+                        //Scanline effect : dim every fourth line
                         if vertical_copy == self.render_vert_upscale - 1 {
                             if final_rgb.0 < self.scan_line_strength {final_rgb.0 = 0} else {final_rgb.0 -= self.scan_line_strength};
                             if final_rgb.1 < self.scan_line_strength {final_rgb.1 = 0} else {final_rgb.1 -= self.scan_line_strength};

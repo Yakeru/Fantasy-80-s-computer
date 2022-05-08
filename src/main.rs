@@ -16,7 +16,6 @@ mod characters_rom;
 mod virtual_text_mode;
 mod virtual_frame_buffer;
 mod color_palettes;
-mod boot_rom;
 mod shell;
 
 use crate::virtual_text_mode::{VirtualTextLayerFrameBuffer, TextLayerRenderer};
@@ -25,10 +24,16 @@ use crate::virtual_frame_buffer::{VirtualFrameBuffer, CrtEffectRenderer};
 const WIDTH: u32 = 1280;
 const HEIGHT: u32 = 960;
 
-const VIRTUAL_WIDTH: u32 = 426;  //426*3 = 1278 draw one black line on each side of screen for perfect *3 scale
+const VIRTUAL_WIDTH: u32 = 426;  //426*3 = 1278 draw one black line on each side of screen for perfectly centered *3 scale
 const VIRTUAL_HEIGHT: u32 = 240; //240*4 = 960
 
 const FPS: u128 = 16; //ms per frame, so 16 = 60fps, 32 = 30fps, 1000 = 1fps
+
+const SPLASH_1: &str = "************** FANTASY CPC *************";
+const SPLASH_2: &str = "*               ROM v0.1               *";
+const SPLASH_3: &str = "*        Damien Torreilles 2022        *";
+const SPLASH_4: &str = "****************************************";
+const SPLASH_5: &str = "Ready                                   ";
 
 const DEFAULT_BKG_COLOR: u8 = 4;
 const DEFAULT_COLOR: u8 = 5;
@@ -57,13 +62,33 @@ fn main()-> Result<(), Error> {
     let mut text_bkg_color = DEFAULT_BKG_COLOR;
     let mut virtual_text_layer_buffer = VirtualTextLayerFrameBuffer::new(TEXT_COLUMNS as u32, TEXT_ROWS as u32);
     let text_renderer = TextLayerRenderer::new(TEXT_COLUMNS as u32, TEXT_ROWS as u32, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
-
     let mut virtual_frame_buffer: VirtualFrameBuffer = VirtualFrameBuffer::new(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
     let crt_renderer: CrtEffectRenderer = CrtEffectRenderer::new(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, WIDTH, HEIGHT);
 
-    //let mut shell: Shell = Shell::new(5000, TEXT_COLUMNS, TEXT_ROWS);
-
     let mut last_refresh: Instant = Instant::now();
+
+    //Boot
+    for c in SPLASH_1.chars() {
+        virtual_text_layer_buffer.push_char(c, text_color, text_bkg_color, false);
+    }
+
+    for c in SPLASH_2.chars() {
+        virtual_text_layer_buffer.push_char(c, text_color, text_bkg_color, false);
+    }
+
+    for c in SPLASH_3.chars() {
+        virtual_text_layer_buffer.push_char(c, text_color, text_bkg_color, false);
+    }
+
+    for c in SPLASH_4.chars() {
+        virtual_text_layer_buffer.push_char(c, text_color, text_bkg_color, false);
+    }
+
+    for c in SPLASH_5.chars() {
+        virtual_text_layer_buffer.push_char(c, text_color, text_bkg_color, false);
+    }
+
+    virtual_text_layer_buffer.push_char('_', text_color, text_bkg_color, false);
 
     event_loop.run(move |event, _, control_flow| {
 
@@ -78,18 +103,34 @@ fn main()-> Result<(), Error> {
 
             if input.key_released(VirtualKeyCode::Left) {
                 if text_color == 7 {text_color = 0} else {text_color += 1}
+                virtual_text_layer_buffer.pop_char();
+                virtual_text_layer_buffer.push_char('_', text_color, text_bkg_color, false);
             }
 
             if input.key_released(VirtualKeyCode::Right) {
                 if text_color == 0 {text_color = 7} else {text_color -= 1}
+                virtual_text_layer_buffer.pop_char();
+                virtual_text_layer_buffer.push_char('_', text_color, text_bkg_color, false);
             }
 
             if input.key_released(VirtualKeyCode::Up) {
                 if text_bkg_color == 7 {text_bkg_color = 0} else {text_bkg_color += 1}
+                virtual_text_layer_buffer.pop_char();
+                virtual_text_layer_buffer.push_char('_', text_color, text_bkg_color, false);
             }
 
             if input.key_released(VirtualKeyCode::Down) {
                 if text_bkg_color == 0 {text_bkg_color = 7} else {text_bkg_color -= 1}
+                virtual_text_layer_buffer.pop_char();
+                virtual_text_layer_buffer.push_char('_', text_color, text_bkg_color, false);
+            }
+
+            if input.key_released(VirtualKeyCode::PageUp) {
+                virtual_text_layer_buffer.scroll_up();
+
+                if virtual_text_layer_buffer.get_characters().len() == 0 {
+                    virtual_text_layer_buffer.push_char('_', text_color, text_bkg_color, false);
+                }
             }
         }
 
@@ -102,13 +143,31 @@ fn main()-> Result<(), Error> {
                 }
                 WindowEvent::ReceivedCharacter(c) => {
                     
-                    print!("{}", c);
+                    print!("{} ", c as u8);
                     io::stdout().flush().unwrap();
 
-                    if c == 0x08 as char { //0x08 is unicode for Backspace
+                    if c == 8 as char {
+                        //8 is Backspace 
                         virtual_text_layer_buffer.pop_char();
+                        virtual_text_layer_buffer.pop_char();
+                        virtual_text_layer_buffer.push_char('_', text_color, text_bkg_color, false);
+                    } else if c == 13 as char {
+                        //13 is Enter
+                        virtual_text_layer_buffer.pop_char();
+                        let reminder = virtual_text_layer_buffer.get_characters().len() % TEXT_COLUMNS as usize;
+                        for _i in 0..(TEXT_COLUMNS as usize - reminder) {
+                            virtual_text_layer_buffer.push_char(' ', DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
+                        }
+                        virtual_text_layer_buffer.push_char('_', text_color, text_bkg_color, false);
+
                     } else {
+
+                        if virtual_text_layer_buffer.get_characters().len() == TEXT_COLUMNS as usize * (TEXT_ROWS as usize - 1) {
+                            virtual_text_layer_buffer.scroll_up();
+                        }
+                        virtual_text_layer_buffer.pop_char();
                         virtual_text_layer_buffer.push_char(c, text_color, text_bkg_color, false);
+                        virtual_text_layer_buffer.push_char('_', text_color, text_bkg_color, false);
                     }
                 }
                 _ => ()
