@@ -62,14 +62,18 @@ impl VirtualTextLayerFrameBuffer {
         self.push_character(a_char);
     }
 
+    pub fn push_string(&mut self, string: &str, color: u8, back_color: u8, blink: bool) {
+        for c in string.chars() {
+            self.push_char(c, color, back_color, blink);
+        }
+    }
+
     pub fn pop_char(&mut self) {
         self.characters.pop();
     }
 
     pub fn clear(&mut self) {
-        while self.characters.len() > 0 {
-            self.pop_char();
-        }
+        self.characters.clear();
     }
 
     pub fn scroll_up(&mut self) {

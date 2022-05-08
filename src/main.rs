@@ -33,7 +33,8 @@ const SPLASH_1: &str = "************** FANTASY CPC *************";
 const SPLASH_2: &str = "*               ROM v0.1               *";
 const SPLASH_3: &str = "*        Damien Torreilles 2022        *";
 const SPLASH_4: &str = "****************************************";
-const SPLASH_5: &str = "Ready                                   ";
+const SPLASH_5: &str = "Ready. Type 'help' for command list.    ";
+const SPLASH_6: &str = "                                        ";
 
 const DEFAULT_BKG_COLOR: u8 = 4;
 const DEFAULT_COLOR: u8 = 5;
@@ -68,27 +69,16 @@ fn main()-> Result<(), Error> {
     let mut last_refresh: Instant = Instant::now();
 
     //Boot
-    for c in SPLASH_1.chars() {
-        virtual_text_layer_buffer.push_char(c, text_color, text_bkg_color, false);
-    }
-
-    for c in SPLASH_2.chars() {
-        virtual_text_layer_buffer.push_char(c, text_color, text_bkg_color, false);
-    }
-
-    for c in SPLASH_3.chars() {
-        virtual_text_layer_buffer.push_char(c, text_color, text_bkg_color, false);
-    }
-
-    for c in SPLASH_4.chars() {
-        virtual_text_layer_buffer.push_char(c, text_color, text_bkg_color, false);
-    }
-
-    for c in SPLASH_5.chars() {
-        virtual_text_layer_buffer.push_char(c, text_color, text_bkg_color, false);
-    }
+    virtual_text_layer_buffer.push_string(SPLASH_1, text_color, text_bkg_color, false);
+    virtual_text_layer_buffer.push_string(SPLASH_2, text_color, text_bkg_color, false);
+    virtual_text_layer_buffer.push_string(SPLASH_3, text_color, text_bkg_color, false);
+    virtual_text_layer_buffer.push_string(SPLASH_4, text_color, text_bkg_color, false);
+    virtual_text_layer_buffer.push_string(SPLASH_5, text_color, text_bkg_color, false);
+    virtual_text_layer_buffer.push_string(SPLASH_6, text_color, text_bkg_color, false);
 
     virtual_text_layer_buffer.push_char('_', text_color, text_bkg_color, false);
+
+    let mut command: Vec<char> = Vec::new();
 
     event_loop.run(move |event, _, control_flow| {
 
@@ -143,14 +133,15 @@ fn main()-> Result<(), Error> {
                 }
                 WindowEvent::ReceivedCharacter(c) => {
                     
-                    print!("{} ", c as u8);
-                    io::stdout().flush().unwrap();
+                    // print!("{} ", c as u8);
+                    // io::stdout().flush().unwrap();
 
                     if c == 8 as char {
                         //8 is Backspace 
                         virtual_text_layer_buffer.pop_char();
                         virtual_text_layer_buffer.pop_char();
                         virtual_text_layer_buffer.push_char('_', text_color, text_bkg_color, false);
+                        command.pop();
                     } else if c == 13 as char {
                         //13 is Enter
                         virtual_text_layer_buffer.pop_char();
@@ -159,6 +150,32 @@ fn main()-> Result<(), Error> {
                             virtual_text_layer_buffer.push_char(' ', DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
                         }
                         virtual_text_layer_buffer.push_char('_', text_color, text_bkg_color, false);
+                        let mut string_command: String = command.iter().cloned().collect();
+                        string_command = string_command.trim().to_lowercase();
+                        println!("Command: '{}'", string_command.trim().to_lowercase());
+                        command.clear();
+
+                        if string_command == "help" {
+                            virtual_text_layer_buffer.pop_char();
+                            virtual_text_layer_buffer.push_string("Help is on the way !                    ", DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
+                            virtual_text_layer_buffer.push_string("'clear'", 2, DEFAULT_BKG_COLOR, false);
+                            virtual_text_layer_buffer.push_string(" clears the screen.              ", DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
+                            virtual_text_layer_buffer.push_string("'quit'", 2, DEFAULT_BKG_COLOR, false);
+                            virtual_text_layer_buffer.push_string(" or ", DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
+                            virtual_text_layer_buffer.push_string("'exit'", 2, DEFAULT_BKG_COLOR, false);
+                            virtual_text_layer_buffer.push_string(" shuts down computer.   ", DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
+                            virtual_text_layer_buffer.push_char('_', text_color, text_bkg_color, false);
+                        }
+
+                        if string_command == "clear" {
+                            virtual_text_layer_buffer.clear();
+                            virtual_text_layer_buffer.push_char('_', text_color, text_bkg_color, false);
+                        }
+
+                        if string_command == "quit" || string_command == "exit"{
+                            println!("Command 'quit' or 'exit' received; stopping");
+                            *control_flow = ControlFlow::Exit
+                        }
 
                     } else {
 
@@ -168,6 +185,7 @@ fn main()-> Result<(), Error> {
                         virtual_text_layer_buffer.pop_char();
                         virtual_text_layer_buffer.push_char(c, text_color, text_bkg_color, false);
                         virtual_text_layer_buffer.push_char('_', text_color, text_bkg_color, false);
+                        command.push(c);
                     }
                 }
                 _ => ()
