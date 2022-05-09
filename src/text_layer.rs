@@ -5,7 +5,7 @@ use crate::characters_rom::rom;
 //TODO implement "flipp" tells the renderer to flip the color and background of that character
 //TODO implement "blink" tells the renderer to automatically flip the color and background of that character at a set interval, useful for blinking warning messages
 #[derive(Copy, Clone)]
-pub struct TextModeChar {
+pub struct TextLayerChar {
     pub c: char,
     pub background_color: u8,
     pub color: u8,
@@ -14,30 +14,30 @@ pub struct TextModeChar {
 }
 
 //The virtual text mode buffer, width and height are expressed in characters
-pub struct VirtualTextLayerFrameBuffer {
+pub struct TextLayer {
     character_columns: u32,
     character_rows: u32,
-    characters: Vec<TextModeChar>
+    characters: Vec<Option<TextLayerChar>>
 }
 
-impl VirtualTextLayerFrameBuffer {
+impl TextLayer {
 
-    pub fn new(character_columns: u32, character_rows: u32) -> VirtualTextLayerFrameBuffer {
+    pub fn new(character_columns: u32, character_rows: u32) -> TextLayer {
 
-        let fb: Vec<TextModeChar> = Vec::new();
+        let fb: Vec<Option<TextLayerChar>> = Vec::new();
 
-        VirtualTextLayerFrameBuffer {
+        TextLayer {
             character_columns,
             character_rows,
             characters: fb
         }
     }
 
-    pub fn get_characters(&self) -> &Vec<TextModeChar> {
+    pub fn get_characters(&self) -> &Vec<Option<TextLayerChar>> {
         return &self.characters;
     }
 
-    pub fn push_character(&mut self, tmchar: TextModeChar) {
+    pub fn push_character(&mut self, tmchar: Option<TextLayerChar>) {
         if self.characters.len() == self.character_columns as usize * self.character_rows as usize {
             for i in 0..self.characters.len() -1 {
                 self.characters[i] = self.characters[i+1];
@@ -51,7 +51,7 @@ impl VirtualTextLayerFrameBuffer {
 
     pub fn push_char(&mut self, c: char, color: u8, back_color: u8, blink: bool) {
 
-        let a_char = TextModeChar {
+        let a_char = TextLayerChar {
             c: c,
             background_color: back_color,
             color: color,
@@ -59,7 +59,9 @@ impl VirtualTextLayerFrameBuffer {
             blink: blink
         };
 
-        self.push_character(a_char);
+        let a_cell = Some(a_char);
+
+        self.push_character(a_cell);
     }
 
     pub fn push_string(&mut self, string: &str, color: u8, back_color: u8, blink: bool) {
@@ -68,8 +70,18 @@ impl VirtualTextLayerFrameBuffer {
         }
     }
 
-    pub fn pop_char(&mut self) {
+    //pops the last cell, just the last one, wether it contains a character or None.
+    pub fn pop_char_cell(&mut self) {
         self.characters.pop();
+    }
+
+    //pops the last cell, if cell contains None, will continue poping until it reaches
+    //a cell with a char in it.
+    pub fn pop_char(&mut self) {
+        self.pop_char_cell();
+        while self.characters.last().is_none() {
+            self.pop_char_cell();
+        }
     }
 
     pub fn clear(&mut self) {
@@ -106,7 +118,7 @@ impl TextLayerRenderer {
         }
     }
 
-    pub fn render(&self, text_layer: &VirtualTextLayerFrameBuffer, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    pub fn render(&self, text_layer: &TextLayer, virtual_frame_buffer: &mut VirtualFrameBuffer) {
 
         let horizontal_border: u32 = (virtual_frame_buffer.get_width() as u32 - self.character_columns as u32 * 8) / 2;
         let vertical_border: u32 = (virtual_frame_buffer.get_height() - self.character_rows as u32 * 8) / 2;
@@ -119,25 +131,28 @@ impl TextLayerRenderer {
     
         for character in text_layer.get_characters() {
     
-            let pic = rom(&character.c);
-    
-            for row_count in 0..8 {
-    
-                let row = pic[row_count];
-                let row_in_binary = &format!("{:0>8b}", row);
-                let mut character_sprite_col_count = 0;
-    
-                for c in row_in_binary.chars() {
-                    let virtual_frame_buffer_pos = x_pos as usize + character_sprite_col_count + (y_pos as usize + row_count ) * virtual_frame_buffer.get_width() as usize;
-                    match c {
-                        '0' => virtual_frame_buffer.get_frame()[virtual_frame_buffer_pos] = if character.flipp {character.color} else {character.background_color},
-                        '1' => virtual_frame_buffer.get_frame()[virtual_frame_buffer_pos] = if character.flipp {character.background_color} else {character.color},
-                        _ => ()
+            if character.is_some() {
+                let text_mode_char = character.unwrap();
+                    let pic = rom(&text_mode_char.c);
+            
+                    for row_count in 0..8 {
+            
+                        let row = pic[row_count];
+                        let row_in_binary = &format!("{:0>8b}", row);
+                        let mut character_sprite_col_count = 0;
+            
+                        for c in row_in_binary.chars() {
+                            let virtual_frame_buffer_pos = x_pos as usize + character_sprite_col_count + (y_pos as usize + row_count ) * virtual_frame_buffer.get_width() as usize;
+                            match c {
+                                '0' => virtual_frame_buffer.get_frame()[virtual_frame_buffer_pos] = if text_mode_char.flipp {text_mode_char.color} else {text_mode_char.background_color},
+                                '1' => virtual_frame_buffer.get_frame()[virtual_frame_buffer_pos] = if text_mode_char.flipp {text_mode_char.background_color} else {text_mode_char.color},
+                                _ => ()
+                            }
+                            character_sprite_col_count += 1;
+                        }
                     }
-                    character_sprite_col_count += 1;
-                }
             }
-    
+            
             text_col_count += 1;
             x_pos += 8;
     

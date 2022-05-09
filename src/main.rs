@@ -13,12 +13,13 @@ use std::time::{
 use std::io::{self, Write};
 
 mod characters_rom;
-mod virtual_text_mode;
+mod text_layer;
 mod virtual_frame_buffer;
 mod color_palettes;
 mod shell;
+mod application;
 
-use crate::virtual_text_mode::{VirtualTextLayerFrameBuffer, TextLayerRenderer};
+use crate::text_layer::{TextLayer, TextLayerRenderer};
 use crate::virtual_frame_buffer::{VirtualFrameBuffer, CrtEffectRenderer};
 
 const WIDTH: u32 = 1280;
@@ -53,6 +54,8 @@ fn main()-> Result<(), Error> {
     let window = builder.build(&event_loop).expect("Window creation failed !");
     let mut input = WinitInputHelper::new();
     
+    //TODO in the future : have a surface texture upscale the buffer instead of upscaling by hand pixel by pixel ...
+    //and learn to do shader for the CRT effect.
     let mut pixels = {
         let window_size = window.inner_size();
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
@@ -61,7 +64,7 @@ fn main()-> Result<(), Error> {
 
     let mut text_color = DEFAULT_COLOR;
     let mut text_bkg_color = DEFAULT_BKG_COLOR;
-    let mut virtual_text_layer_buffer = VirtualTextLayerFrameBuffer::new(TEXT_COLUMNS as u32, TEXT_ROWS as u32);
+    let mut virtual_text_layer_buffer = TextLayer::new(TEXT_COLUMNS as u32, TEXT_ROWS as u32);
     let text_renderer = TextLayerRenderer::new(TEXT_COLUMNS as u32, TEXT_ROWS as u32, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
     let mut virtual_frame_buffer: VirtualFrameBuffer = VirtualFrameBuffer::new(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
     let crt_renderer: CrtEffectRenderer = CrtEffectRenderer::new(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, WIDTH, HEIGHT);
@@ -86,8 +89,8 @@ fn main()-> Result<(), Error> {
 
         if input.update(&event) {
             if input.key_released(VirtualKeyCode::Escape) || input.quit() {
-                println!("The Escape key was pressed; stopping");
-                *control_flow = ControlFlow::Exit;
+                //println!("The Escape key was pressed; stopping");
+                //*control_flow = ControlFlow::Exit;
                 return;
             }
 
@@ -133,23 +136,29 @@ fn main()-> Result<(), Error> {
                 }
                 WindowEvent::ReceivedCharacter(c) => {
                     
-                    // print!("{} ", c as u8);
-                    // io::stdout().flush().unwrap();
+                    print!("{} ", c as u8);
+                    io::stdout().flush().unwrap();
 
                     if c == 8 as char {
                         //8 is Backspace 
-                        virtual_text_layer_buffer.pop_char();
-                        virtual_text_layer_buffer.pop_char();
-                        virtual_text_layer_buffer.push_char('_', text_color, text_bkg_color, false);
+                        //virtual_text_layer_buffer.pop_char_cell(); //delete cursor
+                        virtual_text_layer_buffer.pop_char(); //delete a char, or all the None up to next char
+                        virtual_text_layer_buffer.push_char('_', text_color, text_bkg_color, false); //re insert cursor
                         command.pop();
                     } else if c == 13 as char {
                         //13 is Enter
-                        virtual_text_layer_buffer.pop_char();
+                        virtual_text_layer_buffer.pop_char_cell(); //delete cursor
+
+                        //push enough None characters to fill line and go to next
                         let reminder = virtual_text_layer_buffer.get_characters().len() % TEXT_COLUMNS as usize;
                         for _i in 0..(TEXT_COLUMNS as usize - reminder) {
-                            virtual_text_layer_buffer.push_char(' ', DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
+                            virtual_text_layer_buffer.push_character(None);
                         }
+
+                        //re insert cursor
                         virtual_text_layer_buffer.push_char('_', text_color, text_bkg_color, false);
+                        
+                        //Interpret line content as command
                         let mut string_command: String = command.iter().cloned().collect();
                         string_command = string_command.trim().to_lowercase();
                         println!("Command: '{}'", string_command.trim().to_lowercase());
@@ -179,12 +188,12 @@ fn main()-> Result<(), Error> {
 
                     } else {
 
-                        if virtual_text_layer_buffer.get_characters().len() == TEXT_COLUMNS as usize * (TEXT_ROWS as usize - 1) {
+                        if virtual_text_layer_buffer.get_characters().len() >= TEXT_COLUMNS as usize * (TEXT_ROWS as usize - 1) {
                             virtual_text_layer_buffer.scroll_up();
                         }
-                        virtual_text_layer_buffer.pop_char();
-                        virtual_text_layer_buffer.push_char(c, text_color, text_bkg_color, false);
-                        virtual_text_layer_buffer.push_char('_', text_color, text_bkg_color, false);
+                        virtual_text_layer_buffer.pop_char_cell(); //delete cursor
+                        virtual_text_layer_buffer.push_char(c, text_color, text_bkg_color, false); //push new char
+                        virtual_text_layer_buffer.push_char('_', text_color, text_bkg_color, false); //re insert cursor
                         command.push(c);
                     }
                 }
