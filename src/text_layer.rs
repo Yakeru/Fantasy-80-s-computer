@@ -23,9 +23,7 @@ pub struct TextLayer {
 impl TextLayer {
 
     pub fn new(character_columns: u32, character_rows: u32) -> TextLayer {
-
         let fb: Vec<Option<TextLayerChar>> = Vec::new();
-
         TextLayer {
             character_columns,
             character_rows,
@@ -50,7 +48,6 @@ impl TextLayer {
     }
 
     pub fn push_char(&mut self, c: char, color: u8, back_color: u8, blink: bool) {
-
         let a_char = TextLayerChar {
             c: c,
             background_color: back_color,
@@ -58,9 +55,7 @@ impl TextLayer {
             flipp: false,
             blink: blink
         };
-
         let a_cell = Some(a_char);
-
         self.push_character(a_cell);
     }
 
@@ -71,16 +66,26 @@ impl TextLayer {
     }
 
     //pops the last cell, just the last one, wether it contains a character or None.
-    pub fn pop_char_cell(&mut self) {
+    pub fn pop_char(&mut self) {
         self.characters.pop();
     }
 
-    //pops the last cell, if cell contains None, will continue poping until it reaches
-    //a cell with a char in it.
-    pub fn pop_char(&mut self) {
-        self.pop_char_cell();
-        while self.characters.last().is_none() {
-            self.pop_char_cell();
+    pub fn pop_all_none(&mut self) {
+        while match self.characters.last() { //Returns a Option<Option<TextLayerChar>> ... 
+            Some(plop) => {
+                match plop {
+                    Some(T) => {
+                        match T.c {
+                            '\n' => {true}
+                            _ => {false}
+                        }    
+                    }
+                    None => {true}
+                }
+            }
+            None => {false}
+        } {
+            self.characters.pop();
         }
     }
 
@@ -109,7 +114,6 @@ pub struct TextLayerRenderer {
 impl TextLayerRenderer {
 
     pub fn new(character_columns: u32, character_rows: u32, output_frame_px_width: u32, output_frame_px_height: u32) -> TextLayerRenderer {
-
         TextLayerRenderer {
             character_columns,
             character_rows,
@@ -119,18 +123,15 @@ impl TextLayerRenderer {
     }
 
     pub fn render(&self, text_layer: &TextLayer, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-
         let horizontal_border: u32 = (virtual_frame_buffer.get_width() as u32 - self.character_columns as u32 * 8) / 2;
         let vertical_border: u32 = (virtual_frame_buffer.get_height() - self.character_rows as u32 * 8) / 2;
-    
         let mut x_pos = horizontal_border;
         let mut y_pos = vertical_border;
-    
         let mut text_row_count = 0;
         let mut text_col_count = 0;
     
         for character in text_layer.get_characters() {
-    
+
             if character.is_some() {
                 let text_mode_char = character.unwrap();
                     let pic = rom(&text_mode_char.c);
@@ -143,6 +144,7 @@ impl TextLayerRenderer {
             
                         for c in row_in_binary.chars() {
                             let virtual_frame_buffer_pos = x_pos as usize + character_sprite_col_count + (y_pos as usize + row_count ) * virtual_frame_buffer.get_width() as usize;
+                            
                             match c {
                                 '0' => virtual_frame_buffer.get_frame()[virtual_frame_buffer_pos] = if text_mode_char.flipp {text_mode_char.color} else {text_mode_char.background_color},
                                 '1' => virtual_frame_buffer.get_frame()[virtual_frame_buffer_pos] = if text_mode_char.flipp {text_mode_char.background_color} else {text_mode_char.color},

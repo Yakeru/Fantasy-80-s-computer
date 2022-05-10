@@ -96,8 +96,7 @@ impl CrtEffectRenderer {
             let global_offset = pixels_sub_pixel_count * virt_line_pixel_counter * self.render_horiz_upscale as usize 
             + self.output_frame_px_width as usize * pixels_sub_pixel_count * virt_line_counter * self.render_vert_upscale as usize;
 
-            if global_offset < max_output_index as usize {
-            
+            if global_offset < max_output_index as usize {  
                 for horizontal_copy in 0..self.render_horiz_upscale {
                     for vertical_copy in 0..self.render_vert_upscale {
                         let scaling_offset: usize = pixels_sub_pixel_count * horizontal_copy as usize + self.output_frame_px_width as usize * pixels_sub_pixel_count * vertical_copy as usize;
@@ -147,86 +146,3 @@ impl CrtEffectRenderer {
         }
     }
 }
-
-// fn simple_upscale_renderer(virtual_fb: &mut[u8], pixels_frame: &mut[u8], integer_width_multiplier: usize, integer_height_multiplier: usize) {
-    
-//     let mut virt_line_pixel_counter: usize = 0;
-//     let mut virt_line_counter: usize = 0;
-//     let pixels_sub_pixel_count = 4;
-
-//     for pixel in virtual_fb {
-
-//         //Temporary color index to RGB mapping
-//         let mut rgb: (u8, u8, u8) = (0, 0, 0);
-//         match pixel {
-//             0 => {
-//                 rgb.0 = 0;
-//                 rgb.1 = 0;
-//                 rgb.2 = 0;
-//             },
-//             1 => {
-//                 rgb.0 = 254;
-//                 rgb.1 = 254;
-//                 rgb.2 = 254;
-//             },
-//             2 => {
-//                 rgb.0 = 254;
-//                 rgb.1 = 0;
-//                 rgb.2 = 0;
-//             },
-//             3 => {
-//                 rgb.0 = 0;
-//                 rgb.1 = 254;
-//                 rgb.2 = 0;
-//             },
-//             4 => {
-//                 rgb.0 = 0;
-//                 rgb.1 = 0;
-//                 rgb.2 = 254;
-//             },
-//             5 => {
-//                 rgb.0 = 254;
-//                 rgb.1 = 254;
-//                 rgb.2 = 0;
-//             },
-//             6 => {
-//                 rgb.0 = 0;
-//                 rgb.1 = 254;
-//                 rgb.2 = 254;
-//             },
-//             7 => {
-//                 rgb.0 = 254;
-//                 rgb.1 = 0;
-//                 rgb.2 = 254;
-//             },
-//             8.. => {
-//                 rgb.0 = 0;
-//                 rgb.1 = 0;
-//                 rgb.2 = 0;
-//             }
-//         }
-
-//         //Offset between virtual frame buffer and pixel's frame buffer
-//         //if scaling is applied, it represents the offset between virtual frame buffer's pixel and
-//         //pixel's top-left corner of scalled pixel
-//         let global_offset = pixels_sub_pixel_count * virt_line_pixel_counter * integer_width_multiplier 
-//         + WIDTH as usize * pixels_sub_pixel_count * virt_line_counter * integer_height_multiplier;
-        
-//         for horizontal_copy in 0..integer_width_multiplier {
-//             for vertical_copy in 0..integer_height_multiplier {
-//                 let scaling_offset:usize = pixels_sub_pixel_count * horizontal_copy + WIDTH as usize * pixels_sub_pixel_count * vertical_copy;
-//                 let final_offset: usize = global_offset + scaling_offset;
-//                 pixels_frame[0 + final_offset] = rgb.0;
-//                 pixels_frame[1 + final_offset] = rgb.1;
-//                 pixels_frame[2 + final_offset] = rgb.2;
-//                 pixels_frame[3 + final_offset] = 254;
-//             }
-//         }
-
-//         virt_line_pixel_counter += 1;
-//         if virt_line_pixel_counter == VIRTUAL_WIDTH as usize {
-//             virt_line_pixel_counter = 0;
-//             virt_line_counter += 1;
-//         }
-//     }
-// }

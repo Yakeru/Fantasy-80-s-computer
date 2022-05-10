@@ -1,5 +1,5 @@
 use winit::{
-    event::{Event, WindowEvent, VirtualKeyCode, KeyboardInput},
+    event::{Event, WindowEvent, VirtualKeyCode},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
     dpi::PhysicalSize
@@ -16,8 +16,6 @@ mod characters_rom;
 mod text_layer;
 mod virtual_frame_buffer;
 mod color_palettes;
-mod shell;
-mod application;
 
 use crate::text_layer::{TextLayer, TextLayerRenderer};
 use crate::virtual_frame_buffer::{VirtualFrameBuffer, CrtEffectRenderer};
@@ -89,8 +87,8 @@ fn main()-> Result<(), Error> {
 
         if input.update(&event) {
             if input.key_released(VirtualKeyCode::Escape) || input.quit() {
-                //println!("The Escape key was pressed; stopping");
-                //*control_flow = ControlFlow::Exit;
+                println!("The Escape key was pressed; stopping");
+                *control_flow = ControlFlow::Exit;
                 return;
             }
 
@@ -136,19 +134,20 @@ fn main()-> Result<(), Error> {
                 }
                 WindowEvent::ReceivedCharacter(c) => {
                     
-                    print!("{} ", c as u8);
-                    io::stdout().flush().unwrap();
+                    // print!("{} ", c as u8);
+                    // io::stdout().flush().unwrap();
 
                     if c == 8 as char {
                         //8 is Backspace 
-                        //virtual_text_layer_buffer.pop_char_cell(); //delete cursor
-                        virtual_text_layer_buffer.pop_char(); //delete a char, or all the None up to next char
+                        virtual_text_layer_buffer.pop_char(); //delete cursor
+                        virtual_text_layer_buffer.pop_char(); //delete a char
+                        virtual_text_layer_buffer.pop_all_none();
                         virtual_text_layer_buffer.push_char('_', text_color, text_bkg_color, false); //re insert cursor
                         command.pop();
                     } else if c == 13 as char {
                         //13 is Enter
-                        virtual_text_layer_buffer.pop_char_cell(); //delete cursor
-
+                        virtual_text_layer_buffer.pop_char(); //delete cursor
+                        virtual_text_layer_buffer.push_char('\n', text_color, text_bkg_color, false); //re insert cursor
                         //push enough None characters to fill line and go to next
                         let reminder = virtual_text_layer_buffer.get_characters().len() % TEXT_COLUMNS as usize;
                         for _i in 0..(TEXT_COLUMNS as usize - reminder) {
@@ -191,7 +190,7 @@ fn main()-> Result<(), Error> {
                         if virtual_text_layer_buffer.get_characters().len() >= TEXT_COLUMNS as usize * (TEXT_ROWS as usize - 1) {
                             virtual_text_layer_buffer.scroll_up();
                         }
-                        virtual_text_layer_buffer.pop_char_cell(); //delete cursor
+                        virtual_text_layer_buffer.pop_char(); //delete cursor
                         virtual_text_layer_buffer.push_char(c, text_color, text_bkg_color, false); //push new char
                         virtual_text_layer_buffer.push_char('_', text_color, text_bkg_color, false); //re insert cursor
                         command.push(c);
