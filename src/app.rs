@@ -1,7 +1,6 @@
 use winit::{
     event::{Event, WindowEvent, VirtualKeyCode},
     event_loop::{ControlFlow, EventLoop,EventLoopProxy}};
-use crate::text_layer::TextLayer;
 use crate::virtual_frame_buffer::VirtualFrameBuffer;
 
 pub struct App {
@@ -41,9 +40,5 @@ pub trait Update {
 }
 
 pub trait Draw {
-    fn draw_text(&mut self, text_layer: &mut TextLayer);
-}
-
-pub trait DrawGraphics {
-    fn draw_graphics(&mut self, text_layer: &mut VirtualFrameBuffer);
+    fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer);
 }

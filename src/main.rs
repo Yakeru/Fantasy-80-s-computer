@@ -20,7 +20,6 @@ mod app;
 mod cli;
 mod text_edit;
 
-use crate::text_layer::{TextLayer, TextLayerRenderer};
 use crate::virtual_frame_buffer::{VirtualFrameBuffer, CrtEffectRenderer};
 use crate::app::*;
 use crate::cli::*;
@@ -59,8 +58,6 @@ fn main()-> Result<(), Error> {
         Pixels::new(WIDTH as u32, HEIGHT as u32, surface_texture)?
     };
 
-    let mut text_layer = TextLayer::new(TEXT_COLUMNS, TEXT_ROWS);
-    let text_renderer = TextLayerRenderer::new(TEXT_COLUMNS, TEXT_ROWS, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
     let mut virtual_frame_buffer: VirtualFrameBuffer = VirtualFrameBuffer::new(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, TEXT_COLUMNS, TEXT_ROWS);
     let crt_renderer: CrtEffectRenderer = CrtEffectRenderer::new(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, WIDTH, HEIGHT);
 
@@ -164,17 +161,17 @@ fn main()-> Result<(), Error> {
                 key_released = None;
 
                 if  cli.app.drawing {
-                    cli.draw_text(&mut text_layer);
+                    cli.draw(&mut virtual_frame_buffer);
                 }
 
                 if  text_edit.app.drawing {
-                    text_edit.draw_text(&mut text_layer);
+                    text_edit.draw(&mut virtual_frame_buffer);
                 }
 
                 //let render_time: Instant = Instant::now();
-                virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
+                //virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
+                virtual_frame_buffer.render();
                 draw_loading_border(virtual_frame_buffer.get_frame(), 20, 30);
-                text_renderer.render(&text_layer, &mut virtual_frame_buffer);
                 crt_renderer.render(virtual_frame_buffer.get_frame(), pixels.get_frame());
                 //println!("draw time {}us", render_time.elapsed().as_micros());
                 pixels.render().expect("Pixels render oups");

@@ -1,6 +1,3 @@
-use crate::virtual_frame_buffer::VirtualFrameBuffer;
-use crate::characters_rom::rom;
-
 //Struct describing all the settings one character can have in text mode
 //TODO implement "flipp" tells the renderer to flip the color and background of that character
 //TODO implement "blink" tells the renderer to automatically flip the color and background of that character at a set interval, useful for blinking warning messages
@@ -123,77 +120,6 @@ impl TextLayer {
 
         for _i in 0..self.columns {
             self.pop_char();
-        }
-    }
-}
-
-pub struct TextLayerRenderer {
-    character_columns: usize, 
-    character_rows: usize,
-    output_frame_px_width: usize,
-    output_frame_px_height: usize,
-}
-
-impl TextLayerRenderer {
-
-    pub fn new(character_columns: usize, character_rows: usize, output_frame_px_width: usize, output_frame_px_height: usize) -> TextLayerRenderer {
-        TextLayerRenderer {
-            character_columns,
-            character_rows,
-            output_frame_px_width,
-            output_frame_px_height
-        }
-    }
-
-    pub fn render(&self, text_layer: &TextLayer, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-        let horizontal_border: usize = (virtual_frame_buffer.get_width() - self.character_columns * 8) / 2;
-        let vertical_border: usize = (virtual_frame_buffer.get_height() - self.character_rows * 8) / 2;
-        let mut x_pos = horizontal_border;
-        let mut y_pos = vertical_border;
-        let mut text_row_count = 0;
-        let mut text_col_count = 0;
-    
-        for character in text_layer.get_characters() {
-
-            if character.is_some() {
-                let text_mode_char = character.unwrap();
-                    let pic = rom(&text_mode_char.c);
-            
-                    for row_count in 0..8 {
-            
-                        let row = pic[row_count];
-                        let row_in_binary = &format!("{:0>8b}", row);
-                        let mut character_sprite_col_count = 0;
-            
-                        for c in row_in_binary.chars() {
-                            let virtual_frame_buffer_pos = x_pos + character_sprite_col_count + (y_pos + row_count ) * virtual_frame_buffer.get_width();
-                            
-                            match c {
-                                '0' => virtual_frame_buffer.get_frame()[virtual_frame_buffer_pos] = if text_mode_char.flipp {text_mode_char.color} else {text_mode_char.background_color},
-                                '1' => virtual_frame_buffer.get_frame()[virtual_frame_buffer_pos] = if text_mode_char.flipp {text_mode_char.background_color} else {text_mode_char.color},
-                                _ => ()
-                            }
-                            character_sprite_col_count += 1;
-                        }
-                    }
-            }
-            
-            text_col_count += 1;
-            x_pos += 8;
-    
-            if text_col_count == text_layer.columns {
-                text_col_count = 0;
-                text_row_count += 1;
-                x_pos = horizontal_border;
-                y_pos += 8;
-            } 
-    
-            if text_row_count == text_layer.rows {
-                text_col_count = 0;
-                text_row_count = 0;
-                x_pos = horizontal_border;
-                y_pos = vertical_border;
-            }
         }
     }
 }

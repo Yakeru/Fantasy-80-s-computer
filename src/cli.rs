@@ -1,6 +1,5 @@
 use winit::{event::VirtualKeyCode,event_loop::{ControlFlow,EventLoopProxy}};
-use crate::text_layer::TextLayer;
-use std::io::{self, Write};
+use crate::virtual_frame_buffer::VirtualFrameBuffer;
 use crate::app::*;
 
 const SPLASH_1: &str = "************* FANTASY CPC *************";
@@ -34,8 +33,8 @@ impl Cli {
 
     pub fn new(pid: usize) -> Cli {
 
-        let mut buffer: Vec<DisplayStyle> = Vec::new();
-        let mut app = App::new(String::from("Yak's CPC CLI"), pid);
+        let buffer: Vec<DisplayStyle> = Vec::new();
+        let app = App::new(String::from("Yak's CPC CLI"), pid);
 
         Cli {
             app,
@@ -102,10 +101,6 @@ impl Update for Cli {
 
         match character_received {
             Some(c) => {
-
-                print!("{} ", c as u8);
-                io::stdout().flush().unwrap();
-
                 match c as u8 {
                     8 => { //Backspace
                         self.command.pop();
@@ -179,50 +174,50 @@ impl Update for Cli {
 }
 
 impl Draw for Cli {
-    fn draw_text(&mut self, text_layer: &mut TextLayer) {
+    fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
 
-        text_layer.clear();
+        virtual_frame_buffer.get_text_layer().clear();
 
         for line in self.buffer.chunks_exact_mut(1) {
 
             match &line[0] {
                 DisplayStyle::Default(text) => {
-                    text_layer.push_string_line(&text, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
+                    virtual_frame_buffer.get_text_layer().push_string_line(&text, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
                 }
                 DisplayStyle::Command(text) => {
-                    text_layer.push_char('>', DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
-                    text_layer.push_string_line(&text, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
+                    virtual_frame_buffer.get_text_layer().push_char('>', DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
+                    virtual_frame_buffer.get_text_layer().push_string_line(&text, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
                 }
                 DisplayStyle::Message(text) => {
-                    text_layer.push_string_line(&text, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
+                    virtual_frame_buffer.get_text_layer().push_string_line(&text, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
                 }
                 DisplayStyle::Highlight(text) => {
-                    text_layer.push_string_line(&text, 3, DEFAULT_BKG_COLOR, false);
+                    virtual_frame_buffer.get_text_layer().push_string_line(&text, 3, DEFAULT_BKG_COLOR, false);
                 }
                 DisplayStyle::Warning(text) => {
-                    text_layer.push_string("[WARNING]", DEFAULT_BKG_COLOR, DEFAULT_COLOR, false);
-                    text_layer.push_char(' ', DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
-                    text_layer.push_string_line(&text, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
+                    virtual_frame_buffer.get_text_layer().push_string("[WARNING]", DEFAULT_BKG_COLOR, DEFAULT_COLOR, false);
+                    virtual_frame_buffer.get_text_layer().push_char(' ', DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
+                    virtual_frame_buffer.get_text_layer().push_string_line(&text, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
                 }
                 DisplayStyle::Error(text) => {
-                    text_layer.push_string("[ERROR] ", 0, 2, false);
-                    text_layer.push_string_line(&text, 0, 2, false);
+                    virtual_frame_buffer.get_text_layer().push_string("[ERROR] ", 0, 2, false);
+                    virtual_frame_buffer.get_text_layer().push_string_line(&text, 0, 2, false);
                 }
             }
         }
 
-        text_layer.push_char('>', DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
+        virtual_frame_buffer.get_text_layer().push_char('>', DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
         for c in self.command.chunks_exact_mut(1) {
-            text_layer.push_char(c[0], DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
+            virtual_frame_buffer.get_text_layer().push_char(c[0], DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
         }
-        text_layer.push_char('_', DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
+        virtual_frame_buffer.get_text_layer().push_char('_', DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-enum CustomEvent {
-    Grr,
-}
+// #[derive(Debug, Clone, Copy)]
+// enum CustomEvent {
+//     Grr,
+// }
 
 // impl SendEvent for Cli {
 //     fn send_event(plop: &EventLoopProxy<()>) {
