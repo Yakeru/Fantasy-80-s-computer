@@ -15,20 +15,28 @@ pub struct TextLayerChar {
 
 //The virtual text mode buffer, width and height are expressed in characters
 pub struct TextLayer {
-    character_columns: u32,
-    character_rows: u32,
+    columns: u32,
+    rows: u32,
     characters: Vec<Option<TextLayerChar>>
 }
 
 impl TextLayer {
 
-    pub fn new(character_columns: u32, character_rows: u32) -> TextLayer {
+    pub fn new(columns: u32, rows: u32) -> TextLayer {
         let fb: Vec<Option<TextLayerChar>> = Vec::new();
         TextLayer {
-            character_columns,
-            character_rows,
+            columns,
+            rows,
             characters: fb
         }
+    }
+
+    pub fn get_columns(&self) -> u32 {
+        return self.columns;
+    }
+
+    pub fn get_rows(&self) -> u32 {
+        return self.rows;
     }
 
     pub fn get_characters(&self) -> &Vec<Option<TextLayerChar>> {
@@ -36,7 +44,7 @@ impl TextLayer {
     }
 
     pub fn push_character(&mut self, tmchar: Option<TextLayerChar>) {
-        if self.characters.len() == self.character_columns as usize * self.character_rows as usize {
+        if self.characters.len() == self.columns as usize * self.rows as usize {
             for i in 0..self.characters.len() -1 {
                 self.characters[i] = self.characters[i+1];
             }
@@ -65,18 +73,32 @@ impl TextLayer {
         }
     }
 
+    pub fn push_string_line(&mut self, string: &str, color: u8, back_color: u8, blink: bool) {
+        for c in string.chars() {
+            self.push_char(c, color, back_color, blink);
+        }
+
+        let reminder = self.get_characters().len() % self.columns as usize;
+        for _i in 0..(self.columns as usize - reminder) {
+            self.push_character(None);
+        }
+    }
+
     //pops the last cell, just the last one, wether it contains a character or None.
     pub fn pop_char(&mut self) {
         self.characters.pop();
     }
 
     pub fn pop_all_none(&mut self) {
+
+        let mut stop: bool = false;
+
         while match self.characters.last() { //Returns a Option<Option<TextLayerChar>> ... 
             Some(plop) => {
                 match plop {
-                    Some(T) => {
-                        match T.c {
-                            '\n' => {true}
+                    Some(t) => {
+                        match t.c {
+                            '\n' => {stop = true; true}
                             _ => {false}
                         }    
                     }
@@ -86,6 +108,7 @@ impl TextLayer {
             None => {false}
         } {
             self.characters.pop();
+            if stop {return}
         }
     }
 
@@ -94,11 +117,11 @@ impl TextLayer {
     }
 
     pub fn scroll_up(&mut self) {
-        for i in self.character_columns as usize..self.characters.len() as usize {
-            self.characters[i - self.character_columns as usize] = self.characters[i];
+        for i in self.columns as usize..self.characters.len() as usize {
+            self.characters[i - self.columns as usize] = self.characters[i];
         }
 
-        for _i in 0..self.character_columns as usize {
+        for _i in 0..self.columns as usize {
             self.pop_char();
         }
     }
@@ -158,14 +181,14 @@ impl TextLayerRenderer {
             text_col_count += 1;
             x_pos += 8;
     
-            if text_col_count == text_layer.character_columns {
+            if text_col_count == text_layer.columns {
                 text_col_count = 0;
                 text_row_count += 1;
                 x_pos = horizontal_border;
                 y_pos += 8;
             } 
     
-            if text_row_count == text_layer.character_rows {
+            if text_row_count == text_layer.rows {
                 text_col_count = 0;
                 text_row_count = 0;
                 x_pos = horizontal_border;
