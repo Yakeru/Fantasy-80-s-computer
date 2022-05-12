@@ -1,5 +1,6 @@
 use crate::color_palettes::default_color_palette;
-use crate::text_layer::{TextLayer, TextLayerRenderer};
+use crate::text_layer::TextLayer;
+use crate::characters_rom::rom;
 
 //Contains a list of u8 values corresponding to values from a color palette.
 //So just one u8 per pixel, R G and B values are retrieved from the palette.
@@ -9,11 +10,17 @@ use crate::text_layer::{TextLayer, TextLayerRenderer};
 pub struct VirtualFrameBuffer {
     width: usize,
     height: usize,
-    frame: Vec<u8>
+    columns_count: usize,
+    rows_count: usize,
+    frame: Vec<u8>,
+    text_layer: TextLayer,
+    //background_layer
+    //tiles_layer
+    //sprites_layer
 }
 
 impl VirtualFrameBuffer {
-    pub fn new(fb_width: usize, fb_height: usize, text_columns: usize, text_rows: usize) -> VirtualFrameBuffer {
+    pub fn new(fb_width: usize, fb_height: usize, columns_count: usize, rows_count: usize) -> VirtualFrameBuffer {
         let size: usize = fb_width * fb_height;
         let mut virtual_frame_buffer = Vec::new();
 
@@ -21,10 +28,18 @@ impl VirtualFrameBuffer {
             virtual_frame_buffer.push(0);
         }
 
+        let text_layer: TextLayer = TextLayer::new(columns_count, rows_count);
+        
+
+        //TODO init background_layers, tiles_layers, sprites_layers... and correesponding renderes
+
         VirtualFrameBuffer {
             width: fb_width,
             height: fb_height,
+            columns_count,
+            rows_count,
             frame: virtual_frame_buffer,
+            text_layer
         }
     }
 
@@ -39,12 +54,75 @@ impl VirtualFrameBuffer {
         }
     }
 
+    pub fn get_text_layer(&mut self) -> &mut TextLayer {
+        return &mut self.text_layer;
+    }
+
     pub fn get_width(&self) -> usize {
         return self.width;
     }
 
     pub fn get_height(&self) -> usize {
         return self.height;
+    }
+
+    pub fn render(&mut self) {
+        self.clear_frame_buffer(0);
+        self.text_layer_renderer();
+        //Add background renderees, sprite renderers etc...
+    }
+
+    fn text_layer_renderer(&mut self) {
+        let horizontal_border: usize = (self.width - self.columns_count * 8) / 2;
+        let vertical_border: usize = (self.height - self.rows_count * 8) / 2;
+        let mut x_pos = horizontal_border;
+        let mut y_pos = vertical_border;
+        let mut text_row_count = 0;
+        let mut text_col_count = 0;
+    
+        for character in self.text_layer.get_characters() {
+
+            if character.is_some() {
+                let text_mode_char = character.unwrap();
+                    let pic = rom(&text_mode_char.c);
+            
+                    for row_count in 0..8 {
+            
+                        let row = pic[row_count];
+                        let row_in_binary = &format!("{:0>8b}", row);
+                        let mut character_sprite_col_count = 0;
+            
+                        for c in row_in_binary.chars() {
+                            let virtual_frame_buffer_pos = x_pos + character_sprite_col_count + (y_pos + row_count ) * self.width;
+                            
+                            match c {
+                                '0' => self.frame[virtual_frame_buffer_pos] = if text_mode_char.flipp {text_mode_char.color} else {text_mode_char.background_color},
+                                '1' => self.frame[virtual_frame_buffer_pos] = if text_mode_char.flipp {text_mode_char.background_color} else {text_mode_char.color},
+                                _ => ()
+                            }
+                            character_sprite_col_count += 1;
+                        }
+                    }
+            }
+            
+            text_col_count += 1;
+            x_pos += 8;
+    
+            if text_col_count == self.columns_count {
+                text_col_count = 0;
+                text_row_count += 1;
+                x_pos = horizontal_border;
+                y_pos += 8;
+            } 
+    
+            if text_row_count == self.rows_count {
+                text_col_count = 0;
+                text_row_count = 0;
+                x_pos = horizontal_border;
+                y_pos = vertical_border;
+            }
+        }
+        
     }
 }
 

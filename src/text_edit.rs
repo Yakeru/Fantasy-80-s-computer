@@ -1,7 +1,8 @@
 use winit::{event::VirtualKeyCode,event_loop::ControlFlow};
-use crate::text_layer::{TextLayer,TextLayerChar};
+use crate::text_layer::TextLayerChar;
 use std::io::{self, Write};
 use crate::app::*;
+use crate::virtual_frame_buffer::VirtualFrameBuffer;
 
 const DEFAULT_BKG_COLOR: u8 = 0;
 const DEFAULT_COLOR: u8 = 1;
@@ -22,8 +23,8 @@ impl TextEdit {
         // text_layer.clear();
         // text_layer.push_char('_', DEFAULT_COLOR, DEFAULT_BKG_COLOR, false); //re insert cursor
 
-        let mut app = App::new(String::from("Yak's Text Editor"), pid);
-        let mut buffer = Vec::new();
+        let app = App::new(String::from("Yak's Text Editor"), pid);
+        let buffer = Vec::new();
 
         TextEdit {
             app,
@@ -121,14 +122,14 @@ impl Update for TextEdit {
 }
 
 impl Draw for TextEdit {
-    fn draw_text(&mut self, text_layer: &mut TextLayer) {
+    fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
 
-        text_layer.clear();
+        virtual_frame_buffer.get_text_layer().clear();
 
         for text_layer_char in self.buffer.chunks_exact_mut(1) {
-            text_layer.push_character(Some(text_layer_char[0]));
+            virtual_frame_buffer.get_text_layer().push_character(Some(text_layer_char[0]));
         }
 
-        text_layer.push_char('_', self.selected_color, self.selected_bkg_color, false);
+        virtual_frame_buffer.get_text_layer().push_char('_', self.selected_color, self.selected_bkg_color, false);
     }
 }
