@@ -15,14 +15,14 @@ pub struct TextLayerChar {
 
 //The virtual text mode buffer, width and height are expressed in characters
 pub struct TextLayer {
-    columns: u32,
-    rows: u32,
+    columns: usize,
+    rows: usize,
     characters: Vec<Option<TextLayerChar>>
 }
 
 impl TextLayer {
 
-    pub fn new(columns: u32, rows: u32) -> TextLayer {
+    pub fn new(columns: usize, rows: usize) -> TextLayer {
         let fb: Vec<Option<TextLayerChar>> = Vec::new();
         TextLayer {
             columns,
@@ -31,11 +31,11 @@ impl TextLayer {
         }
     }
 
-    pub fn get_columns(&self) -> u32 {
+    pub fn get_columns(&self) -> usize {
         return self.columns;
     }
 
-    pub fn get_rows(&self) -> u32 {
+    pub fn get_rows(&self) -> usize {
         return self.rows;
     }
 
@@ -44,7 +44,7 @@ impl TextLayer {
     }
 
     pub fn push_character(&mut self, tmchar: Option<TextLayerChar>) {
-        if self.characters.len() == self.columns as usize * self.rows as usize {
+        if self.characters.len() == self.columns * self.rows {
             for i in 0..self.characters.len() -1 {
                 self.characters[i] = self.characters[i+1];
             }
@@ -78,8 +78,8 @@ impl TextLayer {
             self.push_char(c, color, back_color, blink);
         }
 
-        let reminder = self.get_characters().len() % self.columns as usize;
-        for _i in 0..(self.columns as usize - reminder) {
+        let reminder = self.get_characters().len() % self.columns;
+        for _i in 0..(self.columns - reminder) {
             self.push_character(None);
         }
     }
@@ -117,26 +117,26 @@ impl TextLayer {
     }
 
     pub fn scroll_up(&mut self) {
-        for i in self.columns as usize..self.characters.len() as usize {
-            self.characters[i - self.columns as usize] = self.characters[i];
+        for i in self.columns..self.characters.len() {
+            self.characters[i - self.columns] = self.characters[i];
         }
 
-        for _i in 0..self.columns as usize {
+        for _i in 0..self.columns {
             self.pop_char();
         }
     }
 }
 
 pub struct TextLayerRenderer {
-    character_columns: u32, 
-    character_rows: u32,
-    output_frame_px_width: u32,
-    output_frame_px_height: u32,
+    character_columns: usize, 
+    character_rows: usize,
+    output_frame_px_width: usize,
+    output_frame_px_height: usize,
 }
 
 impl TextLayerRenderer {
 
-    pub fn new(character_columns: u32, character_rows: u32, output_frame_px_width: u32, output_frame_px_height: u32) -> TextLayerRenderer {
+    pub fn new(character_columns: usize, character_rows: usize, output_frame_px_width: usize, output_frame_px_height: usize) -> TextLayerRenderer {
         TextLayerRenderer {
             character_columns,
             character_rows,
@@ -146,8 +146,8 @@ impl TextLayerRenderer {
     }
 
     pub fn render(&self, text_layer: &TextLayer, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-        let horizontal_border: u32 = (virtual_frame_buffer.get_width() as u32 - self.character_columns as u32 * 8) / 2;
-        let vertical_border: u32 = (virtual_frame_buffer.get_height() - self.character_rows as u32 * 8) / 2;
+        let horizontal_border: usize = (virtual_frame_buffer.get_width() - self.character_columns * 8) / 2;
+        let vertical_border: usize = (virtual_frame_buffer.get_height() - self.character_rows * 8) / 2;
         let mut x_pos = horizontal_border;
         let mut y_pos = vertical_border;
         let mut text_row_count = 0;
@@ -166,7 +166,7 @@ impl TextLayerRenderer {
                         let mut character_sprite_col_count = 0;
             
                         for c in row_in_binary.chars() {
-                            let virtual_frame_buffer_pos = x_pos as usize + character_sprite_col_count + (y_pos as usize + row_count ) * virtual_frame_buffer.get_width() as usize;
+                            let virtual_frame_buffer_pos = x_pos + character_sprite_col_count + (y_pos + row_count ) * virtual_frame_buffer.get_width();
                             
                             match c {
                                 '0' => virtual_frame_buffer.get_frame()[virtual_frame_buffer_pos] = if text_mode_char.flipp {text_mode_char.color} else {text_mode_char.background_color},

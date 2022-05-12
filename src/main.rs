@@ -8,7 +8,7 @@ use winit_input_helper::WinitInputHelper;
 use pixels::{Error, Pixels, SurfaceTexture};
 use rand::Rng;
 use std::time::{
-    Instant
+    Instant, Duration
 };
 use std::io::{self, Write};
 
@@ -16,32 +16,35 @@ mod characters_rom;
 mod text_layer;
 mod virtual_frame_buffer;
 mod color_palettes;
+mod app;
 mod cli;
 mod text_edit;
 
 use crate::text_layer::{TextLayer, TextLayerRenderer};
 use crate::virtual_frame_buffer::{VirtualFrameBuffer, CrtEffectRenderer};
-use crate::cli::{Draw, Update, Cli};
-use crate::text_edit::TextEdit;
+use crate::app::*;
+use crate::cli::*;
+use crate::text_edit::*;
 
-const WIDTH: u32 = 1280;
-const HEIGHT: u32 = 960;
+const WIDTH: usize = 1280;
+const HEIGHT: usize = 960;
 
-const VIRTUAL_WIDTH: u32 = 426;  //426*3 = 1278 draw one black line on each side of screen for perfectly centered *3 scale
-const VIRTUAL_HEIGHT: u32 = 240; //240*4 = 960
-
-const FPS: u128 = 16; //ms per frame, so 16 = 60fps, 32 = 30fps, 1000 = 1fps
+const FPS: u64 = 16; //ms per frame, so 16 = 60fps, 32 = 30fps, 1000 = 1fps
 
 const DEFAULT_BKG_COLOR: u8 = 4;
-const TEXT_COLUMNS: u8 = 40;
-const TEXT_ROWS: u8 = 25;
+const TEXT_COLUMNS: usize = 40;
+const TEXT_ROWS: usize = 25;
+
+const VIRTUAL_WIDTH: usize = 426;  //426*3 = 1278 draw one black line on each side of screen for perfectly centered *3 scale
+const VIRTUAL_HEIGHT: usize = 240; //240*4 = 960
 
 fn main()-> Result<(), Error> {
 
     let event_loop = EventLoop::new();
+    let event_loop_proxy = event_loop.create_proxy();
     let builder = WindowBuilder::new()
         .with_decorations(true)
-        .with_inner_size(PhysicalSize::new(WIDTH, HEIGHT))
+        .with_inner_size(PhysicalSize::new(WIDTH as i32, HEIGHT as i32))
         .with_title("Yay, une fenêtre !")
         .with_resizable(false);
 
@@ -53,28 +56,33 @@ fn main()-> Result<(), Error> {
     let mut pixels = {
         let window_size = window.inner_size();
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
-        Pixels::new(WIDTH, HEIGHT, surface_texture)?
+        Pixels::new(WIDTH as u32, HEIGHT as u32, surface_texture)?
     };
 
-    let mut text_layer = TextLayer::new(TEXT_COLUMNS as u32, TEXT_ROWS as u32);
-    let text_renderer = TextLayerRenderer::new(TEXT_COLUMNS as u32, TEXT_ROWS as u32, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
-    let mut virtual_frame_buffer: VirtualFrameBuffer = VirtualFrameBuffer::new(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+    let mut text_layer = TextLayer::new(TEXT_COLUMNS, TEXT_ROWS);
+    let text_renderer = TextLayerRenderer::new(TEXT_COLUMNS, TEXT_ROWS, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+    let mut virtual_frame_buffer: VirtualFrameBuffer = VirtualFrameBuffer::new(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, TEXT_COLUMNS, TEXT_ROWS);
     let crt_renderer: CrtEffectRenderer = CrtEffectRenderer::new(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, WIDTH, HEIGHT);
 
     let mut last_refresh: Instant = Instant::now();
 
     //Init various apps
-    let mut cli = Cli::new(&mut text_layer);
-    cli.running = true;
-
-    //let mut text_edit = TextEdit::new(&mut text_layer);
+    let mut cli = Cli::new(1);
+    let mut text_edit = TextEdit::new(2);
+    text_edit.app.updating = false;
+    text_edit.app.drawing = false;
+    let mut running_apps: Vec<&App> = Vec::new();
+    running_apps.push(&cli.app);
+    running_apps.push(&text_edit.app);
 
     let mut key_released: Option<VirtualKeyCode> = None;
     let mut char_received: Option<char> = None;
 
     event_loop.run(move |event, _, control_flow| {
 
-        *control_flow = ControlFlow::Poll;
+        //Control_flow::Poll uses 100% of a CPU core (In Windows 10 at least). Use WaitUntil instead.
+        let refresh_timer: Instant = Instant::now().checked_add(Duration::from_millis(FPS)).unwrap();
+        *control_flow = ControlFlow::WaitUntil(refresh_timer);
 
         if input.update(&event) {
             if input.key_released(VirtualKeyCode::Escape) || input.quit() {
@@ -100,8 +108,20 @@ fn main()-> Result<(), Error> {
             if input.key_released(VirtualKeyCode::PageUp) {
                 key_released = Some(VirtualKeyCode::PageUp);
             }
-        } else {
-            key_released = None;
+
+            if input.key_released(VirtualKeyCode::F1) {
+                cli.app.updating = true;
+                cli.app.drawing = true;
+                text_edit.app.updating = false;
+                text_edit.app.drawing = false;
+            }
+
+            if input.key_released(VirtualKeyCode::F2) {
+                cli.app.updating = false;
+                cli.app.drawing = false;
+                text_edit.app.updating = true;
+                text_edit.app.drawing = true;
+            }
         }
 
         match event {
@@ -114,7 +134,6 @@ fn main()-> Result<(), Error> {
                 }
 
                 WindowEvent::ReceivedCharacter(c) => {
-
                     char_received = Some(c);
                 }
                 _ => {
@@ -125,8 +144,12 @@ fn main()-> Result<(), Error> {
                 // Application update code.
                 let mut flow = None;
                 
-                if cli.running {
+                if  cli.app.updating {
                     flow  = cli.update(char_received, key_released);
+                }
+
+                if  text_edit.app.updating {
+                    flow  = text_edit.update(char_received, key_released);
                 }
                 
                 match flow {
@@ -136,44 +159,44 @@ fn main()-> Result<(), Error> {
 
                     None => ()
                 }
+
                 char_received = None;
                 key_released = None;
-    
-                // Queue a RedrawRequested event.
-                if last_refresh.elapsed().as_millis() >= FPS {
 
-                    if cli.running {
-                        cli.draw(&mut text_layer);
-                    }
+                if  cli.app.drawing {
+                    cli.draw_text(&mut text_layer);
+                }
 
-                    //let render_time: Instant = Instant::now();
-                    virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
-                    draw_loading_border(virtual_frame_buffer.get_frame(), 20, 30);
-                    text_renderer.render(&text_layer, &mut virtual_frame_buffer);
-                    crt_renderer.render(virtual_frame_buffer.get_frame(), pixels.get_frame());
-                    //println!("draw time {}us", render_time.elapsed().as_micros());
-                    pixels.render().expect("Pixels render oups");
-                    window.request_redraw();
-                    last_refresh = Instant::now();
-                } 
+                if  text_edit.app.drawing {
+                    text_edit.draw_text(&mut text_layer);
+                }
+
+                //let render_time: Instant = Instant::now();
+                virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
+                draw_loading_border(virtual_frame_buffer.get_frame(), 20, 30);
+                text_renderer.render(&text_layer, &mut virtual_frame_buffer);
+                crt_renderer.render(virtual_frame_buffer.get_frame(), pixels.get_frame());
+                //println!("draw time {}us", render_time.elapsed().as_micros());
+                pixels.render().expect("Pixels render oups");
+                window.request_redraw();
             }
             _ => ()
         }
     });
 }
 
-fn draw_loading_border(frame_buffer: &mut[u8], vert_size: u8, horiz_size: u8) {
+fn draw_loading_border(frame_buffer: &mut[u8], vert_size: usize, horiz_size: usize) {
     let mut random = rand::thread_rng();
     let mut rgb_color: u8 = random.gen_range(0..8);
 
-    let mut line_pixel_count: u32 = 0;
-    let mut line_count: u32 = 0;
+    let mut line_pixel_count: usize = 0;
+    let mut line_count: usize = 0;
     let mut band_count: u8 = 0;
     let mut band: u8 = random.gen_range(0..20) + 4;
 
     for pixel in frame_buffer.chunks_exact_mut(1) {
 
-        if line_pixel_count < horiz_size as u32 || line_pixel_count > VIRTUAL_WIDTH - horiz_size as u32 || line_count < vert_size as u32 || line_count > VIRTUAL_HEIGHT - vert_size as u32 {
+        if line_pixel_count < horiz_size || line_pixel_count > VIRTUAL_WIDTH - horiz_size || line_count < vert_size || line_count > VIRTUAL_HEIGHT - vert_size {
             if band_count >= band {
                 rgb_color = random.gen_range(0..8);
                 band_count = 0;

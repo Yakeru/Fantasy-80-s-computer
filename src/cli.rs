@@ -1,6 +1,7 @@
-use winit::{event::VirtualKeyCode,event_loop::ControlFlow};
+use winit::{event::VirtualKeyCode,event_loop::{ControlFlow,EventLoopProxy}};
 use crate::text_layer::TextLayer;
 use std::io::{self, Write};
+use crate::app::*;
 
 const SPLASH_1: &str = "************* FANTASY CPC *************";
 const SPLASH_2: &str = "*              ROM v0.1               *";
@@ -13,21 +14,11 @@ const DEFAULT_COLOR: u8 = 5;
 const BUFFER_SIZE: usize = 100;
 
 pub struct Cli {
+    pub app: App,
     color: u8,
     bkg_color: u8,
-    columns: u8,
-    rows: u8,
     command: Vec<char>,
-    pub running: bool,
     buffer: Vec<DisplayStyle>
-}
-
-pub trait Update {
-    fn update (&mut self, character_received: Option<char>, key_released: Option<VirtualKeyCode>) -> Option<ControlFlow>;
-}
-
-pub trait Draw {
-    fn draw (&mut self, text_layer: &mut TextLayer);
 }
 
 enum DisplayStyle {
@@ -41,49 +32,43 @@ enum DisplayStyle {
 
 impl Cli {
 
-    pub fn new(text_layer: &mut TextLayer) -> Cli {
+    pub fn new(pid: usize) -> Cli {
 
         let mut buffer: Vec<DisplayStyle> = Vec::new();
-        buffer.push(DisplayStyle::Default(String::from(SPLASH_1)));
-        buffer.push(DisplayStyle::Default(String::from(SPLASH_2)));
-        buffer.push(DisplayStyle::Default(String::from(SPLASH_3)));
-        buffer.push(DisplayStyle::Default(String::from(SPLASH_4)));
-        buffer.push(DisplayStyle::Default(String::from(SPLASH_5)));
-        buffer.push(DisplayStyle::Default(String::from("")));
+        let mut app = App::new(String::from("Yak's CPC CLI"), pid);
 
         Cli {
+            app,
             color: DEFAULT_COLOR,
             bkg_color: DEFAULT_BKG_COLOR,
-            columns: text_layer.get_columns() as u8,
-            rows: text_layer.get_rows() as u8,
             command: Vec::new(),
             buffer,
-            running: false,
         }
     }
 
-    pub fn interpret_command (&mut self, command: String) -> Option<ControlFlow> {
-
-        if command == "help" {
-            self.buffer.push(DisplayStyle::Message(String::from("Type [clear] to clear screen.")));
-            self.buffer.push(DisplayStyle::Message(String::from("Type [quit] or [exit] to exit.")));
-            self.buffer.push(DisplayStyle::Message(String::from("Type [warning], [error] or [highlight] to display an example.")));
-        } else if command == "clear" {
-            self.buffer.clear();
-            self.command.clear();
-        } else if command == "warning" {
-            self.buffer.push(DisplayStyle::Warning(String::from("This is a warning message")));
-        } else if command == "error" {
-            self.buffer.push(DisplayStyle::Error(String::from("This is an error message")));
-        } else if command == "highlight" {
-            self.buffer.push(DisplayStyle::Highlight(String::from("This is a highlighted message")));
-        } else if command == "message" {
-            self.buffer.push(DisplayStyle::Message(String::from("This is a message")));
-        } else if command == "quit" || command == "exit"{
-            println!("Command 'quit' or 'exit' received; stopping");
-            return Some(ControlFlow::Exit);
-        } else {
-            self.buffer.push(DisplayStyle::Message(String::from("SYNTAX ERROR")));
+    pub fn interpret_command(&mut self, command: String) -> Option<ControlFlow> {
+        if command.len() > 0 {
+            if command == "help" {
+                self.buffer.push(DisplayStyle::Message(String::from("Type [clear] to clear screen.")));
+                self.buffer.push(DisplayStyle::Message(String::from("Type [quit] or [exit] to exit.")));
+                self.buffer.push(DisplayStyle::Message(String::from("Type [warning], [error] or [highlight] to display an example.")));
+            } else if command == "clear" {
+                self.buffer.clear();
+                self.command.clear();
+            } else if command == "warning" {
+                self.buffer.push(DisplayStyle::Warning(String::from("This is a warning message")));
+            } else if command == "error" {
+                self.buffer.push(DisplayStyle::Error(String::from("This is an error message")));
+            } else if command == "highlight" {
+                self.buffer.push(DisplayStyle::Highlight(String::from("This is a highlighted message")));
+            } else if command == "message" {
+                self.buffer.push(DisplayStyle::Message(String::from("This is a message")));
+            } else if command == "quit" || command == "exit"{
+                println!("Command 'quit' or 'exit' received; stopping");
+                return Some(ControlFlow::Exit);
+            } else {
+                self.buffer.push(DisplayStyle::Message(String::from("SYNTAX ERROR")));
+            }
         }
 
         return None;
@@ -92,7 +77,28 @@ impl Cli {
 
 impl Update for Cli {
 
-    fn update (&mut self, character_received: Option<char>, key_released: Option<VirtualKeyCode>) -> Option<ControlFlow> {
+    fn start(&mut self) {
+        self.buffer.push(DisplayStyle::Default(String::from(SPLASH_1)));
+        self.buffer.push(DisplayStyle::Default(String::from(SPLASH_2)));
+        self.buffer.push(DisplayStyle::Default(String::from(SPLASH_3)));
+        self.buffer.push(DisplayStyle::Default(String::from(SPLASH_4)));
+        self.buffer.push(DisplayStyle::Default(String::from(SPLASH_5)));
+        self.buffer.push(DisplayStyle::Default(String::from("")));
+    }
+
+    fn end(&mut self) {
+        self.app.started = false;
+        self.app.drawing = false;
+        self.app.updating = false;
+        self.app.ended = true;
+    }
+
+    fn update(&mut self, character_received: Option<char>, key_released: Option<VirtualKeyCode>) -> Option<ControlFlow> {
+
+        if !self.app.started {
+            self.start();
+            self.app.started = true;
+        }
 
         match character_received {
             Some(c) => {
@@ -173,7 +179,7 @@ impl Update for Cli {
 }
 
 impl Draw for Cli {
-    fn draw (&mut self, text_layer: &mut TextLayer) {
+    fn draw_text(&mut self, text_layer: &mut TextLayer) {
 
         text_layer.clear();
 
@@ -212,3 +218,14 @@ impl Draw for Cli {
         text_layer.push_char('_', DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
     }
 }
+
+#[derive(Debug, Clone, Copy)]
+enum CustomEvent {
+    Grr,
+}
+
+// impl SendEvent for Cli {
+//     fn send_event(plop: &EventLoopProxy<()>) {
+//         plop.send_event(CustomEvent::Grr).ok();
+//     }
+// }

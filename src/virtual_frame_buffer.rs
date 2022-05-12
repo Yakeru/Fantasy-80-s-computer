@@ -1,19 +1,20 @@
 use crate::color_palettes::default_color_palette;
+use crate::text_layer::{TextLayer, TextLayerRenderer};
 
 //Contains a list of u8 values corresponding to values from a color palette.
 //So just one u8 per pixel, R G and B values are retrieved from the palette.
-//No Alpha for instance.
+//No Alpha.
 //This frame buffer is meant to contain a low resolution low color picure that 
-//will be upscaled into the final "real" 2D frame buffer.
+//will be upscaled into the final pixel 2D frame buffer.
 pub struct VirtualFrameBuffer {
-    width: u32,
-    height: u32,
-    frame: Vec<u8>,
+    width: usize,
+    height: usize,
+    frame: Vec<u8>
 }
 
 impl VirtualFrameBuffer {
-    pub fn new(width: u32, height: u32) -> VirtualFrameBuffer {
-        let size: u32 = width * height;
+    pub fn new(fb_width: usize, fb_height: usize, text_columns: usize, text_rows: usize) -> VirtualFrameBuffer {
+        let size: usize = fb_width * fb_height;
         let mut virtual_frame_buffer = Vec::new();
 
         for _value in 0..size {
@@ -21,9 +22,9 @@ impl VirtualFrameBuffer {
         }
 
         VirtualFrameBuffer {
-            width: width,
-            height: height,
-            frame: virtual_frame_buffer
+            width: fb_width,
+            height: fb_height,
+            frame: virtual_frame_buffer,
         }
     }
 
@@ -38,23 +39,23 @@ impl VirtualFrameBuffer {
         }
     }
 
-    pub fn get_width(&self) -> u32 {
+    pub fn get_width(&self) -> usize {
         return self.width;
     }
 
-    pub fn get_height(&self) -> u32 {
+    pub fn get_height(&self) -> usize {
         return self.height;
     }
 }
 
 pub struct CrtEffectRenderer {
-    input_frame_px_width: u32, 
-    input_frame_px_height: u32,
-    output_frame_px_width: u32,
-    output_frame_px_height: u32,
-    output_nb_of_values_per_pixel: u8,
-    render_horiz_upscale: u8,
-    render_vert_upscale: u8,
+    input_frame_px_width: usize, 
+    input_frame_px_height: usize,
+    output_frame_px_width: usize,
+    output_frame_px_height: usize,
+    output_nb_of_values_per_pixel: usize,
+    render_horiz_upscale: usize,
+    render_vert_upscale: usize,
     scan_line_strength: u8,
     sub_pixel_attenuation: u8,
 }
@@ -63,7 +64,7 @@ pub struct CrtEffectRenderer {
 //Upscalling is fixed to 3x4 with that specific renderer
 impl CrtEffectRenderer {
 
-    pub fn new(input_width: u32, input_height: u32, output_width: u32, output_height: u32) -> CrtEffectRenderer {
+    pub fn new(input_width: usize, input_height: usize, output_width: usize, output_height: usize) -> CrtEffectRenderer {
         CrtEffectRenderer {
             input_frame_px_width: input_width,
             input_frame_px_height: input_height,
@@ -83,7 +84,7 @@ impl CrtEffectRenderer {
         let mut virt_line_counter: usize = 0;
         let pixels_sub_pixel_count = 4;
 
-        let max_output_index = self.output_frame_px_width * self.output_frame_px_height * self.output_nb_of_values_per_pixel as u32;
+        let max_output_index = self.output_frame_px_width * self.output_frame_px_height * self.output_nb_of_values_per_pixel ;
 
         for pixel in input_frame {
 
@@ -93,17 +94,17 @@ impl CrtEffectRenderer {
             //Offset between virtual frame buffer and pixel's frame buffer
             //if scaling is applied, it represents the offset between virtual frame buffer's pixel and
             //pixel's top-left corner of scalled pixel
-            let global_offset = pixels_sub_pixel_count * virt_line_pixel_counter * self.render_horiz_upscale as usize 
-            + self.output_frame_px_width as usize * pixels_sub_pixel_count * virt_line_counter * self.render_vert_upscale as usize;
+            let global_offset = pixels_sub_pixel_count * virt_line_pixel_counter * self.render_horiz_upscale  
+            + self.output_frame_px_width * pixels_sub_pixel_count * virt_line_counter * self.render_vert_upscale ;
 
-            if global_offset < max_output_index as usize {  
+            if global_offset < max_output_index  {  
                 for horizontal_copy in 0..self.render_horiz_upscale {
                     for vertical_copy in 0..self.render_vert_upscale {
-                        let scaling_offset: usize = pixels_sub_pixel_count * horizontal_copy as usize + self.output_frame_px_width as usize * pixels_sub_pixel_count * vertical_copy as usize;
+                        let scaling_offset: usize = pixels_sub_pixel_count * horizontal_copy  + self.output_frame_px_width  * pixels_sub_pixel_count * vertical_copy ;
                         let final_offset: usize = global_offset + scaling_offset;
                         let mut final_rgb: (u8, u8, u8) = rgb;
 
-                        //Use 3 consecutive pixels as the 3 sub components of a single pixel
+                        // //Use 3 consecutive pixels as the 3 sub components of a single pixel
                         match horizontal_copy {
                             0 => {
                                 if final_rgb.1 < self.sub_pixel_attenuation {final_rgb.1 = 0} else {final_rgb.1 -= self.sub_pixel_attenuation};
@@ -136,7 +137,7 @@ impl CrtEffectRenderer {
                 }
 
                 virt_line_pixel_counter += 1;
-                if virt_line_pixel_counter == self.input_frame_px_width as usize {
+                if virt_line_pixel_counter == self.input_frame_px_width  {
                     virt_line_pixel_counter = 0;
                     virt_line_counter += 1;
                 }
