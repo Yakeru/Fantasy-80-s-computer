@@ -19,11 +19,13 @@ mod color_palettes;
 mod app;
 mod cli;
 mod text_edit;
+mod sprite;
 
 use crate::virtual_frame_buffer::{VirtualFrameBuffer, CrtEffectRenderer};
 use crate::app::*;
 use crate::cli::*;
 use crate::text_edit::*;
+use crate::sprite::Sprite;
 
 const WIDTH: usize = 1280;
 const HEIGHT: usize = 960;
@@ -59,7 +61,7 @@ fn main()-> Result<(), Error> {
     };
 
     let mut virtual_frame_buffer: VirtualFrameBuffer = VirtualFrameBuffer::new(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, TEXT_COLUMNS, TEXT_ROWS);
-    let crt_renderer: CrtEffectRenderer = CrtEffectRenderer::new(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, WIDTH, HEIGHT);
+    let crt_renderer: CrtEffectRenderer = CrtEffectRenderer::new(WIDTH, HEIGHT);
 
     let mut last_refresh: Instant = Instant::now();
 
@@ -71,6 +73,26 @@ fn main()-> Result<(), Error> {
     let mut running_apps: Vec<&App> = Vec::new();
     running_apps.push(&cli.app);
     running_apps.push(&text_edit.app);
+
+    let mut sprite0: Sprite = Sprite::new_from_file(&String::from("./resources/sprites/sprite1.txt"));
+    let mut sprite1: Sprite = Sprite::new_from_file(&String::from("./resources/sprites/sprite1.txt"));
+    sprite1.pos_x = 30;
+    sprite1.pos_y = 30;
+    let mut sprite2: Sprite = Sprite::new_from_file(&String::from("./resources/sprites/sprite1.txt"));
+    sprite2.pos_x = 80;
+    sprite2.pos_y = 10;
+    let mut sprite3: Sprite = Sprite::new_from_file(&String::from("./resources/sprites/sprite1.txt"));
+    sprite3.pos_x = 150;
+    sprite3.pos_y = 80;
+    let mut sprite4: Sprite = Sprite::new_from_file(&String::from("./resources/sprites/sprite1.txt"));
+    sprite4.pos_x = 20;
+    sprite4.pos_y = 200;
+    virtual_frame_buffer.sprites.push(sprite0);
+    virtual_frame_buffer.sprites.push(sprite1);
+    virtual_frame_buffer.sprites.push(sprite2);
+    virtual_frame_buffer.sprites.push(sprite3);
+    virtual_frame_buffer.sprites.push(sprite4);
+
 
     let mut key_released: Option<VirtualKeyCode> = None;
     let mut char_received: Option<char> = None;
@@ -157,6 +179,23 @@ fn main()-> Result<(), Error> {
                     None => ()
                 }
 
+                //TEMP SPRITES TEST
+                // let sprite0_x_speed = true;
+                // let sprite0_y_speed = false;
+                // let sprite1_x_speed = true;
+                // let sprite1_y_speed = true;
+                // let sprite2_x_speed = false;
+                // let sprite2_y_speed = false;
+                // let sprite3_x_speed = true;
+                // let sprite3_y_speed = false;
+                // let sprite4_x_speed = true;
+                // let sprite4_y_speed = false;
+                
+                for sprite in virtual_frame_buffer.get_sprites() {
+                    sprite.pos_x += 1;
+                    sprite.pos_y += 1;
+                }
+
                 char_received = None;
                 key_released = None;
 
@@ -168,12 +207,9 @@ fn main()-> Result<(), Error> {
                     text_edit.draw(&mut virtual_frame_buffer);
                 }
 
-                //let render_time: Instant = Instant::now();
-                //virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
                 virtual_frame_buffer.render();
                 draw_loading_border(virtual_frame_buffer.get_frame(), 20, 30);
-                crt_renderer.render(virtual_frame_buffer.get_frame(), pixels.get_frame());
-                //println!("draw time {}us", render_time.elapsed().as_micros());
+                crt_renderer.render(&virtual_frame_buffer, pixels.get_frame());
                 pixels.render().expect("Pixels render oups");
                 window.request_redraw();
             }
@@ -184,7 +220,7 @@ fn main()-> Result<(), Error> {
 
 fn draw_loading_border(frame_buffer: &mut[u8], vert_size: usize, horiz_size: usize) {
     let mut random = rand::thread_rng();
-    let mut rgb_color: u8 = random.gen_range(0..8);
+    let mut rgb_color: u8 = random.gen_range(0..32);
 
     let mut line_pixel_count: usize = 0;
     let mut line_count: usize = 0;
@@ -195,7 +231,7 @@ fn draw_loading_border(frame_buffer: &mut[u8], vert_size: usize, horiz_size: usi
 
         if line_pixel_count < horiz_size || line_pixel_count > VIRTUAL_WIDTH - horiz_size || line_count < vert_size || line_count > VIRTUAL_HEIGHT - vert_size {
             if band_count >= band {
-                rgb_color = random.gen_range(0..8);
+                rgb_color = random.gen_range(0..32);
                 band_count = 0;
                 band  = random.gen_range(0..20) + 4;
             }

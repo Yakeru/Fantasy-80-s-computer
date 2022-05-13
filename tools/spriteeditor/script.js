@@ -62,8 +62,8 @@ function init() {
   drawColorPalette();
 
   document.getElementById("fill_button").addEventListener("click", fill);
-  document.getElementById("save_button").addEventListener("click", httpGetSave);
-  document.getElementById("display_button").addEventListener("click", httpGetDisplay);
+  document.getElementById("generate").addEventListener("click", generate);
+  document.getElementById("copy").addEventListener("click", copyToClipboard);
 }
 
 //Draw black squares and white borders
@@ -238,26 +238,29 @@ function rgbToHex(r, g, b) {
   return ((r << 16) | (g << 8) | b).toString(16);
 }
 
-//ESP displays from bottom to top row.
-//Row 15 from left to right
-//Row 14 from right to left
-//etc...
-function printDrawingMatrixForESP() {
-  let text = "";
-  for (var y = editor_height_px - 1; y >= 0; y--) {
-    //for even rows go right to left
-    if(y % 2  == 0) {
-      for (var x = editor_width_px - 1; x >= 0; x--) {
-        text += String.fromCharCode(drawingMatrix[x][y] + 65);
-      }
+function generate() {
+  var newHex = printDrawingMatrixTuRustArray();
+  document.getElementById("rustArray").value = newHex + "\n";
+}
 
-    } else {
-      //for odd rows, go left to right
+function printDrawingMatrixTuRustArray() {
+  let text = "16,16,";
+
+  for (var y = 0; y < editor_height_px; y++) {
       for (var x = 0; x < editor_width_px; x++) {
-        text += String.fromCharCode(drawingMatrix[x][y] + 65);
+        text += drawingMatrix[x][y] + ",";
       }
-    }
   }
+
+  text = text.slice(0, text.length - 1);
+
   if(log) console.log(text);
   return text;
+}
+
+function copyToClipboard() {
+  var textArea = document.getElementById("rustArray");
+  textArea.select();
+  textArea.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(textArea.value);
 }

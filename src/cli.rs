@@ -8,8 +8,8 @@ const SPLASH_3: &str = "*       Damien Torreilles 2022        *";
 const SPLASH_4: &str = "***************************************";
 const SPLASH_5: &str = "Ready. Type 'help' for command list.";
 
-const DEFAULT_BKG_COLOR: u8 = 4;
-const DEFAULT_COLOR: u8 = 5;
+const DEFAULT_BKG_COLOR: u8 = 28;
+const DEFAULT_COLOR: u8 = 10;
 const BUFFER_SIZE: usize = 100;
 
 pub struct Cli {
@@ -177,6 +177,7 @@ impl Draw for Cli {
     fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
 
         virtual_frame_buffer.get_text_layer().clear();
+        virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
 
         for line in self.buffer.chunks_exact_mut(1) {
 
