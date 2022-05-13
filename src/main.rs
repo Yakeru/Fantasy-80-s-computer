@@ -16,13 +16,13 @@ mod characters_rom;
 mod text_layer;
 mod virtual_frame_buffer;
 mod color_palettes;
-mod app;
+mod process;
 mod cli;
 mod text_edit;
 mod sprite;
 
 use crate::virtual_frame_buffer::{VirtualFrameBuffer, CrtEffectRenderer};
-use crate::app::*;
+use crate::process::*;
 use crate::cli::*;
 use crate::text_edit::*;
 use crate::sprite::Sprite;
@@ -66,13 +66,14 @@ fn main()-> Result<(), Error> {
     let mut last_refresh: Instant = Instant::now();
 
     //Init various apps
-    let mut cli = Cli::new(1);
-    let mut text_edit = TextEdit::new(2);
-    text_edit.app.updating = false;
-    text_edit.app.drawing = false;
-    let mut running_apps: Vec<&App> = Vec::new();
-    running_apps.push(&cli.app);
-    running_apps.push(&text_edit.app);
+    let mut cli = Cli::new();
+    cli.set_state(true, true);
+    let mut text_edit = TextEdit::new();
+    let mut apps: Vec<Box<dyn Process>> = Vec::new();
+    apps.push(Box::new(cli));
+    apps.push(Box::new(text_edit));
+
+    let mut currently_running_app_index: usize = 0;
 
     let mut sprite0: Sprite = Sprite::new_from_file(&String::from("./resources/sprites/sprite1.txt"));
     let mut sprite1: Sprite = Sprite::new_from_file(&String::from("./resources/sprites/sprite1.txt"));
@@ -129,17 +130,24 @@ fn main()-> Result<(), Error> {
             }
 
             if input.key_released(VirtualKeyCode::F1) {
-                cli.app.updating = true;
-                cli.app.drawing = true;
-                text_edit.app.updating = false;
-                text_edit.app.drawing = false;
+                if currently_running_app_index == 0 {currently_running_app_index = 0} else {currently_running_app_index -= 1}
+
+                for app in apps.chunks_exact_mut(1) {
+                    app[0].set_state(false, false);
+                }
+
+                apps[currently_running_app_index].set_state(true, true);
             }
 
             if input.key_released(VirtualKeyCode::F2) {
-                cli.app.updating = false;
-                cli.app.drawing = false;
-                text_edit.app.updating = true;
-                text_edit.app.drawing = true;
+                currently_running_app_index += 1;
+                if currently_running_app_index == apps.len() {currently_running_app_index = apps.len() - 1}
+
+                for app in apps.chunks_exact_mut(1) {
+                    app[0].set_state(false, false);
+                }
+
+                apps[currently_running_app_index].set_state(true, true);
             }
         }
 
@@ -163,12 +171,10 @@ fn main()-> Result<(), Error> {
                 // Application update code.
                 let mut flow = None;
                 
-                if  cli.app.updating {
-                    flow  = cli.update(char_received, key_released);
-                }
-
-                if  text_edit.app.updating {
-                    flow  = text_edit.update(char_received, key_released);
+                for app in apps.chunks_exact_mut(1) {
+                    if app[0].get_state().0 == true {
+                        flow = app[0].update(char_received, key_released);
+                    }
                 }
                 
                 match flow {
@@ -177,6 +183,12 @@ fn main()-> Result<(), Error> {
                     }
 
                     None => ()
+                }
+
+                for app in apps.chunks_exact_mut(1) {
+                    if app[0].get_state().1 == true {
+                        app[0].draw(&mut virtual_frame_buffer);
+                    }
                 }
 
                 //TEMP SPRITES TEST
@@ -198,14 +210,6 @@ fn main()-> Result<(), Error> {
 
                 char_received = None;
                 key_released = None;
-
-                if  cli.app.drawing {
-                    cli.draw(&mut virtual_frame_buffer);
-                }
-
-                if  text_edit.app.drawing {
-                    text_edit.draw(&mut virtual_frame_buffer);
-                }
 
                 virtual_frame_buffer.render();
                 draw_loading_border(virtual_frame_buffer.get_frame(), 20, 30);

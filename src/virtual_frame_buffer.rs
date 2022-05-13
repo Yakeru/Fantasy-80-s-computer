@@ -94,7 +94,10 @@ impl VirtualFrameBuffer {
             for pixel in &sprite.image {
         
                 let mut virtual_fb_offset = (global_offset + self.width * sprite_line_count + pixel_count) % (self.width * self.height);
-                self.frame[virtual_fb_offset] = *pixel;
+
+                if *pixel != 0 {
+                    self.frame[virtual_fb_offset] = *pixel;
+                }
     
                 pixel_count += 1;
                 if pixel_count == sprite.size_x {

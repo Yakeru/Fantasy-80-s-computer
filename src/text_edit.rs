@@ -1,56 +1,57 @@
 use winit::{event::VirtualKeyCode,event_loop::ControlFlow};
 use crate::text_layer::TextLayerChar;
 use std::io::{self, Write};
-use crate::app::*;
+use crate::process::*;
 use crate::virtual_frame_buffer::VirtualFrameBuffer;
 
-const DEFAULT_BKG_COLOR: u8 = 6;
-const DEFAULT_COLOR: u8 = 1;
+const DEFAULT_BKG_COLOR: u8 = 7;
+const DEFAULT_COLOR: u8 = 0;
 
 pub struct TextEdit {
-    pub app: App,
     selected_color: u8,
     selected_bkg_color: u8,
     columns: u8,
     rows: u8,
-    buffer: Vec<TextLayerChar>
+    buffer: Vec<TextLayerChar>,
+    updating: bool,
+    drawing: bool
 }
 
 impl TextEdit {
 
-    pub fn new(pid: usize) -> TextEdit {
+    pub fn new() -> TextEdit {
 
-        let app = App::new(String::from("Yak's Text Editor"), pid);
         let buffer = Vec::new();
 
         TextEdit {
-            app,
             selected_color: DEFAULT_COLOR,
             selected_bkg_color: DEFAULT_BKG_COLOR,
             columns: 0,
             rows: 0,
-            buffer
+            buffer,
+            updating: false,
+            drawing: false,
         }
     }
 }
 
-impl Update for TextEdit {
+impl Process for TextEdit {
 
     fn start(&mut self){}
 
     fn end(&mut self) {
-        self.app.started = false;
-        self.app.drawing = false;
-        self.app.updating = false;
-        self.app.ended = true;
+        // self.app.started = false;
+        // self.app.drawing = false;
+        // self.app.updating = false;
+        // self.app.ended = true;
     }
 
     fn update(&mut self, character_received: Option<char>, key_released: Option<VirtualKeyCode>) -> Option<ControlFlow> {
 
-        if !self.app.started {
-            self.start();
-            self.app.started = true;
-        }
+        // if !self.app.started {
+        //     self.start();
+        //     self.app.started = true;
+        // }
 
         match character_received {
             Some(c) => {
@@ -88,23 +89,23 @@ impl Update for TextEdit {
             Some(k) => {
                 match k {
                     VirtualKeyCode::Left => {
-                        if self.selected_color == 7 {self.selected_color = 0} else {self.selected_color += 1}
+                        if self.selected_color == 31 {self.selected_color = 0} else {self.selected_color += 1}
                     }
         
                     VirtualKeyCode::Right => {
-                        if self.selected_color == 0 {self.selected_color = 7} else {self.selected_color -= 1}
+                        if self.selected_color == 0 {self.selected_color = 31} else {self.selected_color -= 1}
                     }
         
                     VirtualKeyCode::Up => {
-                        if self.selected_bkg_color == 7 {self.selected_bkg_color = 0} else {self.selected_bkg_color += 1}
+                        if self.selected_bkg_color == 31 {self.selected_bkg_color = 0} else {self.selected_bkg_color += 1}
                     }
         
                     VirtualKeyCode::Down => {
-                        if self.selected_bkg_color == 0 {self.selected_bkg_color = 7} else {self.selected_bkg_color -= 1}
+                        if self.selected_bkg_color == 0 {self.selected_bkg_color = 31} else {self.selected_bkg_color -= 1}
                     }
         
                     VirtualKeyCode::PageUp => {
-                        // self.text_layer.scroll_up();
+                        //self.text_layer.scroll_up();
                     }
 
                     _ => () 
@@ -116,9 +117,7 @@ impl Update for TextEdit {
         return None;
 
     }
-}
 
-impl Draw for TextEdit {
     fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
 
         virtual_frame_buffer.get_text_layer().clear();
@@ -129,5 +128,21 @@ impl Draw for TextEdit {
         }
 
         virtual_frame_buffer.get_text_layer().push_char('_', self.selected_color, self.selected_bkg_color, false);
+    }
+
+    fn get_name(&mut self) -> &str {
+        return "text edit";
+    }
+
+    fn set_state(&mut self, updating: bool, drawing: bool) {
+        self.updating = updating;
+        self.drawing = drawing;
+
+        if drawing {self.updating = true}
+        if !updating {self.drawing = false}
+    }
+
+    fn get_state(&mut self) -> (bool, bool) {
+        return (self.updating, self.drawing)
     }
 }

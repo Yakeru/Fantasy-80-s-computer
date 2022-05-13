@@ -1,6 +1,6 @@
 use winit::{event::VirtualKeyCode,event_loop::{ControlFlow,EventLoopProxy}};
 use crate::virtual_frame_buffer::VirtualFrameBuffer;
-use crate::app::*;
+use crate::process::*;
 
 const SPLASH_1: &str = "************* FANTASY CPC *************";
 const SPLASH_2: &str = "*              ROM v0.1               *";
@@ -13,11 +13,14 @@ const DEFAULT_COLOR: u8 = 10;
 const BUFFER_SIZE: usize = 100;
 
 pub struct Cli {
-    pub app: App,
     color: u8,
     bkg_color: u8,
     command: Vec<char>,
-    buffer: Vec<DisplayStyle>
+    buffer: Vec<DisplayStyle>,
+    updating: bool,
+    drawing: bool,
+    started: bool,
+    ended: bool
 }
 
 enum DisplayStyle {
@@ -31,17 +34,19 @@ enum DisplayStyle {
 
 impl Cli {
 
-    pub fn new(pid: usize) -> Cli {
+    pub fn new() -> Cli {
 
         let buffer: Vec<DisplayStyle> = Vec::new();
-        let app = App::new(String::from("Yak's CPC CLI"), pid);
-
+        
         Cli {
-            app,
             color: DEFAULT_COLOR,
             bkg_color: DEFAULT_BKG_COLOR,
             command: Vec::new(),
             buffer,
+            updating: false,
+            drawing: false,
+            started: false,
+            ended: false
         }
     }
 
@@ -74,7 +79,7 @@ impl Cli {
     }
 }
 
-impl Update for Cli {
+impl Process for Cli {
 
     fn start(&mut self) {
         self.buffer.push(DisplayStyle::Default(String::from(SPLASH_1)));
@@ -86,17 +91,17 @@ impl Update for Cli {
     }
 
     fn end(&mut self) {
-        self.app.started = false;
-        self.app.drawing = false;
-        self.app.updating = false;
-        self.app.ended = true;
+        self.started = false;
+        self.drawing = false;
+        self.updating = false;
+        self.ended = true;
     }
 
     fn update(&mut self, character_received: Option<char>, key_released: Option<VirtualKeyCode>) -> Option<ControlFlow> {
 
-        if !self.app.started {
+        if !self.started {
             self.start();
-            self.app.started = true;
+            self.started = true;
         }
 
         match character_received {
@@ -171,9 +176,7 @@ impl Update for Cli {
 
         return None;
     }
-}
 
-impl Draw for Cli {
     fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
 
         virtual_frame_buffer.get_text_layer().clear();
@@ -213,15 +216,20 @@ impl Draw for Cli {
         }
         virtual_frame_buffer.get_text_layer().push_char('_', DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
     }
+
+    fn get_name(&mut self) -> &str {
+        return "cli";
+    }
+
+    fn set_state(&mut self, updating: bool, drawing: bool) {
+        self.updating = updating;
+        self.drawing = drawing;
+
+        if drawing {self.updating = true}
+        if !updating {self.drawing = false}
+    }
+
+    fn get_state(&mut self) -> (bool, bool) {
+        return (self.updating, self.drawing)
+    }
 }
-
-// #[derive(Debug, Clone, Copy)]
-// enum CustomEvent {
-//     Grr,
-// }
-
-// impl SendEvent for Cli {
-//     fn send_event(plop: &EventLoopProxy<()>) {
-//         plop.send_event(CustomEvent::Grr).ok();
-//     }
-// }
