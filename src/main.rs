@@ -20,12 +20,14 @@ mod process;
 mod cli;
 mod text_edit;
 mod sprite;
+mod sprite_editor;
 
 use crate::virtual_frame_buffer::{VirtualFrameBuffer, CrtEffectRenderer};
 use crate::process::*;
 use crate::cli::*;
 use crate::text_edit::*;
 use crate::sprite::Sprite;
+use crate::sprite_editor::*;
 
 const WIDTH: usize = 1280;
 const HEIGHT: usize = 960;
@@ -34,10 +36,10 @@ const FPS: u64 = 16; //ms per frame, so 16 = 60fps, 32 = 30fps, 1000 = 1fps
 
 const DEFAULT_BKG_COLOR: u8 = 4;
 const TEXT_COLUMNS: usize = 40;
-const TEXT_ROWS: usize = 25;
+const TEXT_ROWS: usize = 30;
 
-const VIRTUAL_WIDTH: usize = 426;  //426*3 = 1278 draw one black line on each side of screen for perfectly centered *3 scale
-const VIRTUAL_HEIGHT: usize = 240; //240*4 = 960
+const VIRTUAL_WIDTH: usize = 426;  // 426*3 = 1278 draw one black line on each side of screen for perfectly centered *3 scale
+const VIRTUAL_HEIGHT: usize = 320; // 320*3 = 960
 
 fn main()-> Result<(), Error> {
 
@@ -69,9 +71,12 @@ fn main()-> Result<(), Error> {
     let mut cli = Cli::new();
     cli.set_state(true, true);
     let mut text_edit = TextEdit::new();
+    let mut sprite_editor = SpriteEditor::new();
+
     let mut apps: Vec<Box<dyn Process>> = Vec::new();
     apps.push(Box::new(cli));
     apps.push(Box::new(text_edit));
+    apps.push(Box::new(sprite_editor));
 
     let mut currently_running_app_index: usize = 0;
 
@@ -88,11 +93,11 @@ fn main()-> Result<(), Error> {
     let mut sprite4: Sprite = Sprite::new_from_file(&String::from("./resources/sprites/sprite1.txt"));
     sprite4.pos_x = 20;
     sprite4.pos_y = 200;
-    virtual_frame_buffer.sprites.push(sprite0);
-    virtual_frame_buffer.sprites.push(sprite1);
-    virtual_frame_buffer.sprites.push(sprite2);
-    virtual_frame_buffer.sprites.push(sprite3);
-    virtual_frame_buffer.sprites.push(sprite4);
+    virtual_frame_buffer.get_sprite_list().push(sprite0);
+    virtual_frame_buffer.get_sprite_list().push(sprite1);
+    virtual_frame_buffer.get_sprite_list().push(sprite2);
+    virtual_frame_buffer.get_sprite_list().push(sprite3);
+    virtual_frame_buffer.get_sprite_list().push(sprite4);
 
 
     let mut key_released: Option<VirtualKeyCode> = None;
@@ -203,7 +208,7 @@ fn main()-> Result<(), Error> {
                 // let sprite4_x_speed = true;
                 // let sprite4_y_speed = false;
                 
-                for sprite in virtual_frame_buffer.get_sprites() {
+                for sprite in virtual_frame_buffer.get_sprite_list() {
                     sprite.pos_x += 1;
                     sprite.pos_y += 1;
                 }
@@ -212,7 +217,7 @@ fn main()-> Result<(), Error> {
                 key_released = None;
 
                 virtual_frame_buffer.render();
-                draw_loading_border(virtual_frame_buffer.get_frame(), 20, 30);
+                //draw_loading_border(virtual_frame_buffer.get_frame(), 20, 30);
                 crt_renderer.render(&virtual_frame_buffer, pixels.get_frame());
                 pixels.render().expect("Pixels render oups");
                 window.request_redraw();

@@ -15,10 +15,9 @@ pub struct VirtualFrameBuffer {
     rows_count: usize,
     frame: Vec<u8>,
     text_layer: TextLayer,
-    pub sprites: Vec<Sprite>
+    sprites: Vec<Sprite>,
     //background_layer
     //tiles_layer
-    //sprites_layer
 }
 
 impl VirtualFrameBuffer {
@@ -73,7 +72,7 @@ impl VirtualFrameBuffer {
         return self.height;
     }
 
-    pub fn get_sprites(&mut self) -> &mut Vec<Sprite> {
+    pub fn get_sprite_list(&mut self) -> &mut Vec<Sprite> {
         return &mut self.sprites;
     }
 
@@ -100,7 +99,7 @@ impl VirtualFrameBuffer {
                 }
     
                 pixel_count += 1;
-                if pixel_count == sprite.size_x {
+                if pixel_count == sprite.value_in_physical_size().width {
                     pixel_count = 0;
                     sprite_line_count += 1;
                 }
@@ -181,7 +180,7 @@ impl CrtEffectRenderer {
             output_frame_px_width: output_width,
             output_frame_px_height: output_height,
             render_horiz_upscale: 3,
-            render_vert_upscale: 4,
+            render_vert_upscale: 3,
             output_nb_of_values_per_pixel: 4,
             scan_line_strength: 35,
             sub_pixel_attenuation: 230,

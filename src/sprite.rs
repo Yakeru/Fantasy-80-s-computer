@@ -1,18 +1,24 @@
-use std::env;
-use std::fs::File;
 use std::fs;
-use std::path::Path;
-use std::io::*;
+use winit::dpi::PhysicalSize;
 
 pub struct Sprite {
     pub pos_x: usize,
     pub pos_y: usize,
-    pub size_x: usize,
-    pub size_y: usize,
+    pub size: SpriteSize,
     pub visible: bool,
     pub h_flipp: bool,
     pub v_flipp: bool,
     pub image: Vec<u8>
+}
+
+pub enum SpriteSize {
+    _8x8,
+    _8x16,
+    _16x8,
+    _16x16,
+    _16x32,
+    _32x16,
+    _32x32,
 }
 
 impl Sprite {
@@ -29,8 +35,7 @@ impl Sprite {
         Sprite {
             pos_x: 0,
             pos_y: 0,
-            size_x: 16,
-            size_y: 16,
+            size: SpriteSize::_16x16,
             visible: true,
             h_flipp: false,
             v_flipp: false,
@@ -54,12 +59,23 @@ impl Sprite {
         Sprite {
             pos_x: 0,
             pos_y: 0,
-            size_x,
-            size_y,
+            size: SpriteSize::_16x16,
             visible: true,
             h_flipp: false,
             v_flipp: false,
             image: data
+        }
+    }
+
+    pub fn value_in_physical_size(&self) -> PhysicalSize<usize>{
+        match self.size {
+            SpriteSize::_8x8 => PhysicalSize::new(8 as usize, 8 as usize),
+            SpriteSize::_8x16 => PhysicalSize::new(8 as usize, 16 as usize),
+            SpriteSize::_16x8 => PhysicalSize::new(16 as usize, 8 as usize),
+            SpriteSize::_16x16 => PhysicalSize::new(16 as usize, 16 as usize),
+            SpriteSize::_16x32 => PhysicalSize::new(16 as usize, 32 as usize),
+            SpriteSize::_32x16 => PhysicalSize::new(32 as usize, 16 as usize),
+            SpriteSize::_32x32 => PhysicalSize::new(32 as usize, 23 as usize),
         }
     }
 }

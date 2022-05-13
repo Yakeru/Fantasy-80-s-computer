@@ -131,7 +131,7 @@ impl Process for TextEdit {
     }
 
     fn get_name(&mut self) -> &str {
-        return "text edit";
+        return "Text Editor";
     }
 
     fn set_state(&mut self, updating: bool, drawing: bool) {
