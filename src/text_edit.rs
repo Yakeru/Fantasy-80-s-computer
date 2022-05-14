@@ -46,7 +46,7 @@ impl Process for TextEdit {
         // self.app.ended = true;
     }
 
-    fn update(&mut self, character_received: Option<char>, key_released: Option<VirtualKeyCode>) -> Option<ControlFlow> {
+    fn update(&mut self, character_received: Option<char>, key_pressed_os: Option<VirtualKeyCode>, key_released: Option<VirtualKeyCode>) -> Option<ControlFlow> {
 
         // if !self.app.started {
         //     self.start();
@@ -65,7 +65,7 @@ impl Process for TextEdit {
                     }
                     
                     27 => { //Escape
-                        //self.end();
+                        return Some(ControlFlow::Exit);
                     }
                     
                     _ => {

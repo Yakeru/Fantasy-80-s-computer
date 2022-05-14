@@ -1,5 +1,5 @@
 use winit::{
-    event::{Event, WindowEvent, VirtualKeyCode},
+    event::{Event, WindowEvent, VirtualKeyCode, DeviceEvent, ElementState, ModifiersState},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
     dpi::PhysicalSize
@@ -53,6 +53,11 @@ fn main()-> Result<(), Error> {
 
     let window = builder.build(&event_loop).expect("Window creation failed !");
     let mut input = WinitInputHelper::new();
+
+    window.set_cursor_grab(true).unwrap();
+    window.set_cursor_visible(false);
+
+    let mut modifiers = ModifiersState::default();
     
     //TODO in the future : have a surface texture upscale the buffer instead of upscaling by hand pixel by pixel ...
     //and learn to do shaders for the CRT effect.
@@ -81,27 +86,31 @@ fn main()-> Result<(), Error> {
     let mut currently_running_app_index: usize = 0;
 
     let mut sprite0: Sprite = Sprite::new_from_file(&String::from("./resources/sprites/sprite1.txt"));
-    let mut sprite1: Sprite = Sprite::new_from_file(&String::from("./resources/sprites/sprite1.txt"));
-    sprite1.pos_x = 30;
-    sprite1.pos_y = 30;
-    let mut sprite2: Sprite = Sprite::new_from_file(&String::from("./resources/sprites/sprite1.txt"));
-    sprite2.pos_x = 80;
-    sprite2.pos_y = 10;
-    let mut sprite3: Sprite = Sprite::new_from_file(&String::from("./resources/sprites/sprite1.txt"));
-    sprite3.pos_x = 150;
-    sprite3.pos_y = 80;
-    let mut sprite4: Sprite = Sprite::new_from_file(&String::from("./resources/sprites/sprite1.txt"));
-    sprite4.pos_x = 20;
-    sprite4.pos_y = 200;
+    sprite0.pos_x = VIRTUAL_WIDTH / 2;
+    sprite0.pos_y = VIRTUAL_HEIGHT / 2;
+    // let mut sprite1: Sprite = Sprite::new_from_file(&String::from("./resources/sprites/sprite1.txt"));
+    // sprite1.pos_x = 30;
+    // sprite1.pos_y = 30;
+    // let mut sprite2: Sprite = Sprite::new_from_file(&String::from("./resources/sprites/sprite1.txt"));
+    // sprite2.pos_x = 80;
+    // sprite2.pos_y = 10;
+    // let mut sprite3: Sprite = Sprite::new_from_file(&String::from("./resources/sprites/sprite1.txt"));
+    // sprite3.pos_x = 150;
+    // sprite3.pos_y = 80;
+    // let mut sprite4: Sprite = Sprite::new_from_file(&String::from("./resources/sprites/sprite1.txt"));
+    // sprite4.pos_x = 20;
+    // sprite4.pos_y = 200;
     virtual_frame_buffer.get_sprite_list().push(sprite0);
-    virtual_frame_buffer.get_sprite_list().push(sprite1);
-    virtual_frame_buffer.get_sprite_list().push(sprite2);
-    virtual_frame_buffer.get_sprite_list().push(sprite3);
-    virtual_frame_buffer.get_sprite_list().push(sprite4);
+    // virtual_frame_buffer.get_sprite_list().push(sprite1);
+    // virtual_frame_buffer.get_sprite_list().push(sprite2);
+    // virtual_frame_buffer.get_sprite_list().push(sprite3);
+    // virtual_frame_buffer.get_sprite_list().push(sprite4);
 
 
     let mut key_released: Option<VirtualKeyCode> = None;
+    let mut key_pressed_os: Option<VirtualKeyCode> = None;
     let mut char_received: Option<char> = None;
+    let mut mouse_move_delta: (f64, f64) = (0.0, 0.0);
 
     event_loop.run(move |event, _, control_flow| {
 
@@ -110,6 +119,30 @@ fn main()-> Result<(), Error> {
         *control_flow = ControlFlow::WaitUntil(refresh_timer);
 
         if input.update(&event) {
+            if input.key_pressed_os(VirtualKeyCode::Escape) || input.quit() {
+                key_pressed_os = Some(VirtualKeyCode::Escape);
+            }
+
+            if input.key_pressed_os(VirtualKeyCode::Left) {
+                key_pressed_os = Some(VirtualKeyCode::Left);
+            }
+
+            if input.key_pressed_os(VirtualKeyCode::Right) {
+                key_pressed_os = Some(VirtualKeyCode::Right);
+            }
+
+            if input.key_pressed_os(VirtualKeyCode::Up) {
+                key_pressed_os = Some(VirtualKeyCode::Up);
+            }
+
+            if input.key_pressed_os(VirtualKeyCode::Down) {
+                key_pressed_os = Some(VirtualKeyCode::Down);
+            }
+
+            if input.key_pressed_os(VirtualKeyCode::PageUp) {
+                key_pressed_os = Some(VirtualKeyCode::PageUp);
+            }
+
             if input.key_released(VirtualKeyCode::Escape) || input.quit() {
                 key_released = Some(VirtualKeyCode::Escape);
             }
@@ -172,13 +205,23 @@ fn main()-> Result<(), Error> {
                     char_received = None;
                 }
             },
+            Event::DeviceEvent { event, .. } => match event {
+                DeviceEvent::MouseMotion { delta } => {
+                    mouse_move_delta = delta;
+                }
+                DeviceEvent::Button { button, state } => match state {
+                    ElementState::Pressed => println!("mouse button {} pressed", button),
+                    ElementState::Released => println!("mouse button {} released", button),
+                },
+                _ => (),
+            },
             Event::MainEventsCleared => {
                 // Application update code.
                 let mut flow = None;
                 
                 for app in apps.chunks_exact_mut(1) {
                     if app[0].get_state().0 == true {
-                        flow = app[0].update(char_received, key_released);
+                        flow = app[0].update(char_received, key_pressed_os, key_released);
                     }
                 }
                 
@@ -195,26 +238,26 @@ fn main()-> Result<(), Error> {
                         app[0].draw(&mut virtual_frame_buffer);
                     }
                 }
-
-                //TEMP SPRITES TEST
-                // let sprite0_x_speed = true;
-                // let sprite0_y_speed = false;
-                // let sprite1_x_speed = true;
-                // let sprite1_y_speed = true;
-                // let sprite2_x_speed = false;
-                // let sprite2_y_speed = false;
-                // let sprite3_x_speed = true;
-                // let sprite3_y_speed = false;
-                // let sprite4_x_speed = true;
-                // let sprite4_y_speed = false;
                 
                 for sprite in virtual_frame_buffer.get_sprite_list() {
-                    sprite.pos_x += 1;
-                    sprite.pos_y += 1;
+                    if mouse_move_delta.0 >= 0.0 {
+                        sprite.pos_x += mouse_move_delta.0 as usize;
+                    } else {
+                        sprite.pos_x -= -mouse_move_delta.0 as usize;
+                    }
+                    
+                    if mouse_move_delta.1 >= 0.0 {
+                        sprite.pos_y += mouse_move_delta.1 as usize;
+                    } else {
+                        sprite.pos_y -= -mouse_move_delta.1 as usize;
+                    }
                 }
 
                 char_received = None;
+                key_pressed_os = None;
                 key_released = None;
+                mouse_move_delta.0 = 0.0;
+                mouse_move_delta.1 = 0.0;
 
                 virtual_frame_buffer.render();
                 //draw_loading_border(virtual_frame_buffer.get_frame(), 20, 30);
