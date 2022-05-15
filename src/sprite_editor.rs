@@ -193,7 +193,7 @@ impl Process for SpriteEditor {
         }   
     }
 
-    fn get_name(&mut self) -> &str {
+    fn get_name(&self) -> &str {
         return "Sprite Editor";
     }
 
@@ -205,7 +205,7 @@ impl Process for SpriteEditor {
         if !updating {self.drawing = false}
     }
 
-    fn get_state(&mut self) -> (bool, bool) {
+    fn get_state(&self) -> (bool, bool) {
         return (self.updating, self.drawing)
     }
 }

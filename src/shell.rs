@@ -1,18 +1,16 @@
 use winit::{event::VirtualKeyCode,event_loop::{ControlFlow,EventLoopProxy}};
 use crate::virtual_frame_buffer::VirtualFrameBuffer;
 use crate::process::*;
+use crate::text_edit::*;
+use crate::sprite_editor::*;
 
-const SPLASH_1: &str = "************* FANTASY CPC *************";
-const SPLASH_2: &str = "*              ROM v0.1               *";
-const SPLASH_3: &str = "*       Damien Torreilles 2022        *";
-const SPLASH_4: &str = "***************************************";
-const SPLASH_5: &str = "Ready. Type 'help' for command list.";
+const SHELL_START_MESSAGE: &str = "Ready. Type [help] for command list.";
 
 const DEFAULT_BKG_COLOR: u8 = 28;
 const DEFAULT_COLOR: u8 = 10;
 const BUFFER_SIZE: usize = 100;
 
-pub struct Cli {
+pub struct Shell {
     color: u8,
     bkg_color: u8,
     command: Vec<char>,
@@ -20,7 +18,8 @@ pub struct Cli {
     updating: bool,
     drawing: bool,
     started: bool,
-    ended: bool
+    ended: bool,
+    apps: Vec<Box<dyn Process>>
 }
 
 enum DisplayStyle {
@@ -32,13 +31,13 @@ enum DisplayStyle {
     Error(String)
 }
 
-impl Cli {
+impl Shell {
 
-    pub fn new() -> Cli {
+    pub fn new() -> Shell {
 
         let buffer: Vec<DisplayStyle> = Vec::new();
         
-        Cli {
+        Shell {
             color: DEFAULT_COLOR,
             bkg_color: DEFAULT_BKG_COLOR,
             command: Vec::new(),
@@ -46,7 +45,8 @@ impl Cli {
             updating: false,
             drawing: false,
             started: false,
-            ended: false
+            ended: false,
+            apps: Vec::new()
         }
     }
 
@@ -59,14 +59,10 @@ impl Cli {
             } else if command == "clear" {
                 self.buffer.clear();
                 self.command.clear();
-            } else if command == "warning" {
-                self.buffer.push(DisplayStyle::Warning(String::from("This is a warning message")));
-            } else if command == "error" {
-                self.buffer.push(DisplayStyle::Error(String::from("This is an error message")));
-            } else if command == "highlight" {
-                self.buffer.push(DisplayStyle::Highlight(String::from("This is a highlighted message")));
-            } else if command == "message" {
-                self.buffer.push(DisplayStyle::Message(String::from("This is a message")));
+            } else if command == "top" {
+                for app in self.apps.chunks_exact(1) {
+                    self.buffer.push(DisplayStyle::Message(format!("Name: {}, updating: {}, drawing: {}", app[0].get_name(), app[0].get_state().0, app[0].get_state().1)));
+                }  
             } else if command == "quit" || command == "exit"{
                 println!("Command 'quit' or 'exit' received; stopping");
                 return Some(ControlFlow::Exit);
@@ -77,17 +73,28 @@ impl Cli {
 
         return None;
     }
+
+    // pub fn get_apps(&self) -> Vec<Box<dyn Process>>{
+    //     return self.apps;
+
+    // }
+
+    // pub fn set_apps(&self, apps: Vec<Box<dyn Process>>) {
+    //     self.apps = apps;
+    // }
 }
 
-impl Process for Cli {
+impl Process for Shell {
 
     fn start(&mut self) {
-        self.buffer.push(DisplayStyle::Default(String::from(SPLASH_1)));
-        self.buffer.push(DisplayStyle::Default(String::from(SPLASH_2)));
-        self.buffer.push(DisplayStyle::Default(String::from(SPLASH_3)));
-        self.buffer.push(DisplayStyle::Default(String::from(SPLASH_4)));
-        self.buffer.push(DisplayStyle::Default(String::from(SPLASH_5)));
+        self.buffer.push(DisplayStyle::Default(String::from(SHELL_START_MESSAGE)));
         self.buffer.push(DisplayStyle::Default(String::from("")));
+
+        let text_edit = TextEdit::new();
+        let sprite_editor = SpriteEditor::new();
+
+        self.apps.push(Box::new(text_edit));
+        self.apps.push(Box::new(sprite_editor));
     }
 
     fn end(&mut self) {
@@ -217,7 +224,7 @@ impl Process for Cli {
         virtual_frame_buffer.get_text_layer().push_char('_', DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
     }
 
-    fn get_name(&mut self) -> &str {
+    fn get_name(&self) -> &str {
         return "cli";
     }
 
@@ -229,7 +236,7 @@ impl Process for Cli {
         if !updating {self.drawing = false}
     }
 
-    fn get_state(&mut self) -> (bool, bool) {
+    fn get_state(&self) -> (bool, bool) {
         return (self.updating, self.drawing)
     }
 }

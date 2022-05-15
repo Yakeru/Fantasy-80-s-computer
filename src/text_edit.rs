@@ -130,7 +130,7 @@ impl Process for TextEdit {
         virtual_frame_buffer.get_text_layer().push_char('_', self.selected_color, self.selected_bkg_color, false);
     }
 
-    fn get_name(&mut self) -> &str {
+    fn get_name(&self) -> &str {
         return "Text Editor";
     }
 
@@ -142,7 +142,7 @@ impl Process for TextEdit {
         if !updating {self.drawing = false}
     }
 
-    fn get_state(&mut self) -> (bool, bool) {
+    fn get_state(&self) -> (bool, bool) {
         return (self.updating, self.drawing)
     }
 }

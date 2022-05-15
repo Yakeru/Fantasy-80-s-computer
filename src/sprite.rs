@@ -2,6 +2,7 @@ use std::fs;
 use winit::dpi::PhysicalSize;
 
 pub struct Sprite {
+    pub id: String,
     pub pos_x: usize,
     pub pos_y: usize,
     pub size: SpriteSize,
@@ -21,9 +22,22 @@ pub enum SpriteSize {
     _32x32,
 }
 
+pub fn value_from_physical_size(x: usize, y: usize) -> SpriteSize {
+    match (x, y) {
+        (8, 8) => {SpriteSize::_8x8}
+        (8, 16) => {SpriteSize::_8x16}
+        (16, 8) => {SpriteSize::_16x8}
+        (16, 16) => {SpriteSize::_16x16}
+        (16,32) => {SpriteSize::_16x32}
+        (32, 16) => {SpriteSize::_32x16}
+        (32, 32) => {SpriteSize::_32x32}
+        _ => {SpriteSize::_16x16}
+    }
+}
+
 impl Sprite {
 
-    pub fn new() -> Sprite { 
+    pub fn new(id: String) -> Sprite { 
 
         let size: usize = 16 * 16;
         let mut image = Vec::new();
@@ -39,11 +53,24 @@ impl Sprite {
             visible: true,
             h_flipp: false,
             v_flipp: false,
-            image
+            image,
+            id
         }
     }
 
-    pub fn new_from_file(path_to_file: &String) -> Sprite { 
+    pub fn value_in_physical_size(&self) -> PhysicalSize<usize>{
+        match self.size {
+            SpriteSize::_8x8 => PhysicalSize::new(8 as usize, 8 as usize),
+            SpriteSize::_8x16 => PhysicalSize::new(8 as usize, 16 as usize),
+            SpriteSize::_16x8 => PhysicalSize::new(16 as usize, 8 as usize),
+            SpriteSize::_16x16 => PhysicalSize::new(16 as usize, 16 as usize),
+            SpriteSize::_16x32 => PhysicalSize::new(16 as usize, 32 as usize),
+            SpriteSize::_32x16 => PhysicalSize::new(32 as usize, 16 as usize),
+            SpriteSize::_32x32 => PhysicalSize::new(32 as usize, 23 as usize),
+        }
+    }
+
+    pub fn new_from_file(id: String, path_to_file: &String) -> Sprite { 
 
         let contents = fs::read_to_string(path_to_file).expect("Something went wrong reading the file");
         let split_text: Vec<&str> = contents.split(',').collect();
@@ -59,23 +86,12 @@ impl Sprite {
         Sprite {
             pos_x: 0,
             pos_y: 0,
-            size: SpriteSize::_16x16,
+            size: value_from_physical_size(size_x, size_y),
             visible: true,
             h_flipp: false,
             v_flipp: false,
-            image: data
-        }
-    }
-
-    pub fn value_in_physical_size(&self) -> PhysicalSize<usize>{
-        match self.size {
-            SpriteSize::_8x8 => PhysicalSize::new(8 as usize, 8 as usize),
-            SpriteSize::_8x16 => PhysicalSize::new(8 as usize, 16 as usize),
-            SpriteSize::_16x8 => PhysicalSize::new(16 as usize, 8 as usize),
-            SpriteSize::_16x16 => PhysicalSize::new(16 as usize, 16 as usize),
-            SpriteSize::_16x32 => PhysicalSize::new(16 as usize, 32 as usize),
-            SpriteSize::_32x16 => PhysicalSize::new(32 as usize, 16 as usize),
-            SpriteSize::_32x32 => PhysicalSize::new(32 as usize, 23 as usize),
+            image: data,
+            id
         }
     }
 }

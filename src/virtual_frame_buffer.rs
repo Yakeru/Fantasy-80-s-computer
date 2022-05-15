@@ -2,6 +2,7 @@ use crate::color_palettes::default_color_palette;
 use crate::text_layer::TextLayer;
 use crate::characters_rom::rom;
 use crate::sprite::Sprite;
+use std::rc::Rc;
 
 //Contains a list of u8 values corresponding to values from a color palette.
 //So just one u8 per pixel, R G and B values are retrieved from the palette.
@@ -22,16 +23,16 @@ pub struct VirtualFrameBuffer {
 
 impl VirtualFrameBuffer {
     pub fn new(fb_width: usize, fb_height: usize, columns_count: usize, rows_count: usize) -> VirtualFrameBuffer {
-        let size: usize = fb_width * fb_height;
+        let size = fb_width * fb_height;
         let mut virtual_frame_buffer = Vec::new();
 
         for _value in 0..size {
             virtual_frame_buffer.push(0);
         }
 
-        let text_layer: TextLayer = TextLayer::new(columns_count, rows_count);
-        let sprites: Vec<Sprite> = Vec::new();
-
+        let text_layer = TextLayer::new(columns_count, rows_count);
+        let sprites = Vec::new();
+        
         //TODO init background_layers, tiles_layers, sprites_layers... and correesponding renderes
 
         VirtualFrameBuffer {
@@ -41,16 +42,16 @@ impl VirtualFrameBuffer {
             rows_count,
             frame: virtual_frame_buffer,
             text_layer,
-            sprites
+            sprites,
         }
     }
 
     pub fn get_frame(&mut self) -> &mut [u8] {
-        return &mut self.frame;
+        &mut self.frame
     }
 
     pub fn get_frame_static(&self) -> &[u8] {
-        return &self.frame;
+        &self.frame
     }
 
     //Sets all the pixels to the specified color of the specified palette
@@ -61,19 +62,19 @@ impl VirtualFrameBuffer {
     }
 
     pub fn get_text_layer(&mut self) -> &mut TextLayer {
-        return &mut self.text_layer;
+        &mut self.text_layer
     }
 
     pub fn get_width(&self) -> usize {
-        return self.width;
+        self.width
     }
 
     pub fn get_height(&self) -> usize {
-        return self.height;
+        self.height
     }
 
-    pub fn get_sprite_list(&mut self) -> &mut Vec<Sprite> {
-        return &mut self.sprites;
+    pub fn get_sprites(&mut self) -> &mut Vec<Sprite> {
+        &mut self.sprites
     }
 
     pub fn render(&mut self) {
@@ -83,23 +84,24 @@ impl VirtualFrameBuffer {
     }
 
     fn sprite_layer_renderer(&mut self) {
-        for sprite in &self.sprites {
+
+        for sprite in self.sprites.chunks_exact_mut(1) {
 
             let mut pixel_count = 0;
             let mut sprite_line_count = 0;
 
-            let mut global_offset = self.width * sprite.pos_y + sprite.pos_x;
+            let global_offset = self.width * sprite[0].pos_y + sprite[0].pos_x;
 
-            for pixel in &sprite.image {
+            for pixel in &sprite[0].image {
         
-                let mut virtual_fb_offset = (global_offset + self.width * sprite_line_count + pixel_count) % (self.width * self.height);
+                let virtual_fb_offset = (global_offset + self.width * sprite_line_count + pixel_count) % (self.width * self.height);
 
                 if *pixel != 0 {
                     self.frame[virtual_fb_offset] = *pixel;
                 }
     
                 pixel_count += 1;
-                if pixel_count == sprite.value_in_physical_size().width {
+                if pixel_count == sprite[0].value_in_physical_size().width {
                     pixel_count = 0;
                     sprite_line_count += 1;
                 }
