@@ -1,8 +1,5 @@
-// enum character {
-//     character([u8;8]),
-//     None
-// }
-
+/// The character "ROM", returns the 8x8 pixels drawing corresponding to each character.
+/// Inspired by the AMSTRAD character set.
 pub fn rom(character: &char) -> [u8;8] {
     match character {
         ' ' => [0, 0, 0, 0, 0, 0, 0, 0],
@@ -96,6 +93,7 @@ pub fn rom(character: &char) -> [u8;8] {
         'x' => [0x00, 0x00, 0xC6, 0x6C, 0x38, 0x6C, 0xC6, 0x0],
         'y' => [0x00, 0x00, 0x66, 0x66, 0x66, 0x3E, 0x06, 0x7C],
         'z' => [0x00, 0x00, 0x7E, 0x4C, 0x18, 0x30, 0x7E, 0x00],
+        '\u{25AE}' => [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF],
         _ => [0, 0, 0, 0, 0, 0, 0, 0]
     }
 }   

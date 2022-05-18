@@ -1,19 +1,19 @@
-use crate::color_palettes::default_color_palette;
+use crate::color_palettes::*;
 use crate::text_layer::TextLayer;
 use crate::characters_rom::rom;
 use crate::sprite::Sprite;
-use std::rc::Rc;
 
-//Contains a list of u8 values corresponding to values from a color palette.
-//So just one u8 per pixel, R G and B values are retrieved from the palette.
-//No Alpha.
-//This frame buffer is meant to contain a low resolution low color picure that 
-//will be upscaled into the final pixel 2D frame buffer.
+/// Contains a list of u8 values corresponding to values from a color palette.
+/// So just one u8 per pixel, R G and B values are retrieved from the palette, No Alpha.
+/// This frame buffer is meant to contain a low resolution low color picure that 
+/// will be upscaled into the final pixel 2D frame buffer.
 pub struct VirtualFrameBuffer {
     width: usize,
     height: usize,
     columns_count: usize,
     rows_count: usize,
+    default_text_color: ColorPalette,
+    default_text_bkg_color: ColorPalette,
     frame: Vec<u8>,
     text_layer: TextLayer,
     sprites: Vec<Sprite>,
@@ -22,7 +22,12 @@ pub struct VirtualFrameBuffer {
 }
 
 impl VirtualFrameBuffer {
-    pub fn new(fb_width: usize, fb_height: usize, columns_count: usize, rows_count: usize) -> VirtualFrameBuffer {
+    pub fn new(fb_width: usize, 
+        fb_height: usize, 
+        columns_count: usize, 
+        rows_count: usize, 
+        default_text_color: ColorPalette,
+        default_text_bkg_color: ColorPalette) -> VirtualFrameBuffer {
         let size = fb_width * fb_height;
         let mut virtual_frame_buffer = Vec::new();
 
@@ -40,6 +45,8 @@ impl VirtualFrameBuffer {
             height: fb_height,
             columns_count,
             rows_count,
+            default_text_color,
+            default_text_bkg_color,
             frame: virtual_frame_buffer,
             text_layer,
             sprites,
@@ -54,10 +61,12 @@ impl VirtualFrameBuffer {
         &self.frame
     }
 
-    //Sets all the pixels to the specified color of the specified palette
-    pub fn clear_frame_buffer(&mut self, color: u8) {
+    /// Sets all the pixels to the specified color of the color palette
+    /// Used to clear the screen between frames or set the background when
+    /// redering only the text layer
+    pub fn clear_frame_buffer(&mut self, color: ColorPalette) {
         for value in self.frame.chunks_exact_mut(1) {
-            value[0] = color;
+            value[0] = get_index(&color);
         }
     }
 
@@ -83,6 +92,8 @@ impl VirtualFrameBuffer {
         //Add background renderees, sprite renderers etc...
     }
 
+    /// Gets all the sprites listed in the sprite vector and renders them at the rignt place in the
+    /// pixel vector of the virtual frame buffer
     fn sprite_layer_renderer(&mut self) {
 
         for sprite in self.sprites.chunks_exact_mut(1) {
@@ -121,8 +132,8 @@ impl VirtualFrameBuffer {
 
             if character.is_some() {
                 let text_mode_char = character.unwrap();
-                let pic = rom(&text_mode_char.c);
-        
+                let pic = rom(&text_mode_char.unicode);
+
                 for row_count in 0..8 {
         
                     let row = pic[row_count];
@@ -131,10 +142,22 @@ impl VirtualFrameBuffer {
         
                     for c in row_in_binary.chars() {
                         let virtual_frame_buffer_pos = x_pos + character_sprite_col_count + (y_pos + row_count ) * self.width;
+                        let mut text_color: ColorPalette = self.default_text_color;
+                        let mut text_bkg_color: ColorPalette = self.default_text_bkg_color;
+
+                        match text_mode_char.color {
+                            Some(color) => {text_color = color}
+                            None => ()
+                        }
+
+                        match text_mode_char.background_color {
+                            Some(color) => {text_bkg_color = color}
+                            None => ()
+                        }
                         
                         match c {
-                            '0' => self.frame[virtual_frame_buffer_pos] = if text_mode_char.flipp {text_mode_char.color} else {text_mode_char.background_color},
-                            '1' => self.frame[virtual_frame_buffer_pos] = if text_mode_char.flipp {text_mode_char.background_color} else {text_mode_char.color},
+                            '0' => self.frame[virtual_frame_buffer_pos] = if text_mode_char.flipp {get_index(&text_color)} else {get_index(&text_bkg_color)},
+                            '1' => self.frame[virtual_frame_buffer_pos] = if text_mode_char.flipp {get_index(&text_bkg_color)} else {get_index(&text_color)},
                             _ => ()
                         }
                         character_sprite_col_count += 1;
@@ -159,7 +182,6 @@ impl VirtualFrameBuffer {
                 y_pos = vertical_border;
             }
         }
-        
     }
 }
 
@@ -173,8 +195,7 @@ pub struct CrtEffectRenderer {
     sub_pixel_attenuation: u8,
 }
 
-//Specifically for this project, the output frame buffer must be at least 3x wider and 4x higher to apply the CRT effect
-//Upscalling is fixed to 3x4 with that specific renderer
+
 impl CrtEffectRenderer {
 
     pub fn new(output_width: usize, output_height: usize) -> CrtEffectRenderer {
@@ -200,7 +221,7 @@ impl CrtEffectRenderer {
         for pixel in virtual_frame_buffer.get_frame_static() {
 
             //Temporary color index to RGB mapping
-            let rgb: (u8, u8, u8) = default_color_palette(pixel);
+            let rgb: (u8, u8, u8) = get_rgb(pixel);
             
             //Offset between virtual frame buffer and pixel's frame buffer
             //if scaling is applied, it represents the offset between virtual frame buffer's pixel and

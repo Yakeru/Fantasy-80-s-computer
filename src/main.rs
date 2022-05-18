@@ -26,24 +26,25 @@ use crate::virtual_frame_buffer::{VirtualFrameBuffer, CrtEffectRenderer};
 use crate::process::*;
 use crate::shell::*;
 use crate::sprite::Sprite;
+use crate::color_palettes::*;
 
 const WIDTH: usize = 1280;
 const HEIGHT: usize = 960;
 
 const FPS: u64 = 16; //ms per frame, so 16 = 60fps, 32 = 30fps, 1000 = 1fps
 
-const DEFAULT_BKG_COLOR: u8 = 28;
-const DEFAULT_COLOR: u8 = 28;
+const DEFAULT_BKG_COLOR: ColorPalette = ColorPalette::TrueBlue;
+const DEFAULT_COLOR: ColorPalette = ColorPalette::Yellow;
 const TEXT_COLUMNS: usize = 40;
 const TEXT_ROWS: usize = 30;
 
 const VIRTUAL_WIDTH: usize = 426;  // 426*3 = 1278 draw one black line on each side of screen for perfectly centered *3 scale
 const VIRTUAL_HEIGHT: usize = 320; // 320*3 = 960
 
-const SPLASH_1: &str = "************* FANTASY CPC *************";
-const SPLASH_2: &str = "*              ROM v0.1               *";
-const SPLASH_3: &str = "*       Damien Torreilles 2022        *";
-const SPLASH_4: &str = "***************************************";
+const SPLASH_1: &str = "************* FANTASY CPC **************";
+const SPLASH_2: &str = "*               ROM v0.1               *";
+const SPLASH_3: &str = "*        Damien Torreilles 2022        *";
+const SPLASH_4: &str = "****************************************";
 
 fn main()-> Result<(), Error> {
 
@@ -73,7 +74,7 @@ fn main()-> Result<(), Error> {
     //The virtual frame buffer has a text layer, sprite lists, background layers and tiles layers that can be accessed
     //by Processes (structs implemeting "process") to build their image.
     //Its rendere combines all the layers in its frame to produce the complete image.
-    let mut virtual_frame_buffer: VirtualFrameBuffer = VirtualFrameBuffer::new(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, TEXT_COLUMNS, TEXT_ROWS);
+    let mut virtual_frame_buffer: VirtualFrameBuffer = VirtualFrameBuffer::new(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, TEXT_COLUMNS, TEXT_ROWS, DEFAULT_COLOR, DEFAULT_BKG_COLOR);
 
     //The crt renderer takes the virtual frame buffers's frame, upscales it 3 times in X and Y to matche the pixcel's frame and winow size,
     //then applyes an effect to evoke CRT sub-pixels and scanlines.
@@ -102,10 +103,11 @@ fn main()-> Result<(), Error> {
     let mut mouse_move_delta: (f64, f64) = (0.0, 0.0);
 
     //Push the splash screen to the text layer
-    virtual_frame_buffer.get_text_layer().push_string_line(SPLASH_1, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
-    virtual_frame_buffer.get_text_layer().push_string_line(SPLASH_2, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
-    virtual_frame_buffer.get_text_layer().push_string_line(SPLASH_3, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
-    virtual_frame_buffer.get_text_layer().push_string_line(SPLASH_4, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
+    virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
+    virtual_frame_buffer.get_text_layer().push_string(SPLASH_1, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
+    virtual_frame_buffer.get_text_layer().push_string(SPLASH_2, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
+    virtual_frame_buffer.get_text_layer().push_string(SPLASH_3, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
+    virtual_frame_buffer.get_text_layer().push_string(SPLASH_4, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
 
     //The event loop here can be considered as a bios rom + terminal
     //it gathers all the keyborad inputs and sends them to the shell, the shell interprets them.
@@ -144,6 +146,7 @@ fn main()-> Result<(), Error> {
             }
 
             if input.key_released(VirtualKeyCode::Escape) || input.quit() {
+                *control_flow = ControlFlow::Exit;
                 key_released = Some(VirtualKeyCode::Escape);
             }
 
@@ -187,18 +190,23 @@ fn main()-> Result<(), Error> {
                     mouse_move_delta = delta;
                 }
                 DeviceEvent::Button { button, state } => match state {
-                    ElementState::Pressed => println!("mouse button {} pressed", button),
-                    ElementState::Released => println!("mouse button {} released", button),
+                    ElementState::Pressed => (),
+                    ElementState::Released => (),
                 },
                 _ => (),
             },
             Event::MainEventsCleared => {
                 
                 //Updating the shell
-                let flow = shell.update(char_received, key_pressed_os, key_released);                
-                match flow {
-                    Some(flow) => {
-                        *control_flow = flow;
+                let process_response = shell.update(char_received, key_pressed_os, key_released);                
+                match process_response.event {
+                    Some(event) => {*control_flow = event}
+                    None => ()
+                }
+
+                match process_response.message {
+                    Some(message) => {
+                        virtual_frame_buffer.get_text_layer().push_string(&message, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
                     }
                     None => ()
                 }
