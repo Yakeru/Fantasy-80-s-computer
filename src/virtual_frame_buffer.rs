@@ -21,7 +21,6 @@ pub struct VirtualFrameBuffer {
     frame: Vec<u8>,
     text_layer: TextLayer,
     sprites: Vec<Sprite>,
-    mouse_sprite: Sprite,
     //background_layer
     //tiles_layer
     frame_counter: usize,
@@ -46,10 +45,6 @@ impl VirtualFrameBuffer {
 
         let text_layer = TextLayer::new(columns_count, rows_count);
         let sprites = Vec::new();
-
-        let mut mouse_sprite: Sprite = Sprite::new_from_file(String::from("mouse"), &String::from("./resources/sprites/sprite1.txt"));
-        mouse_sprite.pos_x = fb_width / 2;
-        mouse_sprite.pos_y = fb_height / 2;
         
         //TODO init background_layers, tiles_layers, sprites_layers... and correesponding renderes
 
@@ -64,7 +59,6 @@ impl VirtualFrameBuffer {
             frame: virtual_frame_buffer,
             text_layer,
             sprites,
-            mouse_sprite,
             frame_counter: 0,
             second_tick: false,
             half_second_tick: false,
@@ -103,10 +97,6 @@ impl VirtualFrameBuffer {
 
     pub fn get_sprites(&mut self) -> &mut Vec<Sprite> {
         &mut self.sprites
-    }
-
-    pub fn get_mouse_sprite(&mut self) -> &mut Sprite {
-        &mut self.mouse_sprite
     }
 
     pub fn render(&mut self) {
@@ -158,26 +148,6 @@ impl VirtualFrameBuffer {
                 }
             }
         }
-
-        let mut pixel_count = 0;
-            let mut sprite_line_count = 0;
-
-            let global_offset = self.width * self.mouse_sprite.pos_y + self.mouse_sprite.pos_x;
-
-            for pixel in &self.mouse_sprite.image {
-        
-                let virtual_fb_offset = (global_offset + self.width * sprite_line_count + pixel_count) % (self.width * self.height);
-
-                if *pixel != 0 {
-                    self.frame[virtual_fb_offset] = *pixel;
-                }
-    
-                pixel_count += 1;
-                if pixel_count == self.mouse_sprite.value_in_physical_size().width {
-                    pixel_count = 0;
-                    sprite_line_count += 1;
-                }
-            }
     }
 
     fn text_layer_renderer(&mut self) {

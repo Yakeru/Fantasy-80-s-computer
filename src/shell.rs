@@ -188,7 +188,13 @@ impl Process for Shell {
             Some(unicode) => {
                 match unicode {
                     '\u{0008}' => { //Backspace
+                        
+                        //Dont delete further than prompt
+                        if self.command.len() == 0 {
+                            self.last_character_received = None;
+                        }
                         self.command.pop();
+                        
                     } 
                     
                     '\u{000D}' => { //Enter
@@ -259,6 +265,13 @@ impl Process for Shell {
 
     fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
 
+        if self.clear_text_layer {
+            virtual_frame_buffer.get_text_layer().clear();
+            self.clear_text_layer = false;
+        }
+
+        virtual_frame_buffer.clear_frame_buffer(self.bkg_color);
+
         match self.last_character_received {
             Some(c) => {
                 virtual_frame_buffer.get_text_layer().push_character(Some(self.get_text_layer_char_from_style(StyledChar::Default(c))));
@@ -267,18 +280,11 @@ impl Process for Shell {
             None => ()
         }
 
-        virtual_frame_buffer.clear_frame_buffer(self.bkg_color);
-
         for c in &self.display_buffer {
             virtual_frame_buffer.get_text_layer().push_character(Some(self.get_text_layer_char_from_style(*c)));
         }
 
         self.display_buffer.clear();
-
-        if self.clear_text_layer {
-            virtual_frame_buffer.get_text_layer().clear();
-            self.clear_text_layer = false;
-        }
     }
 
     fn get_name(&self) -> &str {

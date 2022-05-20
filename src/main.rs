@@ -90,10 +90,10 @@ fn main()-> Result<(), Error> {
     let mut shell = Shell::new();
     shell.set_state(true, true);
 
-    let mut mouse_sprite: Sprite = Sprite::new_from_file(String::from("mouse"), &String::from("./resources/sprites/sprite1.txt"));
-    mouse_sprite.pos_x = VIRTUAL_WIDTH / 2;
-    mouse_sprite.pos_y = VIRTUAL_HEIGHT / 2;
-    virtual_frame_buffer.get_sprites().push(mouse_sprite);
+    // let mut mouse_sprite: Sprite = Sprite::new_from_file(String::from("mouse"), &String::from("./resources/sprites/sprite1.txt"));
+    // mouse_sprite.pos_x = VIRTUAL_WIDTH / 2;
+    // mouse_sprite.pos_y = VIRTUAL_HEIGHT / 2;
+    // virtual_frame_buffer.get_sprites().push(mouse_sprite);
 
     //Variables used to collect all the events relevent to the shell and processes occuring during a loop.
     //Once all the vents have been cleared, they are sent to the shell for its update.
