@@ -1,4 +1,4 @@
-use winit::{event::VirtualKeyCode,event_loop::{ControlFlow,EventLoopProxy}};
+use winit::{event::VirtualKeyCode,event_loop::ControlFlow};
 use crate::virtual_frame_buffer::VirtualFrameBuffer;
 use crate::process::*;
 use crate::text_edit::*;
@@ -8,18 +8,18 @@ use crate::color_palettes::*;
 
 const SHELL_START_MESSAGE: &str = "Shell ready.\u{000D}Type [help] for command list.\u{000D}";
 
-const DEFAULT_BKG_COLOR: ColorPalette = ColorPalette::TrueBlue;
-const DEFAULT_COLOR: ColorPalette = ColorPalette::Yellow;
+const DEFAULT_BKG_COLOR: u8 = 28;
+const DEFAULT_COLOR: u8 = 10;
 
 pub struct Shell {
     name: String,
-    color: ColorPalette,
-    bkg_color: ColorPalette,
+    color: u8,
+    bkg_color: u8,
     last_character_received: Option<char>,
     clear_text_layer: bool,
     command: Vec<char>,
-    display_buffer: Vec<char>,
-    history_buffer: Vec<char>,
+    command_history: Vec<String>,
+    display_buffer: Vec<StyledChar>,
     updating: bool,
     drawing: bool,
     started: bool,
@@ -27,19 +27,20 @@ pub struct Shell {
     apps: Vec<Box<dyn Process>>
 }
 
-enum Style {
-    Default,
-    Highlight,
-    Warning,
-    Error
+#[derive(Copy, Clone)]
+enum StyledChar {
+    Default(char),
+    Highlight(char),
+    Warning(char),
+    Error(char)
 }
 
 impl Shell {
 
     pub fn new() -> Shell {
 
-        let display_buffer: Vec<char> = Vec::new();
-        let history_buffer: Vec<char> = Vec::new();
+        let display_buffer: Vec<StyledChar> = Vec::new();
+        let command_history: Vec<String> = Vec::new();
         let mut apps: Vec<Box<dyn Process>> = Vec::new();
         
         Shell {
@@ -50,7 +51,7 @@ impl Shell {
             clear_text_layer: false,
             command: Vec::new(),
             display_buffer,
-            history_buffer,
+            command_history,
             updating: false,
             drawing: false,
             started: false,
@@ -59,10 +60,64 @@ impl Shell {
         }
     }
 
-    fn push_string(&mut self, string: &str) {
-        for c in string.chars() {
-            self.display_buffer.push(c);
+    fn style_a_char(&self, c: char, style: StyledChar) -> StyledChar {
+        match style {
+            StyledChar::Default(_) => { StyledChar::Default(c) }
+            StyledChar::Highlight(_) => { StyledChar::Highlight(c) }
+            StyledChar::Warning(_) => { StyledChar::Warning(c) }
+            StyledChar::Error(_) => { StyledChar::Error(c) }
         }
+    }
+    
+    fn get_text_layer_char_from_style(&self, style: StyledChar) -> TextLayerChar {
+        match style {
+            StyledChar::Default(c) => { 
+                TextLayerChar {
+                    unicode: c,
+                    color: Some(self.color),
+                    background_color: Some(self.bkg_color),
+                    blink: false,
+                    flipp: false
+                } 
+            }
+            StyledChar::Highlight(c) => { 
+                TextLayerChar {
+                    unicode: c,
+                    color: Some(self.color),
+                    background_color: Some(self.bkg_color),
+                    blink: false,
+                    flipp: true
+                } 
+            }
+            StyledChar::Warning(c) => { 
+                TextLayerChar {
+                    unicode: c,
+                    color: Some(10),
+                    background_color: Some(0),
+                    blink: false,
+                    flipp: false
+                } 
+            }
+            StyledChar::Error(c) => { 
+                TextLayerChar {
+                    unicode: c,
+                    color: Some(8),
+                    background_color: Some(0),
+                    blink: true,
+                    flipp: false
+                } 
+            }
+        }
+    }
+
+    fn push_string(&mut self, string: &str, style: StyledChar) {
+        for c in string.chars() {
+            self.display_buffer.push(self.style_a_char(c, style));
+        }
+    }
+
+    fn push_char(&mut self, c: StyledChar) {
+        self.display_buffer.push(c);
     }
 
     pub fn interpret_command(&mut self, command: String)  -> ProcessResponse {
@@ -72,26 +127,35 @@ impl Shell {
         if command.len() > 0 {
             println!("Command: '{}'", command);
             if command == "help" {
-                self.push_string("Type [clear] to clear screen.\u{000D}");
-                self.push_string("Type [quit] or [exit] to exit.\u{000D}");
-                self.push_string("Type [ps] to list loaded processes.\u{000D}");
+                self.push_string("Type [clear] to clear screen.\u{000D}", StyledChar::Default(' '));
+                self.push_string("Type [quit] or [exit] to exit.\u{000D}", StyledChar::Default(' '));
+                self.push_string("Type [ps] to list loaded processes.\u{000D}", StyledChar::Default(' '));
             } else if command == "clear" {
                 self.display_buffer.clear();
                 self.command.clear();
                 self.clear_text_layer = true;
             } else if command == "ps" {
-                self.push_string("Name,  Updating,  Drawing\u{000D}");
-                self.push_string(&format!("{},  {},  {}\u{000D}", self.name, self.updating, self.drawing));
+                self.push_string("Name,  Updating,  Drawing\u{000D}", StyledChar::Default(' '));
+                self.push_string(&format!("{},  {},  {}\u{000D}", self.name, self.updating, self.drawing), StyledChar::Default(' '));
                 // for app in self.apps {
                 //     self.push_string(&format!("{},  {},  {}\n", app.get_name() , app.get_state().0, app.get_state().1));
                 // }  
-            } else if command == "quit" || command == "exit"{
+            } else if command == "warning" {
+                self.push_string("[WARNING]!", StyledChar::Warning(' '));
+                self.push_string("this is a warning.\u{000D}", StyledChar::Default(' '));
+            } else if command == "error" {
+                self.push_string("[ERROR]", StyledChar::Error(' '));
+                self.push_string("this is an error.\u{000D}", StyledChar::Default(' '));
+            }
+            else if command == "quit" || command == "exit"{
                 response.event = Some(ControlFlow::Exit);
-                response.set_message(String::from("\u{000D}Command 'quit' or 'exit' received; stopping.\u{000D}"));
+                response.set_message(String::from("Command 'quit' or 'exit' received; stopping."));
                 println!("Command 'quit' or 'exit' received; stopping");
+            } else {
+                self.push_string("Syntax Error\u{000D}", StyledChar::Default(' '));
             }
         }
-
+        self.push_char(StyledChar::Default('>'));
         response
     }
 }
@@ -99,7 +163,8 @@ impl Shell {
 impl Process for Shell {
 
     fn start(&mut self) {
-        self.push_string(SHELL_START_MESSAGE);
+        self.push_string(SHELL_START_MESSAGE, StyledChar::Default(' '));
+        self.push_char(StyledChar::Default('>'))
     }
 
     fn end(&mut self) {
@@ -193,18 +258,21 @@ impl Process for Shell {
     }
 
     fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+
         match self.last_character_received {
             Some(c) => {
-                virtual_frame_buffer.get_text_layer().push_char(c, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
+                virtual_frame_buffer.get_text_layer().push_character(Some(self.get_text_layer_char_from_style(StyledChar::Default(c))));
             }
 
             None => ()
         }
 
-        virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
+        virtual_frame_buffer.clear_frame_buffer(self.bkg_color);
+
         for c in &self.display_buffer {
-            virtual_frame_buffer.get_text_layer().push_char(*c, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
+            virtual_frame_buffer.get_text_layer().push_character(Some(self.get_text_layer_char_from_style(*c)));
         }
+
         self.display_buffer.clear();
 
         if self.clear_text_layer {

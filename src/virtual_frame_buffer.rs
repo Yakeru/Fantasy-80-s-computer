@@ -2,32 +2,41 @@ use crate::color_palettes::*;
 use crate::text_layer::TextLayer;
 use crate::characters_rom::rom;
 use crate::sprite::Sprite;
+use std::time::{
+    Instant, Duration
+};
 
 /// Contains a list of u8 values corresponding to values from a color palette.
 /// So just one u8 per pixel, R G and B values are retrieved from the palette, No Alpha.
 /// This frame buffer is meant to contain a low resolution low color picure that 
 /// will be upscaled into the final pixel 2D frame buffer.
 pub struct VirtualFrameBuffer {
+    frame_time_ms: u64,
     width: usize,
     height: usize,
     columns_count: usize,
     rows_count: usize,
-    default_text_color: ColorPalette,
-    default_text_bkg_color: ColorPalette,
+    default_text_color: u8,
+    default_text_bkg_color: u8,
     frame: Vec<u8>,
     text_layer: TextLayer,
     sprites: Vec<Sprite>,
+    mouse_sprite: Sprite,
     //background_layer
     //tiles_layer
+    frame_counter: usize,
+    second_tick: bool,
+    half_second_tick: bool,
+    half_second_latch: bool
 }
 
 impl VirtualFrameBuffer {
-    pub fn new(fb_width: usize, 
+    pub fn new(frame_time_ms: u64, fb_width: usize, 
         fb_height: usize, 
         columns_count: usize, 
         rows_count: usize, 
-        default_text_color: ColorPalette,
-        default_text_bkg_color: ColorPalette) -> VirtualFrameBuffer {
+        default_text_color: u8,
+        default_text_bkg_color: u8) -> VirtualFrameBuffer {
         let size = fb_width * fb_height;
         let mut virtual_frame_buffer = Vec::new();
 
@@ -37,10 +46,15 @@ impl VirtualFrameBuffer {
 
         let text_layer = TextLayer::new(columns_count, rows_count);
         let sprites = Vec::new();
+
+        let mut mouse_sprite: Sprite = Sprite::new_from_file(String::from("mouse"), &String::from("./resources/sprites/sprite1.txt"));
+        mouse_sprite.pos_x = fb_width / 2;
+        mouse_sprite.pos_y = fb_height / 2;
         
         //TODO init background_layers, tiles_layers, sprites_layers... and correesponding renderes
 
         VirtualFrameBuffer {
+            frame_time_ms,
             width: fb_width,
             height: fb_height,
             columns_count,
@@ -50,6 +64,11 @@ impl VirtualFrameBuffer {
             frame: virtual_frame_buffer,
             text_layer,
             sprites,
+            mouse_sprite,
+            frame_counter: 0,
+            second_tick: false,
+            half_second_tick: false,
+            half_second_latch: false
         }
     }
 
@@ -64,9 +83,9 @@ impl VirtualFrameBuffer {
     /// Sets all the pixels to the specified color of the color palette
     /// Used to clear the screen between frames or set the background when
     /// redering only the text layer
-    pub fn clear_frame_buffer(&mut self, color: ColorPalette) {
+    pub fn clear_frame_buffer(&mut self, color: u8) {
         for value in self.frame.chunks_exact_mut(1) {
-            value[0] = get_index(&color);
+            value[0] = color;
         }
     }
 
@@ -86,7 +105,28 @@ impl VirtualFrameBuffer {
         &mut self.sprites
     }
 
+    pub fn get_mouse_sprite(&mut self) -> &mut Sprite {
+        &mut self.mouse_sprite
+    }
+
     pub fn render(&mut self) {
+        self.second_tick = false;
+        self.half_second_tick = false;
+        
+        if self.frame_counter == (1000 / self.frame_time_ms as usize) / 2 - 1 {
+            self.half_second_tick = true;
+            self.half_second_latch = !self.half_second_latch;
+        }
+
+        if self.frame_counter == (1000 / self.frame_time_ms as usize) - 1 {
+            self.frame_counter = 0;
+            self.second_tick = true;
+            self.half_second_tick = true;
+            self.half_second_latch = !self.half_second_latch;
+        } else {
+            self.frame_counter += 1;
+        }
+
         self.text_layer_renderer();
         self.sprite_layer_renderer();
         //Add background renderees, sprite renderers etc...
@@ -118,6 +158,26 @@ impl VirtualFrameBuffer {
                 }
             }
         }
+
+        let mut pixel_count = 0;
+            let mut sprite_line_count = 0;
+
+            let global_offset = self.width * self.mouse_sprite.pos_y + self.mouse_sprite.pos_x;
+
+            for pixel in &self.mouse_sprite.image {
+        
+                let virtual_fb_offset = (global_offset + self.width * sprite_line_count + pixel_count) % (self.width * self.height);
+
+                if *pixel != 0 {
+                    self.frame[virtual_fb_offset] = *pixel;
+                }
+    
+                pixel_count += 1;
+                if pixel_count == self.mouse_sprite.value_in_physical_size().width {
+                    pixel_count = 0;
+                    sprite_line_count += 1;
+                }
+            }
     }
 
     fn text_layer_renderer(&mut self) {
@@ -130,39 +190,53 @@ impl VirtualFrameBuffer {
     
         for character in self.text_layer.get_characters() {
 
-            if character.is_some() {
-                let text_mode_char = character.unwrap();
-                let pic = rom(&text_mode_char.unicode);
+            match character {
+                Some(text_mode_char) => {
 
-                for row_count in 0..8 {
-        
-                    let row = pic[row_count];
-                    let row_in_binary = &format!("{:0>8b}", row);
-                    let mut character_sprite_col_count = 0;
-        
-                    for c in row_in_binary.chars() {
-                        let virtual_frame_buffer_pos = x_pos + character_sprite_col_count + (y_pos + row_count ) * self.width;
-                        let mut text_color: ColorPalette = self.default_text_color;
-                        let mut text_bkg_color: ColorPalette = self.default_text_bkg_color;
+                    let mut text_color: u8 = self.default_text_color;
+                    let mut text_bkg_color: u8 = self.default_text_bkg_color;
 
-                        match text_mode_char.color {
-                            Some(color) => {text_color = color}
-                            None => ()
+                    match text_mode_char.color {
+                        Some(color) => {
+                            if text_mode_char.flipp { text_bkg_color = color } else { text_color = color }
                         }
+                        None => ()
+                    }
 
-                        match text_mode_char.background_color {
-                            Some(color) => {text_bkg_color = color}
-                            None => ()
+                    match text_mode_char.background_color {
+                        Some(bkg_color) => {
+                            if text_mode_char.flipp { text_color = bkg_color } else { text_bkg_color = bkg_color }
                         }
-                        
-                        match c {
-                            '0' => self.frame[virtual_frame_buffer_pos] = if text_mode_char.flipp {get_index(&text_color)} else {get_index(&text_bkg_color)},
-                            '1' => self.frame[virtual_frame_buffer_pos] = if text_mode_char.flipp {get_index(&text_bkg_color)} else {get_index(&text_color)},
-                            _ => ()
+                        None => ()
+                    }
+
+                    //Blink
+                    if text_mode_char.blink && self.half_second_latch {
+                        text_color = text_bkg_color;
+                    }
+
+                    let pic = rom(&text_mode_char.unicode);
+
+                    for row_count in 0..8 {
+            
+                        let row = pic[row_count];
+                        let row_in_binary = &format!("{:0>8b}", row);
+                        let mut character_sprite_col_count = 0;
+            
+                        for c in row_in_binary.chars() {
+                            let virtual_frame_buffer_pos = x_pos + character_sprite_col_count + (y_pos + row_count ) * self.width;
+
+                            match c {
+                                '0' => self.frame[virtual_frame_buffer_pos] = if text_mode_char.flipp {text_color} else {text_bkg_color},
+                                '1' => self.frame[virtual_frame_buffer_pos] = if self.half_second_latch && text_mode_char.blink {text_bkg_color} else { if text_mode_char.flipp {text_bkg_color} else {text_color}},
+                                _ => ()
+                            }
+                            character_sprite_col_count += 1;
                         }
-                        character_sprite_col_count += 1;
                     }
                 }
+
+                None => ()
             }
             
             text_col_count += 1;

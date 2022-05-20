@@ -6,8 +6,8 @@ use crate::color_palettes::*;
 #[derive(Copy, Clone)]
 pub struct TextLayerChar {
     pub unicode: char,
-    pub color: Option<ColorPalette>,
-    pub background_color: Option<ColorPalette>,
+    pub color: Option<u8>,
+    pub background_color: Option<u8>,
     pub flipp: bool,
     pub blink: bool
 }
@@ -98,7 +98,7 @@ impl TextLayer {
     }
 
     /// Pushes a char to the text layer, must specify the color
-    pub fn push_char(&mut self, c: char, color: ColorPalette, back_color: ColorPalette, blink: bool) {
+    pub fn push_char(&mut self, c: char, color: u8, back_color: u8, blink: bool) {
         let a_char = TextLayerChar {
             unicode: c,
             background_color: Some(back_color),
@@ -110,7 +110,7 @@ impl TextLayer {
     }
 
     /// Pushes all the charaters from the &str to the vector representing the text buffer
-    pub fn push_string(&mut self, string: &str, color: ColorPalette, back_color: ColorPalette, blink: bool) {
+    pub fn push_string(&mut self, string: &str, color: u8, back_color: u8, blink: bool) {
         for c in string.chars() {
             self.push_char(c, color, back_color, blink);
         }

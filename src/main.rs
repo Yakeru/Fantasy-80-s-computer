@@ -31,10 +31,10 @@ use crate::color_palettes::*;
 const WIDTH: usize = 1280;
 const HEIGHT: usize = 960;
 
-const FPS: u64 = 16; //ms per frame, so 16 = 60fps, 32 = 30fps, 1000 = 1fps
+const FRAME_TIME_MS: u64 = 16; //ms per frame, so 16 = 60fps, 32 = 30fps, 1000 = 1fps
 
-const DEFAULT_BKG_COLOR: ColorPalette = ColorPalette::TrueBlue;
-const DEFAULT_COLOR: ColorPalette = ColorPalette::Yellow;
+const DEFAULT_BKG_COLOR: u8 = 28;
+const DEFAULT_COLOR: u8 = 10;
 const TEXT_COLUMNS: usize = 40;
 const TEXT_ROWS: usize = 30;
 
@@ -59,8 +59,8 @@ fn main()-> Result<(), Error> {
     let mut input = WinitInputHelper::new();
     let mut modifiers = ModifiersState::default();
 
-    //window.set_cursor_grab(true).unwrap();
-    //window.set_cursor_visible(false);
+    window.set_cursor_grab(true).unwrap();
+    window.set_cursor_visible(false);
     
     //Pixels frame buffer init and setup
     let mut pixels = {
@@ -74,7 +74,7 @@ fn main()-> Result<(), Error> {
     //The virtual frame buffer has a text layer, sprite lists, background layers and tiles layers that can be accessed
     //by Processes (structs implemeting "process") to build their image.
     //Its rendere combines all the layers in its frame to produce the complete image.
-    let mut virtual_frame_buffer: VirtualFrameBuffer = VirtualFrameBuffer::new(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, TEXT_COLUMNS, TEXT_ROWS, DEFAULT_COLOR, DEFAULT_BKG_COLOR);
+    let mut virtual_frame_buffer: VirtualFrameBuffer = VirtualFrameBuffer::new(FRAME_TIME_MS, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, TEXT_COLUMNS, TEXT_ROWS, DEFAULT_COLOR, DEFAULT_BKG_COLOR);
 
     //The crt renderer takes the virtual frame buffers's frame, upscales it 3 times in X and Y to matche the pixcel's frame and winow size,
     //then applyes an effect to evoke CRT sub-pixels and scanlines.
@@ -90,10 +90,10 @@ fn main()-> Result<(), Error> {
     let mut shell = Shell::new();
     shell.set_state(true, true);
 
-    // let mut mouse_sprite: Sprite = Sprite::new_from_file(String::from("mouse"), &String::from("./resources/sprites/sprite1.txt"));
-    // mouse_sprite.pos_x = VIRTUAL_WIDTH / 2;
-    // mouse_sprite.pos_y = VIRTUAL_HEIGHT / 2;
-    // virtual_frame_buffer.get_sprites().push(mouse_sprite);
+    let mut mouse_sprite: Sprite = Sprite::new_from_file(String::from("mouse"), &String::from("./resources/sprites/sprite1.txt"));
+    mouse_sprite.pos_x = VIRTUAL_WIDTH / 2;
+    mouse_sprite.pos_y = VIRTUAL_HEIGHT / 2;
+    virtual_frame_buffer.get_sprites().push(mouse_sprite);
 
     //Variables used to collect all the events relevent to the shell and processes occuring during a loop.
     //Once all the vents have been cleared, they are sent to the shell for its update.
@@ -117,7 +117,7 @@ fn main()-> Result<(), Error> {
         //Control_flow::Poll used 100% of one CPU core (In Windows 10 at least)
         //WaitUntil polls every "const FPS" ms instead: droped CPU usage from 20% to 4%.
         //The whole program loops (updates and draws) at "const FPS" fps.
-        let refresh_timer: Instant = Instant::now().checked_add(Duration::from_millis(FPS)).unwrap();
+        let refresh_timer: Instant = Instant::now().checked_add(Duration::from_millis(FRAME_TIME_MS)).unwrap();
         *control_flow = ControlFlow::WaitUntil(refresh_timer);
 
         if input.update(&event) {
