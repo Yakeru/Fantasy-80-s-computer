@@ -1,13 +1,13 @@
-
-use crate::color_palettes::*;
-/// TODO implement "blink" tells the renderer to automatically flip the color and background of that character at a set interval, useful for blinking warning messages
+const DEFAULT_COLOR: u8 = 10;
+const DEFAULT_BKG_COLOR: u8 = 28;
+const DEFAULT_CURSOR: char = '\u{25AE}';
 
 /// Struct describing all the settings one character can have in text mode
 #[derive(Copy, Clone)]
 pub struct TextLayerChar {
     pub unicode: char,
-    pub color: Option<u8>,
-    pub background_color: Option<u8>,
+    pub color: u8,
+    pub background_color: u8,
     pub flipp: bool,
     pub blink: bool
 }
@@ -16,6 +16,9 @@ pub struct TextLayerChar {
 pub struct TextLayer {
     columns: usize,
     rows: usize,
+    color: u8,
+    bkg_color: u8,
+    cursor: char,
     characters: Vec<Option<TextLayerChar>>,
     pub show_cursor: bool
 }
@@ -25,15 +28,18 @@ impl TextLayer {
     pub fn new(columns: usize, rows: usize) -> TextLayer {
         let mut fb: Vec<Option<TextLayerChar>> = Vec::new();
         fb.push(Some(TextLayerChar {
-            unicode: '\u{25AE}',
-            color: None,
-            background_color: None,
+            unicode: DEFAULT_CURSOR,
+            color: DEFAULT_COLOR,
+            background_color: DEFAULT_BKG_COLOR,
             flipp: false,
             blink: true
         }));
         TextLayer {
             columns,
             rows,
+            color: DEFAULT_COLOR,
+            bkg_color: DEFAULT_BKG_COLOR,
+            cursor: DEFAULT_CURSOR,
             characters: fb,
             show_cursor: true
         }
@@ -51,7 +57,19 @@ impl TextLayer {
         return &self.characters;
     }
 
-    /// Pushes a craracter struct to the text layer
+    pub fn set_default_color(&mut self, color: u8) {
+        self.color = color;
+    }
+
+    pub fn set_default_bkg_color(&mut self, bkg_color: u8) {
+        self.bkg_color = bkg_color;
+    }
+
+    pub fn set_cursor(&mut self, cursor: char) {
+        self.cursor = cursor;
+    }
+
+    /// Pushes a character struct to the text layer
     pub fn push_character(&mut self, text_layer_char: Option<TextLayerChar>) {
 
         if self.show_cursor {
@@ -88,9 +106,9 @@ impl TextLayer {
 
         if self.show_cursor {
             self.characters.push(Some(TextLayerChar {
-                unicode: '\u{25AE}',
-                color: None,
-                background_color: None,
+                unicode: self.cursor,
+                color: self.color,
+                background_color: self.bkg_color,
                 flipp: false,
                 blink: true
             }));
@@ -98,11 +116,11 @@ impl TextLayer {
     }
 
     /// Pushes a char to the text layer, must specify the color
-    pub fn push_char(&mut self, c: char, color: u8, back_color: u8, blink: bool) {
+    pub fn push_char(&mut self, c: char, color: Option<u8>, back_color: Option<u8>, blink: bool) {
         let a_char = TextLayerChar {
             unicode: c,
-            background_color: Some(back_color),
-            color: Some(color),
+            color: if color.is_some() {color.unwrap()} else {self.color},
+            background_color: if back_color.is_some() {back_color.unwrap()} else {self.bkg_color},
             flipp: false,
             blink: blink
         };
@@ -110,7 +128,7 @@ impl TextLayer {
     }
 
     /// Pushes all the charaters from the &str to the vector representing the text buffer
-    pub fn push_string(&mut self, string: &str, color: u8, back_color: u8, blink: bool) {
+    pub fn push_string(&mut self, string: &str, color: Option<u8>, back_color: Option<u8>, blink: bool) {
         for c in string.chars() {
             self.push_char(c, color, back_color, blink);
         }
@@ -135,7 +153,7 @@ impl TextLayer {
     //     }
     // }
 
-    /// Pops the last cell of the character leyer vector, wether it contains a character or None.
+    /// Pops the last cell of the character layer vector, wether it contains a character or None.
     pub fn pop_char(&mut self) {
         self.characters.pop();
     }
@@ -150,7 +168,7 @@ impl TextLayer {
                 match plop {
                     Some(t) => {
                         match t.unicode {
-                            '\n' => {stop = true; true}
+                            '\u{000D}' => {stop = true; true}
                             _ => {false}
                         }    
                     }
@@ -169,9 +187,9 @@ impl TextLayer {
         self.characters.clear();
         if self.show_cursor {
             self.characters.push(Some(TextLayerChar {
-                unicode: '\u{25AE}',
-                color: None,
-                background_color: None,
+                unicode: self.cursor,
+                color: self.color,
+                background_color: self.bkg_color,
                 flipp: false,
                 blink: true
             }));

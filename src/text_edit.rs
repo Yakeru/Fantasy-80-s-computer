@@ -78,8 +78,8 @@ impl Process for TextEdit {
                     _ => {
                         let plop: TextLayerChar = TextLayerChar {
                             unicode: c,
-                            color: Some(self.selected_color),
-                            background_color: Some(self.selected_bkg_color),
+                            color: self.selected_color,
+                            background_color: self.selected_bkg_color,
                             blink: false,
                             flipp: false
                         };
@@ -133,7 +133,7 @@ impl Process for TextEdit {
             virtual_frame_buffer.get_text_layer().push_character(Some(text_layer_char[0]));
         }
 
-        virtual_frame_buffer.get_text_layer().push_char('_', self.selected_color, self.selected_bkg_color, false);
+        virtual_frame_buffer.get_text_layer().push_char('_', Some(self.selected_color), Some(self.selected_bkg_color), false);
     }
 
     fn get_name(&self) -> &str {

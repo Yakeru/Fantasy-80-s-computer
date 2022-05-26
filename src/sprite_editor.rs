@@ -1,5 +1,5 @@
 use crate::process::*;
-use crate::virtual_frame_buffer::VirtualFrameBuffer;
+use crate::virtual_frame_buffer::*;
 use winit::{event::VirtualKeyCode,event_loop::ControlFlow};
 use winit::dpi::PhysicalSize;
 use crate::text_layer::TextLayerChar;
@@ -20,15 +20,6 @@ pub struct SpriteEditor {
     ended: bool
 }
 
-#[derive(Copy, Clone)]
-struct Square {
-    pos_x: usize,
-    pos_y: usize,
-    size: PhysicalSize<usize>,
-    color: u8,
-    fill: bool
-}
-
 impl SpriteEditor {
 
     pub fn new() -> SpriteEditor {
@@ -44,28 +35,28 @@ impl SpriteEditor {
         }
     }
 
-    fn draw_square(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer, square: Square) {
+    // fn draw_square(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer, square: Square) {
 
-        let start_offset: usize = virtual_frame_buffer.get_width() * square.pos_y + square.pos_x;
+    //     let start_offset: usize = virtual_frame_buffer.get_width() * square.pos_y + square.pos_x;
 
-        for row in 0..square.size.width {
-            for column in 0..square.size.height {
-                if square.fill {
-                    let offset = start_offset + column + virtual_frame_buffer.get_width() * row;
-                    virtual_frame_buffer.get_frame()[offset] = square.color;
-                } else {
-                    if row == 0 || row == square.size.width - 1 || column == 0 || column == square.size.height - 1 {
-                        let offset = start_offset + column + virtual_frame_buffer.get_width() * row;
-                        virtual_frame_buffer.get_frame()[offset] = square.color;
-                    }
-                }
-            }
-        }
-    }
+    //     for row in 0..square.size.width {
+    //         for column in 0..square.size.height {
+    //             if square.fill {
+    //                 let offset = start_offset + column + virtual_frame_buffer.get_width() * row;
+    //                 virtual_frame_buffer.get_frame()[offset] = square.color;
+    //             } else {
+    //                 if row == 0 || row == square.size.width - 1 || column == 0 || column == square.size.height - 1 {
+    //                     let offset = start_offset + column + virtual_frame_buffer.get_width() * row;
+    //                     virtual_frame_buffer.get_frame()[offset] = square.color;
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 
-    fn sprite_pixel_coord_to_index(x: usize, y: usize) -> usize {
-        return y * SPRITE_SIZE.width + x;
-    }
+    // fn sprite_pixel_coord_to_index(x: usize, y: usize) -> usize {
+    //     return y * SPRITE_SIZE.width + x;
+    // }
 }
 
 impl Process for SpriteEditor {
@@ -87,7 +78,7 @@ impl Process for SpriteEditor {
             Some(c) => {
                 match c {
                     '\u{0008}' => { //Backspace
-                        
+
                     } 
                     
                     '\u{000D}' => { //Enter
@@ -167,7 +158,7 @@ impl Process for SpriteEditor {
             fill: true
         };
 
-        self.draw_square(virtual_frame_buffer, bkg_square);
+        virtual_frame_buffer.draw_square(bkg_square);
 
         //Pixels
         for row in 0..SPRITE_SIZE.height {
@@ -184,7 +175,7 @@ impl Process for SpriteEditor {
                     fill: true
                 };
 
-                self.draw_square(virtual_frame_buffer, pixel_square);
+                virtual_frame_buffer.draw_square(pixel_square);
 
                 //Highlight pixel if selected
                 if self.selected_pixel_x == column && self.selected_pixel_y == row {
@@ -196,7 +187,7 @@ impl Process for SpriteEditor {
                         fill: false
                     };
     
-                    self.draw_square(virtual_frame_buffer, highlight_square);
+                    virtual_frame_buffer.draw_square(highlight_square);
                 }
             }
         }   

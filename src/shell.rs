@@ -6,7 +6,7 @@ use crate::sprite_editor::*;
 use crate::text_layer::TextLayerChar;
 use crate::color_palettes::*;
 
-const SHELL_START_MESSAGE: &str = "Shell ready.\u{000D}Type [help] for command list.\u{000D}";
+const SHELL_START_MESSAGE: &str = " SHELL 0.1\u{000D}\u{000D}Ready\u{000D}";
 
 const DEFAULT_BKG_COLOR: u8 = 28;
 const DEFAULT_COLOR: u8 = 10;
@@ -23,8 +23,7 @@ pub struct Shell {
     updating: bool,
     drawing: bool,
     started: bool,
-    ended: bool,
-    apps: Vec<Box<dyn Process>>
+    ended: bool
 }
 
 #[derive(Copy, Clone)]
@@ -33,6 +32,14 @@ enum StyledChar {
     Highlight(char),
     Warning(char),
     Error(char)
+}
+
+#[derive(Copy, Clone)]
+enum Style {
+    Default,
+    Highlight,
+    Warning,
+    Error
 }
 
 impl Shell {
@@ -56,16 +63,15 @@ impl Shell {
             drawing: false,
             started: false,
             ended: false,
-            apps
         }
     }
 
-    fn style_a_char(&self, c: char, style: StyledChar) -> StyledChar {
+    fn style_a_char(&self, c: char, style: Style) -> StyledChar {
         match style {
-            StyledChar::Default(_) => { StyledChar::Default(c) }
-            StyledChar::Highlight(_) => { StyledChar::Highlight(c) }
-            StyledChar::Warning(_) => { StyledChar::Warning(c) }
-            StyledChar::Error(_) => { StyledChar::Error(c) }
+            Style::Default => { StyledChar::Default(c) }
+            Style::Highlight => { StyledChar::Highlight(c) }
+            Style::Warning => { StyledChar::Warning(c) }
+            Style::Error => { StyledChar::Error(c) }
         }
     }
     
@@ -74,8 +80,8 @@ impl Shell {
             StyledChar::Default(c) => { 
                 TextLayerChar {
                     unicode: c,
-                    color: Some(self.color),
-                    background_color: Some(self.bkg_color),
+                    color: self.color,
+                    background_color: self.bkg_color,
                     blink: false,
                     flipp: false
                 } 
@@ -83,8 +89,8 @@ impl Shell {
             StyledChar::Highlight(c) => { 
                 TextLayerChar {
                     unicode: c,
-                    color: Some(self.color),
-                    background_color: Some(self.bkg_color),
+                    color: self.color,
+                    background_color: self.bkg_color,
                     blink: false,
                     flipp: true
                 } 
@@ -92,8 +98,8 @@ impl Shell {
             StyledChar::Warning(c) => { 
                 TextLayerChar {
                     unicode: c,
-                    color: Some(10),
-                    background_color: Some(0),
+                    color: 10,
+                    background_color: 0,
                     blink: false,
                     flipp: false
                 } 
@@ -101,8 +107,8 @@ impl Shell {
             StyledChar::Error(c) => { 
                 TextLayerChar {
                     unicode: c,
-                    color: Some(8),
-                    background_color: Some(0),
+                    color: 8,
+                    background_color: 0,
                     blink: true,
                     flipp: false
                 } 
@@ -110,7 +116,7 @@ impl Shell {
         }
     }
 
-    fn push_string(&mut self, string: &str, style: StyledChar) {
+    fn push_string(&mut self, string: &str, style: Style) {
         for c in string.chars() {
             self.display_buffer.push(self.style_a_char(c, style));
         }
@@ -127,32 +133,32 @@ impl Shell {
         if command.len() > 0 {
             println!("Command: '{}'", command);
             if command == "help" {
-                self.push_string("Type [clear] to clear screen.\u{000D}", StyledChar::Default(' '));
-                self.push_string("Type [quit] or [exit] to exit.\u{000D}", StyledChar::Default(' '));
-                self.push_string("Type [ps] to list loaded processes.\u{000D}", StyledChar::Default(' '));
+                self.push_string("Type [clear] to clear screen.\u{000D}", Style::Default);
+                self.push_string("Type [quit] or [exit] to exit.\u{000D}", Style::Default);
+                self.push_string("Type [ps] to list loaded processes.\u{000D}", Style::Default);
             } else if command == "clear" {
                 self.display_buffer.clear();
                 self.command.clear();
                 self.clear_text_layer = true;
             } else if command == "ps" {
-                self.push_string("Name,  Updating,  Drawing\u{000D}", StyledChar::Default(' '));
-                self.push_string(&format!("{},  {},  {}\u{000D}", self.name, self.updating, self.drawing), StyledChar::Default(' '));
+                // self.push_string("Name,  Updating,  Drawing\u{000D}", Style::Default);
+                // self.push_string(&format!("{},  {},  {}\u{000D}", self.name, self.updating, self.drawing), Style::Default);
                 // for app in self.apps {
-                //     self.push_string(&format!("{},  {},  {}\n", app.get_name() , app.get_state().0, app.get_state().1));
+                //     self.push_string(&format!("{},  {},  {}\u{000D}", *app.get_name() , *app.get_state().0, *app.get_state().1), Style::Default);
                 // }  
             } else if command == "warning" {
-                self.push_string("[WARNING]!", StyledChar::Warning(' '));
-                self.push_string("this is a warning.\u{000D}", StyledChar::Default(' '));
+                self.push_string("[WARNING]!", Style::Warning);
+                self.push_string("this is a warning.\u{000D}", Style::Default);
             } else if command == "error" {
-                self.push_string("[ERROR]", StyledChar::Error(' '));
-                self.push_string("this is an error.\u{000D}", StyledChar::Default(' '));
+                self.push_string("[ERROR]", Style::Error);
+                self.push_string("this is an error.\u{000D}", Style::Default);
             }
             else if command == "quit" || command == "exit"{
                 response.event = Some(ControlFlow::Exit);
                 response.set_message(String::from("Command 'quit' or 'exit' received; stopping."));
                 println!("Command 'quit' or 'exit' received; stopping");
             } else {
-                self.push_string("Syntax Error\u{000D}", StyledChar::Default(' '));
+                self.push_string("Syntax Error\u{000D}", Style::Default);
             }
         }
         self.push_char(StyledChar::Default('>'));
@@ -163,8 +169,9 @@ impl Shell {
 impl Process for Shell {
 
     fn start(&mut self) {
-        self.push_string(SHELL_START_MESSAGE, StyledChar::Default(' '));
-        self.push_char(StyledChar::Default('>'))
+        self.push_string(SHELL_START_MESSAGE, Style::Default);
+        self.push_char(StyledChar::Default('>'));
+        self.started = true;
     }
 
     fn end(&mut self) {
@@ -181,20 +188,17 @@ impl Process for Shell {
 
         if !self.started {
             self.start();
-            self.started = true;
         }
 
         match character_received {
             Some(unicode) => {
                 match unicode {
                     '\u{0008}' => { //Backspace
-                        
                         //Dont delete further than prompt
                         if self.command.len() == 0 {
                             self.last_character_received = None;
                         }
                         self.command.pop();
-                        
                     } 
                     
                     '\u{000D}' => { //Enter
@@ -270,7 +274,7 @@ impl Process for Shell {
             self.clear_text_layer = false;
         }
 
-        virtual_frame_buffer.clear_frame_buffer(self.bkg_color);
+        //virtual_frame_buffer.clear_frame_buffer(self.bkg_color);
 
         match self.last_character_received {
             Some(c) => {

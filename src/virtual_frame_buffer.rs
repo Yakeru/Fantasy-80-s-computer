@@ -5,6 +5,7 @@ use crate::sprite::Sprite;
 use std::time::{
     Instant, Duration
 };
+use winit::dpi::PhysicalSize;
 
 /// Contains a list of u8 values corresponding to values from a color palette.
 /// So just one u8 per pixel, R G and B values are retrieved from the palette, No Alpha.
@@ -16,8 +17,6 @@ pub struct VirtualFrameBuffer {
     height: usize,
     columns_count: usize,
     rows_count: usize,
-    default_text_color: u8,
-    default_text_bkg_color: u8,
     frame: Vec<u8>,
     text_layer: TextLayer,
     sprites: Vec<Sprite>,
@@ -27,6 +26,24 @@ pub struct VirtualFrameBuffer {
     second_tick: bool,
     half_second_tick: bool,
     half_second_latch: bool
+}
+
+#[derive(Copy, Clone)]
+pub struct Square {
+    pub pos_x: usize,
+    pub pos_y: usize,
+    pub size: PhysicalSize<usize>,
+    pub color: u8,
+    pub fill: bool
+}
+
+#[derive(Copy, Clone)]
+pub struct Line {
+    pub start_x: usize,
+    pub start_y: usize,
+    pub end_x: usize,
+    pub end_y: usize,
+    pub color: u8,
 }
 
 impl VirtualFrameBuffer {
@@ -54,8 +71,6 @@ impl VirtualFrameBuffer {
             height: fb_height,
             columns_count,
             rows_count,
-            default_text_color,
-            default_text_bkg_color,
             frame: virtual_frame_buffer,
             text_layer,
             sprites,
@@ -72,6 +87,75 @@ impl VirtualFrameBuffer {
 
     pub fn get_frame_static(&self) -> &[u8] {
         &self.frame
+    }
+
+    pub fn get_pixel(&mut self, x: usize, y: usize) -> u8 {
+        let index = VirtualFrameBuffer::coord_to_vec_index(x, y, self.width, self.height);
+        self.frame[index]
+    }
+
+    pub fn set_pixel(&mut self, x: usize, y: usize, color: u8) {
+        let index = VirtualFrameBuffer::coord_to_vec_index(x, y, self.width, self.height);
+        self.frame[index] = color
+    }
+
+    pub fn coord_to_vec_index(x: usize, y: usize, width: usize, height: usize) -> usize {
+        (y * width + x) % (width * height)
+    }
+
+    pub fn draw_line(&mut self, line: Line) {
+        //self.set_pixel(line.start_x, line.start_y, line.color);
+        //self.set_pixel(line.end_x, line.end_y, line.color);
+
+        let dx: isize = (line.end_x as isize - line.start_x as isize).abs();
+        let dy: isize = -(line.end_y as isize - line.start_y as isize).abs();
+        let sx: isize = if line.start_x < line.end_x {1} else {-1};
+        let sy: isize = if line.start_y < line.end_y {1} else {-1};
+        let mut error = dx + dy;
+
+        let mut x0 = line.start_x as isize;
+        let mut y0 = line.start_y as isize;
+        let x1 = line.end_x as isize;
+        let y1 = line.end_y as isize;
+
+        while true {
+
+            self.set_pixel(x0 as usize, y0 as usize, line.color);
+
+            if x0 == x1 && y0 == y1 {break};
+            let e2 = 2 * error;
+
+            if e2 >= dy {
+                if x0 == x1 {break};
+                error += dy;
+                x0 += sx;
+            }
+
+            if e2 <= dx {
+                if y0 == y1 {break};
+                error += dx;
+                y0 += sy;
+            }
+        }
+    }
+
+    pub fn draw_square(&mut self, square: Square) {
+
+        let start_offset: usize = VirtualFrameBuffer::coord_to_vec_index(square.pos_x, square.pos_y, self.width, self.height);
+
+        for row in 0..square.size.width {
+            for column in 0..square.size.height {
+                if square.fill {
+                    let offset = start_offset + column + self.width * row;
+                    self.frame[offset] = square.color;
+                } else {
+                    if row == 0 || row == square.size.width - 1 || column == 0 || column == square.size.height - 1 {
+                        let offset = start_offset + column + self.width * row;
+                        self.frame[offset] = square.color;
+                    }
+                }
+            }
+        }
     }
 
     /// Sets all the pixels to the specified color of the color palette
@@ -131,7 +215,7 @@ impl VirtualFrameBuffer {
             let mut pixel_count = 0;
             let mut sprite_line_count = 0;
 
-            let global_offset = self.width * sprite[0].pos_y + sprite[0].pos_x;
+            let global_offset = VirtualFrameBuffer::coord_to_vec_index(sprite[0].pos_x, sprite[0].pos_y, self.width, self.height);
 
             for pixel in &sprite[0].image {
         
@@ -163,26 +247,13 @@ impl VirtualFrameBuffer {
             match character {
                 Some(text_mode_char) => {
 
-                    let mut text_color: u8 = self.default_text_color;
-                    let mut text_bkg_color: u8 = self.default_text_bkg_color;
-
-                    match text_mode_char.color {
-                        Some(color) => {
-                            if text_mode_char.flipp { text_bkg_color = color } else { text_color = color }
-                        }
-                        None => ()
-                    }
-
-                    match text_mode_char.background_color {
-                        Some(bkg_color) => {
-                            if text_mode_char.flipp { text_color = bkg_color } else { text_bkg_color = bkg_color }
-                        }
-                        None => ()
-                    }
+                    let mut text_color = text_mode_char.color;
+                    let text_bkg_color = text_mode_char.background_color;
+                    let mut flipp = text_mode_char.flipp;
 
                     //Blink
                     if text_mode_char.blink && self.half_second_latch {
-                        text_color = text_bkg_color;
+                        flipp = !flipp;
                     }
 
                     let pic = rom(&text_mode_char.unicode);
@@ -197,8 +268,8 @@ impl VirtualFrameBuffer {
                             let virtual_frame_buffer_pos = x_pos + character_sprite_col_count + (y_pos + row_count ) * self.width;
 
                             match c {
-                                '0' => self.frame[virtual_frame_buffer_pos] = if text_mode_char.flipp {text_color} else {text_bkg_color},
-                                '1' => self.frame[virtual_frame_buffer_pos] = if self.half_second_latch && text_mode_char.blink {text_bkg_color} else { if text_mode_char.flipp {text_bkg_color} else {text_color}},
+                                '0' => self.frame[virtual_frame_buffer_pos] = if flipp {text_color} else {text_bkg_color},
+                                '1' => self.frame[virtual_frame_buffer_pos] = if flipp {text_bkg_color} else {text_color},
                                 _ => ()
                             }
                             character_sprite_col_count += 1;
@@ -249,12 +320,12 @@ impl CrtEffectRenderer {
             render_horiz_upscale: 3,
             render_vert_upscale: 3,
             output_nb_of_values_per_pixel: 4,
-            scan_line_strength: 35,
+            scan_line_strength: 25, //35,
             sub_pixel_attenuation: 230,
         }
     }
 
-    pub fn render(&self, virtual_frame_buffer: &VirtualFrameBuffer, output_frame: &mut[u8]) {
+    pub fn render(&self, virtual_frame_buffer: &VirtualFrameBuffer, output_frame: &mut[u8], ctr_effect_on: bool) {
         
         let mut virt_line_pixel_counter: usize = 0;
         let mut virt_line_counter: usize = 0;
@@ -281,27 +352,29 @@ impl CrtEffectRenderer {
                         let mut final_rgb: (u8, u8, u8) = rgb;
 
                         // //Use 3 consecutive pixels as the 3 sub components of a single pixel
-                        match horizontal_copy {
-                            0 => {
-                                if final_rgb.1 < self.sub_pixel_attenuation {final_rgb.1 = 0} else {final_rgb.1 -= self.sub_pixel_attenuation};
-                                if final_rgb.2 < self.sub_pixel_attenuation {final_rgb.2 = 0} else {final_rgb.2 -= self.sub_pixel_attenuation};
-                            },
-                            1 => {
-                                if final_rgb.0 < self.sub_pixel_attenuation {final_rgb.0 = 0} else {final_rgb.0 -= self.sub_pixel_attenuation};
-                                if final_rgb.2 < self.sub_pixel_attenuation {final_rgb.2 = 0} else {final_rgb.2 -= self.sub_pixel_attenuation};
-                            },
-                            2 => {
-                                if final_rgb.0 < self.sub_pixel_attenuation {final_rgb.0 = 0} else {final_rgb.0 -= self.sub_pixel_attenuation};
-                                if final_rgb.1 < self.sub_pixel_attenuation {final_rgb.1 = 0} else {final_rgb.1 -= self.sub_pixel_attenuation};
-                            },
-                            _ => {}
-                        }
+                        if ctr_effect_on {
+                            match horizontal_copy {
+                                0 => {
+                                    if final_rgb.1 < self.sub_pixel_attenuation {final_rgb.1 = 0} else {final_rgb.1 -= self.sub_pixel_attenuation};
+                                    if final_rgb.2 < self.sub_pixel_attenuation {final_rgb.2 = 0} else {final_rgb.2 -= self.sub_pixel_attenuation};
+                                },
+                                1 => {
+                                    if final_rgb.0 < self.sub_pixel_attenuation {final_rgb.0 = 0} else {final_rgb.0 -= self.sub_pixel_attenuation};
+                                    if final_rgb.2 < self.sub_pixel_attenuation {final_rgb.2 = 0} else {final_rgb.2 -= self.sub_pixel_attenuation};
+                                },
+                                2 => {
+                                    if final_rgb.0 < self.sub_pixel_attenuation {final_rgb.0 = 0} else {final_rgb.0 -= self.sub_pixel_attenuation};
+                                    if final_rgb.1 < self.sub_pixel_attenuation {final_rgb.1 = 0} else {final_rgb.1 -= self.sub_pixel_attenuation};
+                                },
+                                _ => {}
+                            }
 
-                        //Scanline effect : dim every fourth line
-                        if vertical_copy == self.render_vert_upscale - 1 {
-                            if final_rgb.0 < self.scan_line_strength {final_rgb.0 = 0} else {final_rgb.0 -= self.scan_line_strength};
-                            if final_rgb.1 < self.scan_line_strength {final_rgb.1 = 0} else {final_rgb.1 -= self.scan_line_strength};
-                            if final_rgb.2 < self.scan_line_strength {final_rgb.2 = 0} else {final_rgb.2 -= self.scan_line_strength};
+                            //Scanline effect
+                            if vertical_copy == self.render_vert_upscale - 1 {
+                                if final_rgb.0 < self.scan_line_strength {final_rgb.0 = 0} else {final_rgb.0 -= self.scan_line_strength};
+                                if final_rgb.1 < self.scan_line_strength {final_rgb.1 = 0} else {final_rgb.1 -= self.scan_line_strength};
+                                if final_rgb.2 < self.scan_line_strength {final_rgb.2 = 0} else {final_rgb.2 -= self.scan_line_strength};
+                            }
                         }
 
                         output_frame[0 + final_offset] = final_rgb.0;

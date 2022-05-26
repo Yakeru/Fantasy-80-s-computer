@@ -11,41 +11,43 @@ use std::time::{
     Instant, Duration
 };
 use std::io::{self, Write};
+use crate::virtual_frame_buffer::{VirtualFrameBuffer, CrtEffectRenderer};
+use crate::process::*;
 
 mod characters_rom;
 mod text_layer;
 mod virtual_frame_buffer;
 mod color_palettes;
 mod process;
+mod sprite;
+
+//Apps
 mod shell;
 mod text_edit;
-mod sprite;
 mod sprite_editor;
-
-use crate::virtual_frame_buffer::{VirtualFrameBuffer, CrtEffectRenderer};
-use crate::process::*;
+mod lines;
 use crate::shell::*;
-use crate::sprite::Sprite;
-use crate::color_palettes::*;
+use crate::text_edit::*;
+use crate::sprite_editor::*;
+use crate::lines::*;
 
+const ENTER: char = '\u{000D}';
+const ESCAPE: char = '\u{001B}';
+const BACKSPACE: char = '\u{0008}';
+
+//Settings
 const WIDTH: usize = 1280;
 const HEIGHT: usize = 960;
-
 const FRAME_TIME_MS: u64 = 16; //ms per frame, so 16 = 60fps, 32 = 30fps, 1000 = 1fps
-
 const DEFAULT_BKG_COLOR: u8 = 28;
 const DEFAULT_COLOR: u8 = 10;
 const TEXT_COLUMNS: usize = 40;
 const TEXT_ROWS: usize = 30;
-
 const VIRTUAL_WIDTH: usize = 426;  // 426*3 = 1278 draw one black line on each side of screen for perfectly centered *3 scale
 const VIRTUAL_HEIGHT: usize = 320; // 320*3 = 960
+const SPLASH: &str = " Fantasy CPC Microcomputer V(0.1)\u{000D}\u{000D} 2022 Damien Torreilles\u{000D}\u{000D}";
 
-const SPLASH_1: &str = "************* FANTASY CPC **************";
-const SPLASH_2: &str = "*               ROM v0.1               *";
-const SPLASH_3: &str = "*        Damien Torreilles 2022        *";
-const SPLASH_4: &str = "****************************************";
-
+///*********************************************************THE MAIN 
 fn main()-> Result<(), Error> {
 
     //winit init and setup
@@ -59,8 +61,8 @@ fn main()-> Result<(), Error> {
     let mut input = WinitInputHelper::new();
     let mut modifiers = ModifiersState::default();
 
-    window.set_cursor_grab(true).unwrap();
-    window.set_cursor_visible(false);
+    // window.set_cursor_grab(true).unwrap();
+    // window.set_cursor_visible(false);
     
     //Pixels frame buffer init and setup
     let mut pixels = {
@@ -82,13 +84,25 @@ fn main()-> Result<(), Error> {
     let crt_renderer: CrtEffectRenderer = CrtEffectRenderer::new(WIDTH, HEIGHT);
 
     //Init Shell
-    //The Shell is a process that interprets the user commands to manage other processes.
+    //The Shell is the command line interpreter.
     //It is launched at startup, the winit event loop will update and render the shell by default if
     //no other process is running or has the focus.
     //It manages the start, stop, render, update of all the other processes.
     //It is always updated in the event loop event if another process has the focus (updated and rendered) 
     let mut shell = Shell::new();
     shell.set_state(true, true);
+
+    // let mut apps: Vec<Box<dyn Process>> = Vec::new();
+
+    let mut text_edit = TextEdit::new();
+    let mut sprite_edit = SpriteEditor::new();
+
+    let mut lines = Lines::new();
+    lines.set_state(true, true);
+
+    // apps.push(Box::new(text_edit));
+    // apps.push(Box::new(sprite_edit));
+    // apps.push(Box::new(lines));
 
     // let mut mouse_sprite: Sprite = Sprite::new_from_file(String::from("mouse"), &String::from("./resources/sprites/sprite1.txt"));
     // mouse_sprite.pos_x = VIRTUAL_WIDTH / 2;
@@ -104,10 +118,9 @@ fn main()-> Result<(), Error> {
 
     //Push the splash screen to the text layer
     virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
-    virtual_frame_buffer.get_text_layer().push_string(SPLASH_1, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
-    virtual_frame_buffer.get_text_layer().push_string(SPLASH_2, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
-    virtual_frame_buffer.get_text_layer().push_string(SPLASH_3, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
-    virtual_frame_buffer.get_text_layer().push_string(SPLASH_4, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
+    virtual_frame_buffer.get_text_layer().push_string(SPLASH, None, None, false);
+    // virtual_frame_buffer.get_text_layer().push_string(SPLASH_3, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
+    // virtual_frame_buffer.get_text_layer().push_string(SPLASH_4, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
 
     //The event loop here can be considered as a bios rom + terminal
     //it gathers all the keyborad inputs and sends them to the shell, the shell interprets them.
@@ -198,6 +211,7 @@ fn main()-> Result<(), Error> {
             Event::MainEventsCleared => {
                 
                 //Updating the shell
+                lines.update(char_received, key_pressed_os, key_released);
                 let process_response = shell.update(char_received, key_pressed_os, key_released);                
                 match process_response.event {
                     Some(event) => {*control_flow = event}
@@ -206,15 +220,17 @@ fn main()-> Result<(), Error> {
 
                 match process_response.message {
                     Some(message) => {
-                        virtual_frame_buffer.get_text_layer().push_string(&message, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
+                        virtual_frame_buffer.get_text_layer().push_string(&message, None, None, false);
                     }
                     None => ()
                 }
 
                 //Render
                 shell.draw(&mut virtual_frame_buffer);
+                lines.draw(&mut virtual_frame_buffer);
                 virtual_frame_buffer.render();
-                crt_renderer.render(&virtual_frame_buffer, pixels.get_frame());
+                //draw_loading_border(&mut virtual_frame_buffer.get_frame(), 40, 40);
+                crt_renderer.render(&virtual_frame_buffer, pixels.get_frame(), true);
                 pixels.render().expect("Pixels render oups");
                 window.request_redraw();
 

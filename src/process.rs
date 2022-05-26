@@ -8,6 +8,14 @@ pub struct ProcessResponse {
     pub message: Option<String>
 }
 
+pub enum ProcessMessage {
+    Message(String, Option<ControlFlow>),
+    StartApp(String),
+    QuitApp(String),
+    KillApp(String),
+    GiveMeFocus,
+}
+
 impl ProcessResponse {
 
     pub fn new() -> ProcessResponse {
