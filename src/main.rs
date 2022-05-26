@@ -210,9 +210,9 @@ fn main()-> Result<(), Error> {
             },
             Event::MainEventsCleared => {
                 
-                //Updating the shell
-                lines.update(char_received, key_pressed_os, key_released);
+                //Updating apps
                 let process_response = shell.update(char_received, key_pressed_os, key_released);                
+                
                 match process_response.event {
                     Some(event) => {*control_flow = event}
                     None => ()
@@ -220,10 +220,13 @@ fn main()-> Result<(), Error> {
 
                 match process_response.message {
                     Some(message) => {
+                        virtual_frame_buffer.get_text_layer().push_char('\u{000D}', None, None, false);
                         virtual_frame_buffer.get_text_layer().push_string(&message, None, None, false);
                     }
                     None => ()
                 }
+
+                lines.update(char_received, key_pressed_os, key_released);
 
                 //Render
                 shell.draw(&mut virtual_frame_buffer);

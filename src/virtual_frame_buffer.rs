@@ -206,7 +206,7 @@ impl VirtualFrameBuffer {
         //Add background renderees, sprite renderers etc...
     }
 
-    /// Gets all the sprites listed in the sprite vector and renders them at the rignt place in the
+    /// Gets all the sprites listed in the sprite vector and renders them at the right place in the
     /// pixel vector of the virtual frame buffer
     fn sprite_layer_renderer(&mut self) {
 
@@ -247,7 +247,7 @@ impl VirtualFrameBuffer {
             match character {
                 Some(text_mode_char) => {
 
-                    let mut text_color = text_mode_char.color;
+                    let text_color = text_mode_char.color;
                     let text_bkg_color = text_mode_char.background_color;
                     let mut flipp = text_mode_char.flipp;
 

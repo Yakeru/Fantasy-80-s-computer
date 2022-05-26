@@ -75,6 +75,10 @@ impl TextLayer {
         if self.show_cursor {
             self.characters.pop();
         }
+
+        if self.characters.len() >= self.columns * self.rows {
+            self.scroll_up();
+        }
         
         match text_layer_char {
             Some(c) => {

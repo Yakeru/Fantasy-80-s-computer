@@ -71,13 +71,15 @@ impl Process for Lines {
         let max_x = virtual_frame_buffer.get_width();
         let max_y = virtual_frame_buffer.get_height();
 
-        if self.draw_a_line {
-            let mut random = rand::thread_rng();
+        let mut random = rand::thread_rng();
+
+        for _i in 0..100 {
             let start_x: usize = random.gen_range(0..max_x);
             let start_y: usize = random.gen_range(0..max_y);
             let end_x: usize = random.gen_range(0..max_x);
             let end_y: usize = random.gen_range(0..max_y);
             let color: u8 = random.gen_range(0..32);
+            //if color >= 2 {color = 28} else {color = 0};
 
             let line: Line = Line {
                 start_x,
@@ -86,9 +88,7 @@ impl Process for Lines {
                 end_y,
                 color
             };
-
             virtual_frame_buffer.draw_line(line);
-            //self.draw_a_line = false;
         }
     }
 

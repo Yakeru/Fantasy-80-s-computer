@@ -272,6 +272,7 @@ impl Process for Shell {
         if self.clear_text_layer {
             virtual_frame_buffer.get_text_layer().clear();
             self.clear_text_layer = false;
+            self.last_character_received = None;
         }
 
         //virtual_frame_buffer.clear_frame_buffer(self.bkg_color);
