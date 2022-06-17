@@ -1,8 +1,8 @@
 use winit::{event::VirtualKeyCode,event_loop::ControlFlow};
 use crate::virtual_frame_buffer::VirtualFrameBuffer;
 use crate::process::*;
-use crate::text_edit::*;
-use crate::sprite_editor::*;
+use crate::apps::text_edit::*;
+use crate::apps::sprite_editor::*;
 use crate::text_layer::TextLayerChar;
 use crate::color_palettes::*;
 
@@ -275,7 +275,7 @@ impl Process for Shell {
             self.last_character_received = None;
         }
 
-        //virtual_frame_buffer.clear_frame_buffer(self.bkg_color);
+        virtual_frame_buffer.clear_frame_buffer(self.bkg_color);
 
         match self.last_character_received {
             Some(c) => {

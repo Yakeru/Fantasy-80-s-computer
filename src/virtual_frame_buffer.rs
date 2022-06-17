@@ -146,11 +146,11 @@ impl VirtualFrameBuffer {
         for row in 0..square.size.width {
             for column in 0..square.size.height {
                 if square.fill {
-                    let offset = start_offset + column + self.width * row;
+                    let offset = (start_offset + column + self.width * row)  % (self.width * self.height);
                     self.frame[offset] = square.color;
                 } else {
                     if row == 0 || row == square.size.width - 1 || column == 0 || column == square.size.height - 1 {
-                        let offset = start_offset + column + self.width * row;
+                        let offset = (start_offset + column + self.width * row) % (self.width * self.height);
                         self.frame[offset] = square.color;
                     }
                 }

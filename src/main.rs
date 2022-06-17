@@ -23,17 +23,12 @@ mod sprite;
 
 //Apps
 mod shell;
-mod text_edit;
-mod sprite_editor;
-mod lines;
+mod apps;
 use crate::shell::*;
-use crate::text_edit::*;
-use crate::sprite_editor::*;
-use crate::lines::*;
-
-const ENTER: char = '\u{000D}';
-const ESCAPE: char = '\u{001B}';
-const BACKSPACE: char = '\u{0008}';
+use crate::apps::text_edit::*;
+use crate::apps::sprite_editor::*;
+use crate::apps::lines::*;
+use crate::apps::squares::*;
 
 //Settings
 const WIDTH: usize = 1280;
@@ -99,6 +94,9 @@ fn main()-> Result<(), Error> {
 
     let mut lines = Lines::new();
     lines.set_state(true, true);
+
+    let mut squares = Squares::new();
+    squares.set_state(true, true);
 
     // apps.push(Box::new(text_edit));
     // apps.push(Box::new(sprite_edit));
@@ -226,11 +224,13 @@ fn main()-> Result<(), Error> {
                     None => ()
                 }
 
-                lines.update(char_received, key_pressed_os, key_released);
+                //lines.update(char_received, key_pressed_os, key_released);
+                //squares.update(char_received, key_pressed_os, key_released);
 
                 //Render
                 shell.draw(&mut virtual_frame_buffer);
-                lines.draw(&mut virtual_frame_buffer);
+                //lines.draw(&mut virtual_frame_buffer);
+                //squares.draw(&mut virtual_frame_buffer);
                 virtual_frame_buffer.render();
                 //draw_loading_border(&mut virtual_frame_buffer.get_frame(), 40, 40);
                 crt_renderer.render(&virtual_frame_buffer, pixels.get_frame(), true);

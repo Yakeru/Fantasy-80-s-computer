@@ -73,7 +73,7 @@ impl Process for Lines {
 
         let mut random = rand::thread_rng();
 
-        for _i in 0..100 {
+        for _i in 0..10 {
             let start_x: usize = random.gen_range(0..max_x);
             let start_y: usize = random.gen_range(0..max_y);
             let end_x: usize = random.gen_range(0..max_x);
