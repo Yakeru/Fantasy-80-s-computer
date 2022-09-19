@@ -89,19 +89,24 @@ fn main()-> Result<(), Error> {
     shell.set_state(true, true);
 
     //The vector containing the various "apps"
-    let mut apps: Vec<Box<dyn Process>> = Vec::new();
+    // let mut apps: Vec<Box<dyn Process>> = Vec::new();
 
     let mut text_edit = TextEdit::new();
+    text_edit.set_state(false, false);
     let mut sprite_edit = SpriteEditor::new();
+    sprite_edit.set_state(false, false);
     let mut lines = Lines::new();
+    lines.set_state(false, false);
     let mut squares = Squares::new();
+    squares.set_state(false, false);
     let mut weather_app = WeatherApp::new();
+    weather_app.set_state(false, false);
 
-    apps.push(Box::new(text_edit));
-    apps.push(Box::new(sprite_edit));
-    apps.push(Box::new(lines));
-    apps.push(Box::new(squares));
-    //apps.push(Box::new(weatherApp));
+    // apps.push(Box::new(text_edit));
+    // apps.push(Box::new(sprite_edit));
+    // apps.push(Box::new(lines));
+    // apps.push(Box::new(squares));
+    // apps.push(Box::new(weather_app));
 
     // let mut mouse_sprite: Sprite = Sprite::new_from_file(String::from("mouse"), &String::from("./resources/sprites/sprite1.txt"));
     // mouse_sprite.pos_x = VIRTUAL_WIDTH / 2;
@@ -216,27 +221,30 @@ fn main()-> Result<(), Error> {
             Event::MainEventsCleared => {
                 
                 //Updating apps
-                // let process_response = shell.update(char_received, key_pressed_os, key_released);                
+                let process_response = shell.update(char_received, key_pressed_os, key_released);                
                 
-                // match process_response.event {
-                //     Some(event) => {*control_flow = event}
-                //     None => ()
-                // }
+                match process_response.event {
+                    Some(event) => {*control_flow = event}
+                    None => ()
+                }
 
-                // match process_response.message {
-                //     Some(message) => {
-                //         virtual_frame_buffer.get_text_layer().push_char('\u{000D}', None, None, false);
-                //         virtual_frame_buffer.get_text_layer().push_string(&message, None, None, false);
-                //     }
-                //     None => ()
-                // }
+                match process_response.message {
+                    Some(message) => {
+                        virtual_frame_buffer.get_text_layer().push_char('\u{000D}', None, None, false);
+                        virtual_frame_buffer.get_text_layer().push_string(&message, None, None, false);
+                    }
+                    None => ()
+                }
 
                 //Update apps
-                weather_app.update(char_received, key_pressed_os, key_released);
+                //apps[4].update(char_received, key_pressed_os, key_released);
+                //weather_app.update(char_received, key_pressed_os, key_released);
                 
                 //Draw the app that is focused
-                weather_app.draw(&mut virtual_frame_buffer);
-                //shell.draw(&mut virtual_frame_buffer);
+                //apps[4].draw(&mut virtual_frame_buffer);
+                //weather_app.draw(&mut virtual_frame_buffer);
+                
+                shell.draw(&mut virtual_frame_buffer);
                 
                 virtual_frame_buffer.render();
                 draw_loading_border(&mut virtual_frame_buffer.get_frame(), 40, 40);

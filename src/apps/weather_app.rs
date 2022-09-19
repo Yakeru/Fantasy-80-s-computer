@@ -20,14 +20,10 @@ pub struct WeatherApp {
     drawing: bool,
     started: bool,
     ended: bool,
-    temp: f64,
-    feels_like: f64,
-    pressure: f64,
-    humidity: f64,
-    message: String,
     receiver: Receiver,
     update_interval: Duration,
-    last_update: Instant
+    last_update: Instant,
+    message: String
 }
 
 impl WeatherApp {
@@ -47,14 +43,10 @@ impl WeatherApp {
             drawing: false,
             started: false,
             ended: false,
-            temp: 0f64,
-            feels_like: 0f64,
-            pressure: 0f64,
-            humidity: 0f64,
-            message: String::from("Loading..."),
             receiver: openweathermap::init("45.4874487,-73.5745913", "metric", "fr", "9d3cb43e0e192a1fbf593546a1de2753", 1),
             update_interval: Duration::from_secs(60),
-            last_update: Instant::now().checked_add(Duration::from_secs(55)).unwrap()
+            last_update: Instant::now().checked_add(Duration::from_secs(55)).unwrap(),
+            message: String::from("Loading...")
         }
     }
 }
@@ -83,12 +75,8 @@ impl Process for WeatherApp {
                 Some(result) => {
                     match result {
                         Ok(current_weather) => {
-                            self.temp = current_weather.main.temp;
-                            self.feels_like = current_weather.main.feels_like;
-                            self.humidity = current_weather.main.humidity;
-                            self.pressure = current_weather.main.pressure;
-                            self.message = format!("T: {}c, fl:{}c, H:{}%, P:{}Kpa", self.temp, self.feels_like, self.humidity, self.pressure);
-                        },
+                            self.message = format!("Temp: {}c\u{000D}feels like: {}c\u{000D}Humidity: {}%\u{000D}Pressure: {}Kpa\u{000D}Description: {}", current_weather.main.temp, 
+                            current_weather.main.feels_like, current_weather.main.humidity, current_weather.main.pressure, &current_weather.weather[0].description);},
                         Err(message) => println!("OpenWeather API message {}", message)
                     }
                 }
