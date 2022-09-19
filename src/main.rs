@@ -29,11 +29,12 @@ use crate::apps::text_edit::*;
 use crate::apps::sprite_editor::*;
 use crate::apps::lines::*;
 use crate::apps::squares::*;
+use crate::apps::weather_app::*;
 
 //Settings
 const WIDTH: usize = 1280;
 const HEIGHT: usize = 960;
-const FRAME_TIME_MS: u64 = 16; //ms per frame, so 16 = 60fps, 32 = 30fps, 1000 = 1fps
+const FRAME_TIME_MS: u64 = 16; //ms per frame : 16 = 60fps, 32 = 30fps, 1000 = 1fps
 const DEFAULT_BKG_COLOR: u8 = 28;
 const DEFAULT_COLOR: u8 = 10;
 const TEXT_COLUMNS: usize = 40;
@@ -56,8 +57,8 @@ fn main()-> Result<(), Error> {
     let mut input = WinitInputHelper::new();
     let mut modifiers = ModifiersState::default();
 
-    // window.set_cursor_grab(true).unwrap();
-    // window.set_cursor_visible(false);
+    window.set_cursor_grab(winit::window::CursorGrabMode::None).unwrap();
+    window.set_cursor_visible(false);
     
     //Pixels frame buffer init and setup
     let mut pixels = {
@@ -87,20 +88,20 @@ fn main()-> Result<(), Error> {
     let mut shell = Shell::new();
     shell.set_state(true, true);
 
-    // let mut apps: Vec<Box<dyn Process>> = Vec::new();
+    //The vector containing the various "apps"
+    let mut apps: Vec<Box<dyn Process>> = Vec::new();
 
     let mut text_edit = TextEdit::new();
     let mut sprite_edit = SpriteEditor::new();
-
     let mut lines = Lines::new();
-    lines.set_state(true, true);
-
     let mut squares = Squares::new();
-    squares.set_state(true, true);
+    let mut weather_app = WeatherApp::new();
 
-    // apps.push(Box::new(text_edit));
-    // apps.push(Box::new(sprite_edit));
-    // apps.push(Box::new(lines));
+    apps.push(Box::new(text_edit));
+    apps.push(Box::new(sprite_edit));
+    apps.push(Box::new(lines));
+    apps.push(Box::new(squares));
+    //apps.push(Box::new(weatherApp));
 
     // let mut mouse_sprite: Sprite = Sprite::new_from_file(String::from("mouse"), &String::from("./resources/sprites/sprite1.txt"));
     // mouse_sprite.pos_x = VIRTUAL_WIDTH / 2;
@@ -108,7 +109,7 @@ fn main()-> Result<(), Error> {
     // virtual_frame_buffer.get_sprites().push(mouse_sprite);
 
     //Variables used to collect all the events relevent to the shell and processes occuring during a loop.
-    //Once all the vents have been cleared, they are sent to the shell for its update.
+    //Once all the events have been cleared, they are sent to the shell for its update.
     let mut key_released: Option<VirtualKeyCode> = None;
     let mut key_pressed_os: Option<VirtualKeyCode> = None;
     let mut char_received: Option<char> = None;
@@ -117,8 +118,6 @@ fn main()-> Result<(), Error> {
     //Push the splash screen to the text layer
     virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
     virtual_frame_buffer.get_text_layer().push_string(SPLASH, None, None, false);
-    // virtual_frame_buffer.get_text_layer().push_string(SPLASH_3, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
-    // virtual_frame_buffer.get_text_layer().push_string(SPLASH_4, DEFAULT_COLOR, DEFAULT_BKG_COLOR, false);
 
     //The event loop here can be considered as a bios rom + terminal
     //it gathers all the keyborad inputs and sends them to the shell, the shell interprets them.
@@ -126,7 +125,7 @@ fn main()-> Result<(), Error> {
     event_loop.run(move |event, _, control_flow| {
 
         //Control_flow::Poll used 100% of one CPU core (In Windows 10 at least)
-        //WaitUntil polls every "const FPS" ms instead: droped CPU usage from 20% to 4%.
+        //WaitUntil polls every "const FPS" ms instead: droped global CPU usage from 20% to 4%.
         //The whole program loops (updates and draws) at "const FPS" fps.
         let refresh_timer: Instant = Instant::now().checked_add(Duration::from_millis(FRAME_TIME_MS)).unwrap();
         *control_flow = ControlFlow::WaitUntil(refresh_timer);
@@ -156,6 +155,10 @@ fn main()-> Result<(), Error> {
                 key_pressed_os = Some(VirtualKeyCode::PageUp);
             }
 
+            if input.key_pressed_os(VirtualKeyCode::PageDown) {
+                key_pressed_os = Some(VirtualKeyCode::PageDown);
+            }
+
             if input.key_released(VirtualKeyCode::Escape) || input.quit() {
                 *control_flow = ControlFlow::Exit;
                 key_released = Some(VirtualKeyCode::Escape);
@@ -179,6 +182,10 @@ fn main()-> Result<(), Error> {
 
             if input.key_released(VirtualKeyCode::PageUp) {
                 key_released = Some(VirtualKeyCode::PageUp);
+            }
+
+            if input.key_released(VirtualKeyCode::PageDown) {
+                key_released = Some(VirtualKeyCode::PageDown);
             }
         }
 
@@ -209,30 +216,30 @@ fn main()-> Result<(), Error> {
             Event::MainEventsCleared => {
                 
                 //Updating apps
-                let process_response = shell.update(char_received, key_pressed_os, key_released);                
+                // let process_response = shell.update(char_received, key_pressed_os, key_released);                
                 
-                match process_response.event {
-                    Some(event) => {*control_flow = event}
-                    None => ()
-                }
+                // match process_response.event {
+                //     Some(event) => {*control_flow = event}
+                //     None => ()
+                // }
 
-                match process_response.message {
-                    Some(message) => {
-                        virtual_frame_buffer.get_text_layer().push_char('\u{000D}', None, None, false);
-                        virtual_frame_buffer.get_text_layer().push_string(&message, None, None, false);
-                    }
-                    None => ()
-                }
+                // match process_response.message {
+                //     Some(message) => {
+                //         virtual_frame_buffer.get_text_layer().push_char('\u{000D}', None, None, false);
+                //         virtual_frame_buffer.get_text_layer().push_string(&message, None, None, false);
+                //     }
+                //     None => ()
+                // }
 
-                //lines.update(char_received, key_pressed_os, key_released);
-                //squares.update(char_received, key_pressed_os, key_released);
-
-                //Render
-                shell.draw(&mut virtual_frame_buffer);
-                //lines.draw(&mut virtual_frame_buffer);
-                //squares.draw(&mut virtual_frame_buffer);
+                //Update apps
+                weather_app.update(char_received, key_pressed_os, key_released);
+                
+                //Draw the app that is focused
+                weather_app.draw(&mut virtual_frame_buffer);
+                //shell.draw(&mut virtual_frame_buffer);
+                
                 virtual_frame_buffer.render();
-                //draw_loading_border(&mut virtual_frame_buffer.get_frame(), 40, 40);
+                draw_loading_border(&mut virtual_frame_buffer.get_frame(), 40, 40);
                 crt_renderer.render(&virtual_frame_buffer, pixels.get_frame(), true);
                 pixels.render().expect("Pixels render oups");
                 window.request_redraw();
