@@ -43,7 +43,7 @@ impl WeatherApp {
             drawing: false,
             started: false,
             ended: false,
-            receiver: openweathermap::init("45.4874487,-73.5745913", "metric", "fr", "9d3cb43e0e192a1fbf593546a1de2753", 1),
+            receiver: openweathermap::init("45.4874487,-73.5745913", "metric", "fr", "", 1),
             update_interval: Duration::from_secs(60),
             last_update: Instant::now().checked_add(Duration::from_secs(55)).unwrap(),
             message: String::from("Loading...")
