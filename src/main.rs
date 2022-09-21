@@ -247,8 +247,8 @@ fn main()-> Result<(), Error> {
                 shell.draw(&mut virtual_frame_buffer);
                 
                 virtual_frame_buffer.render();
-                draw_loading_border(&mut virtual_frame_buffer.get_frame(), 40, 40);
-                crt_renderer.render(&virtual_frame_buffer, pixels.get_frame(), false);
+                //draw_loading_border(&mut virtual_frame_buffer.get_frame(), 40, 40);
+                crt_renderer.render(&virtual_frame_buffer, pixels.get_frame(), true);
                 pixels.render().expect("Pixels render oups");
                 window.request_redraw();
 

@@ -390,6 +390,6 @@ impl CrtEffectRenderer {
         }
 
         let end: Duration = Instant::now().duration_since(start);
-        println!("Frame: {} ns", end.as_nanos());
+        println!("Frame: {} micro s", end.as_micros());
     }
 }
