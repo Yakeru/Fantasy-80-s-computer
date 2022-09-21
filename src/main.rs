@@ -32,25 +32,27 @@ use crate::apps::squares::*;
 use crate::apps::weather_app::*;
 
 //Settings
-const WIDTH: usize = 2560;
-const HEIGHT: usize = 1920;
+
 const FRAME_TIME_MS: u64 = 16; //ms per frame : 16 = 60fps, 32 = 30fps, 1000 = 1fps
-const DEFAULT_BKG_COLOR: u8 = 28;
-const DEFAULT_COLOR: u8 = 10;
-const TEXT_COLUMNS: usize = 40;
-const TEXT_ROWS: usize = 30;
-const VIRTUAL_WIDTH: usize = 853;  // 426*3 = 1278 draw one black line on each side of screen for perfectly centered *3 scale
-const VIRTUAL_HEIGHT: usize = 640; // 320*3 = 960
+
+
 const SPLASH: &str = " Fantasy CPC Microcomputer V(0.1)\u{000D}\u{000D} 2022 Damien Torreilles\u{000D}\u{000D}";
 
 ///*********************************************************THE MAIN 
 fn main()-> Result<(), Error> {
 
+    //Custom intermediate frame buffer
+    //Has 1/3 the horizontal resolution and 1/3 the vertical resoluton of pixels surface texture ans winit window size.
+    //The virtual frame buffer has a text layer, sprite lists, background layers and tiles layers that can be accessed
+    //by Processes (structs implemeting "process") to build their image.
+    //Its rendere combines all the layers in its frame to produce the complete image.
+    let mut virtual_frame_buffer: VirtualFrameBuffer = VirtualFrameBuffer::new(FRAME_TIME_MS);
+
     //winit init and setup
     let event_loop = EventLoop::new();
     let builder = WindowBuilder::new()
         .with_decorations(true)
-        .with_inner_size(PhysicalSize::new(WIDTH as i32, HEIGHT as i32))
+        .with_inner_size(PhysicalSize::new(virtual_frame_buffer.get_window_size().0 as i32, virtual_frame_buffer.get_window_size().1 as i32))
         .with_title("Yay, une fenêtre !")
         .with_resizable(false);
     let window = builder.build(&event_loop).expect("Window creation failed !");
@@ -64,20 +66,15 @@ fn main()-> Result<(), Error> {
     let mut pixels = {
         let window_size = window.inner_size();
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
-        Pixels::new(WIDTH as u32, HEIGHT as u32, surface_texture)?
+        Pixels::new(virtual_frame_buffer.get_window_size().0 as u32, virtual_frame_buffer.get_window_size().1 as u32, surface_texture)?
     };
 
-    //Custom intermediate frame buffer
-    //Has 1/3 the horizontal resolution and 1/3 the vertical resoluton of pixels surface texture ans winit window size.
-    //The virtual frame buffer has a text layer, sprite lists, background layers and tiles layers that can be accessed
-    //by Processes (structs implemeting "process") to build their image.
-    //Its rendere combines all the layers in its frame to produce the complete image.
-    let mut virtual_frame_buffer: VirtualFrameBuffer = VirtualFrameBuffer::new(FRAME_TIME_MS, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, TEXT_COLUMNS, TEXT_ROWS, DEFAULT_COLOR, DEFAULT_BKG_COLOR);
+    
 
     //The crt renderer takes the virtual frame buffers's frame, upscales it 3 times in X and Y to matche the pixcel's frame and winow size,
     //then applyes an effect to evoke CRT sub-pixels and scanlines.
     //The upscaled and "crt'ed" image is then pushed into pixel's frame for final render.
-    let crt_renderer: CrtEffectRenderer = CrtEffectRenderer::new(WIDTH, HEIGHT);
+    let crt_renderer: CrtEffectRenderer = CrtEffectRenderer::new();
 
     //Init Shell
     //The Shell is the command line interpreter.
@@ -121,7 +118,7 @@ fn main()-> Result<(), Error> {
     let mut mouse_move_delta: (f64, f64) = (0.0, 0.0);
 
     //Push the splash screen to the text layer
-    virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
+    virtual_frame_buffer.clear_frame_buffer();
     virtual_frame_buffer.get_text_layer().push_string(SPLASH, None, None, false);
 
     //The event loop here can be considered as a bios rom + terminal
@@ -264,7 +261,7 @@ fn main()-> Result<(), Error> {
     });
 }
 
-fn draw_loading_border(frame_buffer: &mut[u8], vert_size: usize, horiz_size: usize) {
+fn draw_loading_border(virtual_frame_buffer: &VirtualFrameBuffer, frame_buffer: &mut[u8], vert_size: usize, horiz_size: usize) {
     let mut random = rand::thread_rng();
     let mut rgb_color: u8 = random.gen_range(0..32);
 
@@ -275,7 +272,7 @@ fn draw_loading_border(frame_buffer: &mut[u8], vert_size: usize, horiz_size: usi
 
     for pixel in frame_buffer.chunks_exact_mut(1) {
 
-        if line_pixel_count < horiz_size || line_pixel_count > VIRTUAL_WIDTH - horiz_size || line_count < vert_size || line_count > VIRTUAL_HEIGHT - vert_size {
+        if line_pixel_count < horiz_size || line_pixel_count > virtual_frame_buffer.get_width() - horiz_size || line_count < vert_size || line_count > virtual_frame_buffer.get_height() - vert_size {
             if band_count >= band {
                 rgb_color = random.gen_range(0..32);
                 band_count = 0;
@@ -288,7 +285,7 @@ fn draw_loading_border(frame_buffer: &mut[u8], vert_size: usize, horiz_size: usi
         line_pixel_count += 1;
 
 
-        if line_pixel_count == VIRTUAL_WIDTH {
+        if line_pixel_count == virtual_frame_buffer.get_width() {
             band_count += 1;
             line_count += 1;
             line_pixel_count = 0;

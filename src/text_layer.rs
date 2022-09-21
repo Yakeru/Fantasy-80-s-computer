@@ -1,3 +1,5 @@
+const TEXT_COLUMNS: usize = 40;
+const TEXT_ROWS: usize = 30;
 const DEFAULT_COLOR: u8 = 10;
 const DEFAULT_BKG_COLOR: u8 = 28;
 const DEFAULT_CURSOR: char = '\u{25AE}';
@@ -14,8 +16,6 @@ pub struct TextLayerChar {
 
 /// The text layer buffer
 pub struct TextLayer {
-    columns: usize,
-    rows: usize,
     color: u8,
     bkg_color: u8,
     cursor: char,
@@ -25,7 +25,7 @@ pub struct TextLayer {
 
 impl TextLayer {
 
-    pub fn new(columns: usize, rows: usize) -> TextLayer {
+    pub fn new() -> TextLayer {
         let mut fb: Vec<Option<TextLayerChar>> = Vec::new();
         fb.push(Some(TextLayerChar {
             unicode: DEFAULT_CURSOR,
@@ -35,8 +35,6 @@ impl TextLayer {
             blink: true
         }));
         TextLayer {
-            columns,
-            rows,
             color: DEFAULT_COLOR,
             bkg_color: DEFAULT_BKG_COLOR,
             cursor: DEFAULT_CURSOR,
@@ -45,12 +43,8 @@ impl TextLayer {
         }
     }
 
-    pub fn get_columns(&self) -> usize {
-        return self.columns;
-    }
-
-    pub fn get_rows(&self) -> usize {
-        return self.rows;
+    pub fn get_size(&self) -> (usize, usize) {
+        return (TEXT_COLUMNS, TEXT_ROWS);
     }
 
     pub fn get_characters(&self) -> &Vec<Option<TextLayerChar>> {
@@ -65,6 +59,10 @@ impl TextLayer {
         self.bkg_color = bkg_color;
     }
 
+    pub fn get_default_bkg_color(&mut self) -> u8 {
+        self.bkg_color
+    }
+
     pub fn set_cursor(&mut self, cursor: char) {
         self.cursor = cursor;
     }
@@ -76,7 +74,7 @@ impl TextLayer {
             self.characters.pop();
         }
 
-        if self.characters.len() >= self.columns * self.rows {
+        if self.characters.len() >= TEXT_COLUMNS * TEXT_ROWS {
             self.scroll_up();
         }
         
@@ -88,12 +86,12 @@ impl TextLayer {
                     } 
                     
                     '\u{000D}' => { //Enter
-                        if self.characters.len() % self.columns == 0 {
-                            for _i in 0..self.columns {
+                        if self.characters.len() % TEXT_COLUMNS == 0 {
+                            for _i in 0..TEXT_COLUMNS {
                                 self.characters.push(None);
                             }
                         }
-                        while self.characters.len() % self.columns > 0 {
+                        while self.characters.len() % TEXT_COLUMNS > 0 {
                             self.characters.push(None);
                         }
                     }
@@ -204,11 +202,11 @@ impl TextLayer {
     /// it pops characters at the beginning of the vector to make
     /// the rest scroll up
     pub fn scroll_up(&mut self) {
-        for i in self.columns..self.characters.len() {
-            self.characters[i - self.columns] = self.characters[i];
+        for i in TEXT_COLUMNS..self.characters.len() {
+            self.characters[i - TEXT_COLUMNS] = self.characters[i];
         }
 
-        for _i in 0..self.columns {
+        for _i in 0..TEXT_COLUMNS {
             self.pop_char();
         }
     }

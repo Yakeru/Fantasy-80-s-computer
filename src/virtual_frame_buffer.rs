@@ -7,17 +7,18 @@ use std::time::{
 };
 use winit::dpi::PhysicalSize;
 
+const WIDTH: usize = 2560; //1280
+const HEIGHT: usize = 1920; //960
+const VIRTUAL_WIDTH: usize = 853;  // 426*3 = 1278 draw one black line on each side of screen for perfectly centered *3 scale
+const VIRTUAL_HEIGHT: usize = 640; // 320*3 = 960
+
 /// Contains a list of u8 values corresponding to values from a color palette.
 /// So just one u8 per pixel, R G and B values are retrieved from the palette, No Alpha.
 /// This frame buffer is meant to contain a low resolution low color picure that 
 /// will be upscaled into the final pixel 2D frame buffer.
 pub struct VirtualFrameBuffer {
     frame_time_ms: u64,
-    width: usize,
-    height: usize,
-    columns_count: usize,
-    rows_count: usize,
-    frame: Vec<u8>,
+    frame: [u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT],
     text_layer: TextLayer,
     sprites: Vec<Sprite>,
     //background_layer
@@ -47,30 +48,15 @@ pub struct Line {
 }
 
 impl VirtualFrameBuffer {
-    pub fn new(frame_time_ms: u64, fb_width: usize, 
-        fb_height: usize, 
-        columns_count: usize, 
-        rows_count: usize, 
-        default_text_color: u8,
-        default_text_bkg_color: u8) -> VirtualFrameBuffer {
-        let size = fb_width * fb_height;
-        let mut virtual_frame_buffer = Vec::new();
-
-        for _value in 0..size {
-            virtual_frame_buffer.push(0);
-        }
-
-        let text_layer = TextLayer::new(columns_count, rows_count);
+    pub fn new(frame_time_ms: u64) -> VirtualFrameBuffer {
+        let mut virtual_frame_buffer = [0; VIRTUAL_WIDTH * VIRTUAL_HEIGHT];
+        let text_layer = TextLayer::new();
         let sprites = Vec::new();
         
         //TODO init background_layers, tiles_layers, sprites_layers... and correesponding renderes
 
         VirtualFrameBuffer {
             frame_time_ms,
-            width: fb_width,
-            height: fb_height,
-            columns_count,
-            rows_count,
             frame: virtual_frame_buffer,
             text_layer,
             sprites,
@@ -79,6 +65,10 @@ impl VirtualFrameBuffer {
             half_second_tick: false,
             half_second_latch: false
         }
+    }
+
+    pub fn get_window_size(&mut self) -> (usize, usize) {
+        (WIDTH, HEIGHT)
     }
 
     pub fn get_frame(&mut self) -> &mut [u8] {
@@ -90,17 +80,17 @@ impl VirtualFrameBuffer {
     }
 
     pub fn get_pixel(&mut self, x: usize, y: usize) -> u8 {
-        let index = VirtualFrameBuffer::coord_to_vec_index(x, y, self.width, self.height);
+        let index = VirtualFrameBuffer::coord_to_vec_index(x, y);
         self.frame[index]
     }
 
     pub fn set_pixel(&mut self, x: usize, y: usize, color: u8) {
-        let index = VirtualFrameBuffer::coord_to_vec_index(x, y, self.width, self.height);
+        let index = VirtualFrameBuffer::coord_to_vec_index(x, y);
         self.frame[index] = color
     }
 
-    pub fn coord_to_vec_index(x: usize, y: usize, width: usize, height: usize) -> usize {
-        (y * width + x) % (width * height)
+    pub fn coord_to_vec_index(x: usize, y: usize) -> usize {
+        (y * VIRTUAL_WIDTH + x) % (VIRTUAL_WIDTH * VIRTUAL_HEIGHT)
     }
 
     pub fn draw_line(&mut self, line: Line) {
@@ -141,16 +131,16 @@ impl VirtualFrameBuffer {
 
     pub fn draw_square(&mut self, square: Square) {
 
-        let start_offset: usize = VirtualFrameBuffer::coord_to_vec_index(square.pos_x, square.pos_y, self.width, self.height);
+        let start_offset: usize = VirtualFrameBuffer::coord_to_vec_index(square.pos_x, square.pos_y);
 
         for row in 0..square.size.width {
             for column in 0..square.size.height {
                 if square.fill {
-                    let offset = (start_offset + column + self.width * row)  % (self.width * self.height);
+                    let offset = (start_offset + column + VIRTUAL_WIDTH * row)  % (VIRTUAL_WIDTH * VIRTUAL_HEIGHT);
                     self.frame[offset] = square.color;
                 } else {
                     if row == 0 || row == square.size.width - 1 || column == 0 || column == square.size.height - 1 {
-                        let offset = (start_offset + column + self.width * row) % (self.width * self.height);
+                        let offset = (start_offset + column + VIRTUAL_WIDTH * row) % (VIRTUAL_WIDTH * VIRTUAL_HEIGHT);
                         self.frame[offset] = square.color;
                     }
                 }
@@ -161,10 +151,9 @@ impl VirtualFrameBuffer {
     /// Sets all the pixels to the specified color of the color palette
     /// Used to clear the screen between frames or set the background when
     /// redering only the text layer
-    pub fn clear_frame_buffer(&mut self, color: u8) {
-        for value in self.frame.chunks_exact_mut(1) {
-            value[0] = color;
-        }
+    pub fn clear_frame_buffer(&mut self) {
+        let clear_frame: [u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT] = [self.text_layer.get_default_bkg_color(); VIRTUAL_WIDTH * VIRTUAL_HEIGHT];
+        self.frame.copy_from_slice(&clear_frame);
     }
 
     pub fn get_text_layer(&mut self) -> &mut TextLayer {
@@ -172,11 +161,11 @@ impl VirtualFrameBuffer {
     }
 
     pub fn get_width(&self) -> usize {
-        self.width
+        VIRTUAL_WIDTH
     }
 
     pub fn get_height(&self) -> usize {
-        self.height
+        VIRTUAL_HEIGHT
     }
 
     pub fn get_sprites(&mut self) -> &mut Vec<Sprite> {
@@ -215,11 +204,11 @@ impl VirtualFrameBuffer {
             let mut pixel_count = 0;
             let mut sprite_line_count = 0;
 
-            let global_offset = VirtualFrameBuffer::coord_to_vec_index(sprite[0].pos_x, sprite[0].pos_y, self.width, self.height);
+            let global_offset = VirtualFrameBuffer::coord_to_vec_index(sprite[0].pos_x, sprite[0].pos_y);
 
             for pixel in &sprite[0].image {
         
-                let virtual_fb_offset = (global_offset + self.width * sprite_line_count + pixel_count) % (self.width * self.height);
+                let virtual_fb_offset = (global_offset + VIRTUAL_WIDTH * sprite_line_count + pixel_count) % (VIRTUAL_WIDTH * VIRTUAL_HEIGHT);
 
                 if *pixel != 0 {
                     self.frame[virtual_fb_offset] = *pixel;
@@ -235,8 +224,8 @@ impl VirtualFrameBuffer {
     }
 
     fn text_layer_renderer(&mut self) {
-        let horizontal_border: usize = (self.width - self.columns_count * 8) / 2;
-        let vertical_border: usize = (self.height - self.rows_count * 8) / 2;
+        let horizontal_border: usize = (VIRTUAL_HEIGHT - self.text_layer.get_size().1 * 8) / 2;
+        let vertical_border: usize = (VIRTUAL_WIDTH - self.text_layer.get_size().0 * 8) / 2;
         let mut x_pos = horizontal_border;
         let mut y_pos = vertical_border;
         let mut text_row_count = 0;
@@ -265,7 +254,7 @@ impl VirtualFrameBuffer {
                         let mut character_sprite_col_count = 0;
             
                         for c in row_in_binary.chars() {
-                            let virtual_frame_buffer_pos = x_pos + character_sprite_col_count + (y_pos + row_count ) * self.width;
+                            let virtual_frame_buffer_pos = x_pos + character_sprite_col_count + (y_pos + row_count ) * VIRTUAL_WIDTH;
 
                             match c {
                                 '0' => self.frame[virtual_frame_buffer_pos] = if flipp {text_color} else {text_bkg_color},
@@ -283,14 +272,14 @@ impl VirtualFrameBuffer {
             text_col_count += 1;
             x_pos += 8;
     
-            if text_col_count == self.columns_count {
+            if text_col_count == self.text_layer.get_size().0 {
                 text_col_count = 0;
                 text_row_count += 1;
                 x_pos = horizontal_border;
                 y_pos += 8;
             } 
     
-            if text_row_count == self.rows_count {
+            if text_row_count == self.text_layer.get_size().1 {
                 text_col_count = 0;
                 text_row_count = 0;
                 x_pos = horizontal_border;
@@ -301,8 +290,6 @@ impl VirtualFrameBuffer {
 }
 
 pub struct CrtEffectRenderer {
-    output_frame_px_width: usize,
-    output_frame_px_height: usize,
     output_nb_of_values_per_pixel: usize,
     render_horiz_upscale: usize,
     render_vert_upscale: usize,
@@ -313,10 +300,8 @@ pub struct CrtEffectRenderer {
 
 impl CrtEffectRenderer {
 
-    pub fn new(output_width: usize, output_height: usize) -> CrtEffectRenderer {
+    pub fn new() -> CrtEffectRenderer {
         CrtEffectRenderer {
-            output_frame_px_width: output_width,
-            output_frame_px_height: output_height,
             render_horiz_upscale: 3,
             render_vert_upscale: 3,
             output_nb_of_values_per_pixel: 4,
@@ -390,6 +375,6 @@ impl CrtEffectRenderer {
         }
 
         let end: Duration = Instant::now().duration_since(start);
-        println!("Frame: {} micro s", end.as_micros());
+        println!("Upscale + crt effect: {} micro s", end.as_micros());
     }
 }
