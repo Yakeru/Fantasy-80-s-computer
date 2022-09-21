@@ -326,73 +326,60 @@ impl CrtEffectRenderer {
     }
 
     pub fn render(&self, virtual_frame_buffer: &VirtualFrameBuffer, output_frame: &mut[u8], ctr_effect_on: bool) {
-        
-        let mut virt_line_pixel_counter: usize = 0;
-        let mut virt_line_counter: usize = 0;
-        let pixels_sub_pixel_count = 4;
 
-        let max_output_index = self.output_frame_px_width * self.output_frame_px_height * self.output_nb_of_values_per_pixel ;
+        let start: Instant = Instant::now();
 
-        for pixel in virtual_frame_buffer.get_frame_static() {
+        let mut rendered_line: [u8; 2560 * 4] = [0; 2560 * 4];
+        let mut rendered_scanline: [u8; 2560 * 4] = [0; 2560 * 4];
 
-            //Temporary color index to RGB mapping
-            let rgb: (u8, u8, u8) = get_rgb(pixel);
-            
-            //Offset between virtual frame buffer and pixel's frame buffer
-            //if scaling is applied, it represents the offset between virtual frame buffer's pixel and
-            //pixel's top-left corner of scalled pixel
-            let global_offset = pixels_sub_pixel_count * virt_line_pixel_counter * self.render_horiz_upscale  
-            + self.output_frame_px_width * pixels_sub_pixel_count * virt_line_counter * self.render_vert_upscale ;
+        let mut line_count: usize = 0;
 
-            if global_offset < max_output_index  {  
-                for horizontal_copy in 0..self.render_horiz_upscale {
-                    for vertical_copy in 0..self.render_vert_upscale {
-                        let scaling_offset: usize = pixels_sub_pixel_count * horizontal_copy  + self.output_frame_px_width  * pixels_sub_pixel_count * vertical_copy ;
-                        let final_offset: usize = global_offset + scaling_offset;
-                        let mut final_rgb: (u8, u8, u8) = rgb;
+        for line in virtual_frame_buffer.get_frame_static().chunks_exact(853) {
 
-                        // //Use 3 consecutive pixels as the 3 sub components of a single pixel
-                        if ctr_effect_on {
-                            match horizontal_copy {
-                                0 => {
-                                    if final_rgb.1 < self.sub_pixel_attenuation {final_rgb.1 = 0} else {final_rgb.1 -= self.sub_pixel_attenuation};
-                                    if final_rgb.2 < self.sub_pixel_attenuation {final_rgb.2 = 0} else {final_rgb.2 -= self.sub_pixel_attenuation};
-                                },
-                                1 => {
-                                    if final_rgb.0 < self.sub_pixel_attenuation {final_rgb.0 = 0} else {final_rgb.0 -= self.sub_pixel_attenuation};
-                                    if final_rgb.2 < self.sub_pixel_attenuation {final_rgb.2 = 0} else {final_rgb.2 -= self.sub_pixel_attenuation};
-                                },
-                                2 => {
-                                    if final_rgb.0 < self.sub_pixel_attenuation {final_rgb.0 = 0} else {final_rgb.0 -= self.sub_pixel_attenuation};
-                                    if final_rgb.1 < self.sub_pixel_attenuation {final_rgb.1 = 0} else {final_rgb.1 -= self.sub_pixel_attenuation};
-                                },
-                                _ => {}
-                            }
+            for i in 0..852 {
 
-                            //Scanline effect
-                            if vertical_copy == self.render_vert_upscale - 1 {
-                                if final_rgb.0 < self.scan_line_strength {final_rgb.0 = 0} else {final_rgb.0 -= self.scan_line_strength};
-                                if final_rgb.1 < self.scan_line_strength {final_rgb.1 = 0} else {final_rgb.1 -= self.scan_line_strength};
-                                if final_rgb.2 < self.scan_line_strength {final_rgb.2 = 0} else {final_rgb.2 -= self.scan_line_strength};
-                            }
-                        }
+                let rgb: (u8, u8, u8) = get_rgb(&line[i]);
 
-                        output_frame[0 + final_offset] = final_rgb.0;
-                        output_frame[1 + final_offset] = final_rgb.1;
-                        output_frame[2 + final_offset] = final_rgb.2;
-                        output_frame[3 + final_offset] = 254;
-                        
-                    }
-                }
+                rendered_line[0 + 12 * i] = rgb.0;
+                rendered_line[1 + 12 * i] = rgb.1.checked_sub(self.sub_pixel_attenuation).unwrap_or(0);
+                rendered_line[2 + 12 * i] = rgb.2.checked_sub(self.sub_pixel_attenuation).unwrap_or(0);
+                rendered_line[3 + 12 * i] = 254;
 
-                virt_line_pixel_counter += 1;
-                if virt_line_pixel_counter == virtual_frame_buffer.get_width() {
-                    virt_line_pixel_counter = 0;
-                    virt_line_counter += 1;
-                }
-            } else {
-                println!("CrtEffectRenderer exceeded the size of the output frame buffer.");
+                rendered_line[4 + 12 * i] = rgb.0.checked_sub(self.sub_pixel_attenuation).unwrap_or(0);
+                rendered_line[5 + 12 * i] = rgb.1;
+                rendered_line[6 + 12 * i] = rgb.2.checked_sub(self.sub_pixel_attenuation).unwrap_or(0);
+                rendered_line[7 + 12 * i] = 254;
+
+                rendered_line[8 + 12 * i] = rgb.0.checked_sub(self.sub_pixel_attenuation).unwrap_or(0);
+                rendered_line[9 + 12 * i] = rgb.1.checked_sub(self.sub_pixel_attenuation).unwrap_or(0);
+                rendered_line[10 + 12 * i] = rgb.2;
+                rendered_line[11 + 12 * i] = 254;
+
+                rendered_scanline[0 + 12 * i] = rgb.0;
+                rendered_scanline[1 + 12 * i] = rgb.1.checked_sub(self.scan_line_strength).unwrap_or(0);
+                rendered_scanline[2 + 12 * i] = rgb.2.checked_sub(self.scan_line_strength).unwrap_or(0);
+                rendered_scanline[3 + 12 * i] = 254;
+
+                rendered_scanline[4 + 12 * i] = rgb.0.checked_sub(self.scan_line_strength).unwrap_or(0);
+                rendered_scanline[5 + 12 * i] = rgb.1;
+                rendered_scanline[6 + 12 * i] = rgb.2.checked_sub(self.scan_line_strength).unwrap_or(0);
+                rendered_scanline[7 + 12 * i] = 254;
+
+                rendered_scanline[8 + 12 * i] = rgb.0.checked_sub(self.scan_line_strength).unwrap_or(0);
+                rendered_scanline[9 + 12 * i] = rgb.1.checked_sub(self.scan_line_strength).unwrap_or(0);
+                rendered_scanline[10 + 12 * i] = rgb.2;
+                rendered_scanline[11 + 12 * i] = 254;
             }
+
+            let start = line_count * 2560 * 4 * 3;
+            output_frame[start..start + 2560 * 4].copy_from_slice(&rendered_line);
+            output_frame[start + 2560 * 4..start + 2 * 2560 * 4].copy_from_slice(&rendered_line);
+            output_frame[start + 2 * 2560 * 4..start + 3 * 2560 * 4].copy_from_slice(&rendered_scanline);
+
+            line_count += 1;
         }
+
+        let end: Duration = Instant::now().duration_since(start);
+        println!("Frame: {} ms", end.as_millis());
     }
 }

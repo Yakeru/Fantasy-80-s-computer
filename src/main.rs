@@ -32,15 +32,15 @@ use crate::apps::squares::*;
 use crate::apps::weather_app::*;
 
 //Settings
-const WIDTH: usize = 1280;
-const HEIGHT: usize = 960;
+const WIDTH: usize = 2560;
+const HEIGHT: usize = 1920;
 const FRAME_TIME_MS: u64 = 16; //ms per frame : 16 = 60fps, 32 = 30fps, 1000 = 1fps
 const DEFAULT_BKG_COLOR: u8 = 28;
 const DEFAULT_COLOR: u8 = 10;
 const TEXT_COLUMNS: usize = 40;
 const TEXT_ROWS: usize = 30;
-const VIRTUAL_WIDTH: usize = 426;  // 426*3 = 1278 draw one black line on each side of screen for perfectly centered *3 scale
-const VIRTUAL_HEIGHT: usize = 320; // 320*3 = 960
+const VIRTUAL_WIDTH: usize = 853;  // 426*3 = 1278 draw one black line on each side of screen for perfectly centered *3 scale
+const VIRTUAL_HEIGHT: usize = 640; // 320*3 = 960
 const SPLASH: &str = " Fantasy CPC Microcomputer V(0.1)\u{000D}\u{000D} 2022 Damien Torreilles\u{000D}\u{000D}";
 
 ///*********************************************************THE MAIN 
@@ -248,7 +248,7 @@ fn main()-> Result<(), Error> {
                 
                 virtual_frame_buffer.render();
                 draw_loading_border(&mut virtual_frame_buffer.get_frame(), 40, 40);
-                crt_renderer.render(&virtual_frame_buffer, pixels.get_frame(), true);
+                crt_renderer.render(&virtual_frame_buffer, pixels.get_frame(), false);
                 pixels.render().expect("Pixels render oups");
                 window.request_redraw();
 
