@@ -339,34 +339,44 @@ impl CrtEffectRenderer {
             for i in 0..852 {
 
                 let rgb: (u8, u8, u8) = get_rgb(&line[i]);
-
+                let mut attenuated_rgb: (u8, u8, u8) = rgb;
+                let mut scanline_rgb: (u8, u8, u8) = rgb;
+                if ctr_effect_on {
+                    attenuated_rgb = (rgb.0.checked_sub(self.sub_pixel_attenuation).unwrap_or(0), 
+                        rgb.1.checked_sub(self.sub_pixel_attenuation).unwrap_or(0),
+                        rgb.2.checked_sub(self.sub_pixel_attenuation).unwrap_or(0));
+                    scanline_rgb = (rgb.0.checked_sub(self.scan_line_strength).unwrap_or(0), 
+                        rgb.1.checked_sub(self.scan_line_strength).unwrap_or(0),
+                        rgb.2.checked_sub(self.scan_line_strength).unwrap_or(0));
+                }
+                
                 rendered_line[0 + 12 * i] = rgb.0;
-                rendered_line[1 + 12 * i] = rgb.1.checked_sub(self.sub_pixel_attenuation).unwrap_or(0);
-                rendered_line[2 + 12 * i] = rgb.2.checked_sub(self.sub_pixel_attenuation).unwrap_or(0);
+                rendered_line[1 + 12 * i] = attenuated_rgb.1;
+                rendered_line[2 + 12 * i] = attenuated_rgb.2;
                 rendered_line[3 + 12 * i] = 254;
 
-                rendered_line[4 + 12 * i] = rgb.0.checked_sub(self.sub_pixel_attenuation).unwrap_or(0);
+                rendered_line[4 + 12 * i] = attenuated_rgb.0;
                 rendered_line[5 + 12 * i] = rgb.1;
-                rendered_line[6 + 12 * i] = rgb.2.checked_sub(self.sub_pixel_attenuation).unwrap_or(0);
+                rendered_line[6 + 12 * i] = attenuated_rgb.2;
                 rendered_line[7 + 12 * i] = 254;
 
-                rendered_line[8 + 12 * i] = rgb.0.checked_sub(self.sub_pixel_attenuation).unwrap_or(0);
-                rendered_line[9 + 12 * i] = rgb.1.checked_sub(self.sub_pixel_attenuation).unwrap_or(0);
+                rendered_line[8 + 12 * i] = attenuated_rgb.0;
+                rendered_line[9 + 12 * i] = attenuated_rgb.1;
                 rendered_line[10 + 12 * i] = rgb.2;
                 rendered_line[11 + 12 * i] = 254;
 
                 rendered_scanline[0 + 12 * i] = rgb.0;
-                rendered_scanline[1 + 12 * i] = rgb.1.checked_sub(self.scan_line_strength).unwrap_or(0);
-                rendered_scanline[2 + 12 * i] = rgb.2.checked_sub(self.scan_line_strength).unwrap_or(0);
+                rendered_scanline[1 + 12 * i] = scanline_rgb.1;
+                rendered_scanline[2 + 12 * i] = scanline_rgb.2;
                 rendered_scanline[3 + 12 * i] = 254;
 
-                rendered_scanline[4 + 12 * i] = rgb.0.checked_sub(self.scan_line_strength).unwrap_or(0);
+                rendered_scanline[4 + 12 * i] = scanline_rgb.0;
                 rendered_scanline[5 + 12 * i] = rgb.1;
-                rendered_scanline[6 + 12 * i] = rgb.2.checked_sub(self.scan_line_strength).unwrap_or(0);
+                rendered_scanline[6 + 12 * i] = scanline_rgb.2;
                 rendered_scanline[7 + 12 * i] = 254;
 
-                rendered_scanline[8 + 12 * i] = rgb.0.checked_sub(self.scan_line_strength).unwrap_or(0);
-                rendered_scanline[9 + 12 * i] = rgb.1.checked_sub(self.scan_line_strength).unwrap_or(0);
+                rendered_scanline[8 + 12 * i] = scanline_rgb.0;
+                rendered_scanline[9 + 12 * i] = scanline_rgb.1;
                 rendered_scanline[10 + 12 * i] = rgb.2;
                 rendered_scanline[11 + 12 * i] = 254;
             }
@@ -380,6 +390,6 @@ impl CrtEffectRenderer {
         }
 
         let end: Duration = Instant::now().duration_since(start);
-        println!("Frame: {} ms", end.as_millis());
+        println!("Frame: {} ns", end.as_nanos());
     }
 }
