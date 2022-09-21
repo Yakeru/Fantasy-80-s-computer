@@ -160,7 +160,7 @@ impl Process for WeatherApp {
     fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
 
         virtual_frame_buffer.get_text_layer().clear();
-        virtual_frame_buffer.clear_frame_buffer();
+        virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
         virtual_frame_buffer.get_text_layer().push_string(&self.message, None, None, false);
     }
 

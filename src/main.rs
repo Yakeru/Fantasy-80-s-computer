@@ -34,8 +34,6 @@ use crate::apps::weather_app::*;
 //Settings
 
 const FRAME_TIME_MS: u64 = 16; //ms per frame : 16 = 60fps, 32 = 30fps, 1000 = 1fps
-
-
 const SPLASH: &str = " Fantasy CPC Microcomputer V(0.1)\u{000D}\u{000D} 2022 Damien Torreilles\u{000D}\u{000D}";
 
 ///*********************************************************THE MAIN 
@@ -118,7 +116,7 @@ fn main()-> Result<(), Error> {
     let mut mouse_move_delta: (f64, f64) = (0.0, 0.0);
 
     //Push the splash screen to the text layer
-    virtual_frame_buffer.clear_frame_buffer();
+    virtual_frame_buffer.clear_frame_buffer(0);
     virtual_frame_buffer.get_text_layer().push_string(SPLASH, None, None, false);
 
     //The event loop here can be considered as a bios rom + terminal
@@ -220,6 +218,7 @@ fn main()-> Result<(), Error> {
                 //Updating apps
                 let process_response = shell.update(char_received, key_pressed_os, key_released);                
                 
+                //Process app response
                 match process_response.event {
                     Some(event) => {*control_flow = event}
                     None => ()
@@ -233,16 +232,8 @@ fn main()-> Result<(), Error> {
                     None => ()
                 }
 
-                //Update apps
-                //apps[4].update(char_received, key_pressed_os, key_released);
-                //weather_app.update(char_received, key_pressed_os, key_released);
-                
-                //Draw the app that is focused
-                //apps[4].draw(&mut virtual_frame_buffer);
-                //weather_app.draw(&mut virtual_frame_buffer);
-                
+                //Draw app
                 shell.draw(&mut virtual_frame_buffer);
-                
                 virtual_frame_buffer.render();
                 //draw_loading_border(&mut virtual_frame_buffer.get_frame(), 40, 40);
                 crt_renderer.render(&virtual_frame_buffer, pixels.get_frame(), true);

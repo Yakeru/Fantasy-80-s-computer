@@ -19,6 +19,7 @@ const VIRTUAL_HEIGHT: usize = 640; // 320*3 = 960
 pub struct VirtualFrameBuffer {
     frame_time_ms: u64,
     frame: [u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT],
+    black_frame: [u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT],
     text_layer: TextLayer,
     sprites: Vec<Sprite>,
     //background_layer
@@ -50,6 +51,7 @@ pub struct Line {
 impl VirtualFrameBuffer {
     pub fn new(frame_time_ms: u64) -> VirtualFrameBuffer {
         let mut virtual_frame_buffer = [0; VIRTUAL_WIDTH * VIRTUAL_HEIGHT];
+        let black_frame = [0; VIRTUAL_WIDTH * VIRTUAL_HEIGHT];
         let text_layer = TextLayer::new();
         let sprites = Vec::new();
         
@@ -58,6 +60,7 @@ impl VirtualFrameBuffer {
         VirtualFrameBuffer {
             frame_time_ms,
             frame: virtual_frame_buffer,
+            black_frame,
             text_layer,
             sprites,
             frame_counter: 0,
@@ -151,8 +154,8 @@ impl VirtualFrameBuffer {
     /// Sets all the pixels to the specified color of the color palette
     /// Used to clear the screen between frames or set the background when
     /// redering only the text layer
-    pub fn clear_frame_buffer(&mut self) {
-        let clear_frame: [u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT] = [self.text_layer.get_default_bkg_color(); VIRTUAL_WIDTH * VIRTUAL_HEIGHT];
+    pub fn clear_frame_buffer(&mut self, color: u8) {
+        let clear_frame: [u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT] = [color; VIRTUAL_WIDTH * VIRTUAL_HEIGHT];
         self.frame.copy_from_slice(&clear_frame);
     }
 
@@ -375,6 +378,6 @@ impl CrtEffectRenderer {
         }
 
         let end: Duration = Instant::now().duration_since(start);
-        println!("Upscale + crt effect: {} micro s", end.as_micros());
+        println!("crt renderer: {} micro s", end.as_micros());
     }
 }

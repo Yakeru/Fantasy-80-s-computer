@@ -275,7 +275,7 @@ impl Process for Shell {
             self.last_character_received = None;
         }
 
-        virtual_frame_buffer.clear_frame_buffer();
+        virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
 
         match self.last_character_received {
             Some(c) => {
