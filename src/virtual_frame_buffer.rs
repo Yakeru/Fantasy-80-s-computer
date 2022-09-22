@@ -11,6 +11,8 @@ const WIDTH: usize = 2560; //1280
 const HEIGHT: usize = 1920; //960
 const VIRTUAL_WIDTH: usize = 853;  // 426*3 = 1278 draw one black line on each side of screen for perfectly centered *3 scale
 const VIRTUAL_HEIGHT: usize = 640; // 320*3 = 960
+const SUB_PIXEL_COUNT: usize = 4;
+const RENDERED_LINE_LENGTH: usize = WIDTH * SUB_PIXEL_COUNT;
 
 /// Contains a list of u8 values corresponding to values from a color palette.
 /// So just one u8 per pixel, R G and B values are retrieved from the palette, No Alpha.
@@ -293,9 +295,6 @@ impl VirtualFrameBuffer {
 }
 
 pub struct CrtEffectRenderer {
-    output_nb_of_values_per_pixel: usize,
-    render_horiz_upscale: usize,
-    render_vert_upscale: usize,
     scan_line_strength: u8,
     sub_pixel_attenuation: u8,
 }
@@ -305,9 +304,6 @@ impl CrtEffectRenderer {
 
     pub fn new() -> CrtEffectRenderer {
         CrtEffectRenderer {
-            render_horiz_upscale: 3,
-            render_vert_upscale: 3,
-            output_nb_of_values_per_pixel: 4,
             scan_line_strength: 25, //35,
             sub_pixel_attenuation: 230,
         }
@@ -316,15 +312,15 @@ impl CrtEffectRenderer {
     pub fn render(&self, virtual_frame_buffer: &VirtualFrameBuffer, output_frame: &mut[u8], ctr_effect_on: bool) {
 
         let start: Instant = Instant::now();
-
-        let mut rendered_line: [u8; 2560 * 4] = [0; 2560 * 4];
-        let mut rendered_scanline: [u8; 2560 * 4] = [0; 2560 * 4];
+        
+        let mut rendered_line: [u8; rendered_line_length] = [0; rendered_line_length];
+        let mut rendered_scanline: [u8; rendered_line_length] = [0; rendered_line_length]; 
 
         let mut line_count: usize = 0;
 
-        for line in virtual_frame_buffer.get_frame_static().chunks_exact(853) {
+        for line in virtual_frame_buffer.get_frame_static().chunks_exact(VIRTUAL_WIDTH) {
 
-            for i in 0..852 {
+            for i in 0..VIRTUAL_WIDTH {
 
                 let rgb: (u8, u8, u8) = get_rgb(&line[i]);
                 let mut attenuated_rgb: (u8, u8, u8) = rgb;
@@ -369,10 +365,10 @@ impl CrtEffectRenderer {
                 rendered_scanline[11 + 12 * i] = 254;
             }
 
-            let start = line_count * 2560 * 4 * 3;
-            output_frame[start..start + 2560 * 4].copy_from_slice(&rendered_line);
-            output_frame[start + 2560 * 4..start + 2 * 2560 * 4].copy_from_slice(&rendered_line);
-            output_frame[start + 2 * 2560 * 4..start + 3 * 2560 * 4].copy_from_slice(&rendered_scanline);
+            let start = line_count * 3 * RENDERED_LINE_LENGTH;
+            output_frame[start..start + RENDERED_LINE_LENGTH].copy_from_slice(&rendered_line);
+            output_frame[start + RENDERED_LINE_LENGTH..start + 2 * RENDERED_LINE_LENGTH].copy_from_slice(&rendered_line);
+            output_frame[start + 2 * RENDERED_LINE_LENGTH..start + 3 * RENDERED_LINE_LENGTH].copy_from_slice(&rendered_scanline);
 
             line_count += 1;
         }
