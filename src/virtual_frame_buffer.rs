@@ -7,10 +7,21 @@ use std::time::{
 };
 use winit::dpi::PhysicalSize;
 
-const WIDTH: usize = 2560; //1280
-const HEIGHT: usize = 1920; //960
-const VIRTUAL_WIDTH: usize = 853;  // 426*3 = 1278 draw one black line on each side of screen for perfectly centered *3 scale
-const VIRTUAL_HEIGHT: usize = 640; // 320*3 = 960
+//4K
+// const WIDTH: usize = 2560;
+// const HEIGHT: usize = 1920;
+// const VIRTUAL_WIDTH: usize = 853;
+// const VIRTUAL_HEIGHT: usize = 640;
+
+//1080
+const WIDTH: usize = 1280;
+const HEIGHT: usize = 960;
+const VIRTUAL_WIDTH: usize = 426;  // 426*3 = 1278 draw one black line on each side of screen for perfectly centered *3 scale
+const VIRTUAL_HEIGHT: usize = 320; // 320*3 = 960
+
+const SCAN_LINE_STRENGTH: u8 = 25;
+const SUB_PIXEL_ATTENUATION: u8 = 230;
+
 const SUB_PIXEL_COUNT: usize = 4;
 const RENDERED_LINE_LENGTH: usize = WIDTH * SUB_PIXEL_COUNT;
 
@@ -21,7 +32,6 @@ const RENDERED_LINE_LENGTH: usize = WIDTH * SUB_PIXEL_COUNT;
 pub struct VirtualFrameBuffer {
     frame_time_ms: u64,
     frame: [u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT],
-    black_frame: [u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT],
     text_layer: TextLayer,
     sprites: Vec<Sprite>,
     //background_layer
@@ -53,7 +63,6 @@ pub struct Line {
 impl VirtualFrameBuffer {
     pub fn new(frame_time_ms: u64) -> VirtualFrameBuffer {
         let mut virtual_frame_buffer = [0; VIRTUAL_WIDTH * VIRTUAL_HEIGHT];
-        let black_frame = [0; VIRTUAL_WIDTH * VIRTUAL_HEIGHT];
         let text_layer = TextLayer::new();
         let sprites = Vec::new();
         
@@ -62,7 +71,6 @@ impl VirtualFrameBuffer {
         VirtualFrameBuffer {
             frame_time_ms,
             frame: virtual_frame_buffer,
-            black_frame,
             text_layer,
             sprites,
             frame_counter: 0,
@@ -304,65 +312,67 @@ impl CrtEffectRenderer {
 
     pub fn new() -> CrtEffectRenderer {
         CrtEffectRenderer {
-            scan_line_strength: 25, //35,
-            sub_pixel_attenuation: 230,
+            scan_line_strength: SCAN_LINE_STRENGTH,
+            sub_pixel_attenuation: SUB_PIXEL_ATTENUATION
         }
     }
 
     pub fn render(&self, virtual_frame_buffer: &VirtualFrameBuffer, output_frame: &mut[u8], ctr_effect_on: bool) {
-
-        let start: Instant = Instant::now();
         
-        let mut rendered_line: [u8; rendered_line_length] = [0; rendered_line_length];
-        let mut rendered_scanline: [u8; rendered_line_length] = [0; rendered_line_length]; 
+        let mut rendered_line: [u8; RENDERED_LINE_LENGTH] = [0; RENDERED_LINE_LENGTH];
+        let mut rendered_scanline: [u8; RENDERED_LINE_LENGTH] = [0; RENDERED_LINE_LENGTH]; 
 
         let mut line_count: usize = 0;
 
-        for line in virtual_frame_buffer.get_frame_static().chunks_exact(VIRTUAL_WIDTH) {
+        for virt_line in virtual_frame_buffer.get_frame_static().chunks_exact(VIRTUAL_WIDTH) {
 
-            for i in 0..VIRTUAL_WIDTH {
+            let mut count = 0;
 
-                let rgb: (u8, u8, u8) = get_rgb(&line[i]);
+            for virt_pixel in virt_line {
+
+                let rgb: (u8, u8, u8) = get_rgb(virt_pixel);
                 let mut attenuated_rgb: (u8, u8, u8) = rgb;
                 let mut scanline_rgb: (u8, u8, u8) = rgb;
                 if ctr_effect_on {
                     attenuated_rgb = (rgb.0.checked_sub(self.sub_pixel_attenuation).unwrap_or(0), 
                         rgb.1.checked_sub(self.sub_pixel_attenuation).unwrap_or(0),
                         rgb.2.checked_sub(self.sub_pixel_attenuation).unwrap_or(0));
-                    scanline_rgb = (rgb.0.checked_sub(self.scan_line_strength).unwrap_or(0), 
-                        rgb.1.checked_sub(self.scan_line_strength).unwrap_or(0),
-                        rgb.2.checked_sub(self.scan_line_strength).unwrap_or(0));
+                    scanline_rgb = (rgb.0.checked_sub(self.scan_line_strength + self.sub_pixel_attenuation).unwrap_or(0), 
+                        rgb.1.checked_sub(self.scan_line_strength + self.sub_pixel_attenuation).unwrap_or(0),
+                        rgb.2.checked_sub(self.scan_line_strength + self.sub_pixel_attenuation).unwrap_or(0));
                 }
                 
-                rendered_line[0 + 12 * i] = rgb.0;
-                rendered_line[1 + 12 * i] = attenuated_rgb.1;
-                rendered_line[2 + 12 * i] = attenuated_rgb.2;
-                rendered_line[3 + 12 * i] = 254;
+                rendered_line[0 + 12 * count] = rgb.0;
+                rendered_line[1 + 12 * count] = attenuated_rgb.1;
+                rendered_line[2 + 12 * count] = attenuated_rgb.2;
+                rendered_line[3 + 12 * count] = 254;
 
-                rendered_line[4 + 12 * i] = attenuated_rgb.0;
-                rendered_line[5 + 12 * i] = rgb.1;
-                rendered_line[6 + 12 * i] = attenuated_rgb.2;
-                rendered_line[7 + 12 * i] = 254;
+                rendered_line[4 + 12 * count] = attenuated_rgb.0;
+                rendered_line[5 + 12 * count] = rgb.1;
+                rendered_line[6 + 12 * count] = attenuated_rgb.2;
+                rendered_line[7 + 12 * count] = 254;
 
-                rendered_line[8 + 12 * i] = attenuated_rgb.0;
-                rendered_line[9 + 12 * i] = attenuated_rgb.1;
-                rendered_line[10 + 12 * i] = rgb.2;
-                rendered_line[11 + 12 * i] = 254;
+                rendered_line[8 + 12 * count] = attenuated_rgb.0;
+                rendered_line[9 + 12 * count] = attenuated_rgb.1;
+                rendered_line[10 + 12 * count] = rgb.2;
+                rendered_line[11 + 12 * count] = 254;
 
-                rendered_scanline[0 + 12 * i] = rgb.0;
-                rendered_scanline[1 + 12 * i] = scanline_rgb.1;
-                rendered_scanline[2 + 12 * i] = scanline_rgb.2;
-                rendered_scanline[3 + 12 * i] = 254;
+                rendered_scanline[0 + 12 * count] = rgb.0;
+                rendered_scanline[1 + 12 * count] = scanline_rgb.1;
+                rendered_scanline[2 + 12 * count] = scanline_rgb.2;
+                rendered_scanline[3 + 12 * count] = 254;
 
-                rendered_scanline[4 + 12 * i] = scanline_rgb.0;
-                rendered_scanline[5 + 12 * i] = rgb.1;
-                rendered_scanline[6 + 12 * i] = scanline_rgb.2;
-                rendered_scanline[7 + 12 * i] = 254;
+                rendered_scanline[4 + 12 * count] = scanline_rgb.0;
+                rendered_scanline[5 + 12 * count] = rgb.1;
+                rendered_scanline[6 + 12 * count] = scanline_rgb.2;
+                rendered_scanline[7 + 12 * count] = 254;
 
-                rendered_scanline[8 + 12 * i] = scanline_rgb.0;
-                rendered_scanline[9 + 12 * i] = scanline_rgb.1;
-                rendered_scanline[10 + 12 * i] = rgb.2;
-                rendered_scanline[11 + 12 * i] = 254;
+                rendered_scanline[8 + 12 * count] = scanline_rgb.0;
+                rendered_scanline[9 + 12 * count] = scanline_rgb.1;
+                rendered_scanline[10 + 12 * count] = rgb.2;
+                rendered_scanline[11 + 12 * count] = 254;
+
+                count += 1;
             }
 
             let start = line_count * 3 * RENDERED_LINE_LENGTH;
@@ -372,8 +382,5 @@ impl CrtEffectRenderer {
 
             line_count += 1;
         }
-
-        let end: Duration = Instant::now().duration_since(start);
-        println!("crt renderer: {} micro s", end.as_micros());
     }
 }

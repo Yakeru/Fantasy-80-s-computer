@@ -233,13 +233,14 @@ fn main()-> Result<(), Error> {
                 }
 
                 //Draw app
+                let now = Instant::now();
                 shell.draw(&mut virtual_frame_buffer);
                 virtual_frame_buffer.render();
                 //draw_loading_border(&mut virtual_frame_buffer.get_frame(), 40, 40);
                 crt_renderer.render(&virtual_frame_buffer, pixels.get_frame(), true);
+                println!("Render time: {} micros", Instant::now().duration_since(now).as_micros());
                 pixels.render().expect("Pixels render oups");
                 window.request_redraw();
-
                 //Reset input buffers for next loop
                 char_received = None;
                 key_pressed_os = None;
