@@ -1,3 +1,4 @@
+use f8b_app_macro::F8bAppMacro;
 use winit::{
     event::{Event, WindowEvent, VirtualKeyCode, DeviceEvent, ElementState, ModifiersState},
     event_loop::{ControlFlow, EventLoop},
@@ -98,15 +99,6 @@ fn main()-> Result<(), Error> {
     squares.set_state(false, false);
     let mut weather_app = WeatherApp::new();
     weather_app.set_state(false, false);
-
-    let mut toto: Test = Test::new();
-    
-
-    // apps.push(Box::new(text_edit));
-    // apps.push(Box::new(sprite_edit));
-    // apps.push(Box::new(lines));
-    // apps.push(Box::new(squares));
-    // apps.push(Box::new(weather_app));
 
     // let mut mouse_sprite: Sprite = Sprite::new_from_file(String::from("mouse"), &String::from("./resources/sprites/sprite1.txt"));
     // mouse_sprite.pos_x = VIRTUAL_WIDTH / 2;
@@ -221,7 +213,8 @@ fn main()-> Result<(), Error> {
             Event::MainEventsCleared => {
                 
                 //Updating apps
-                let process_response = shell.update(char_received, key_pressed_os, key_released);                
+                //let process_response = shell.update(char_received, key_pressed_os, key_released);
+                let process_response = text_edit.update(char_received, key_pressed_os, key_released);                
                 
                 //Process app response
                 match process_response.event {
@@ -238,12 +231,13 @@ fn main()-> Result<(), Error> {
                 }
 
                 //Draw app
-                let now = Instant::now();
-                shell.draw(&mut virtual_frame_buffer);
+                //let now = Instant::now();
+                //shell.draw(&mut virtual_frame_buffer);
+                text_edit.draw(&mut virtual_frame_buffer);
                 virtual_frame_buffer.render();
                 //draw_loading_border(&mut virtual_frame_buffer.get_frame(), 40, 40);
                 crt_renderer.render(&virtual_frame_buffer, pixels.get_frame(), true);
-                println!("Render time: {} micros", Instant::now().duration_since(now).as_micros());
+                //println!("Render time: {} micros", Instant::now().duration_since(now).as_micros());
                 pixels.render().expect("Pixels render oups");
                 window.request_redraw();
                 //Reset input buffers for next loop

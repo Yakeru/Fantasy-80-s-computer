@@ -4,9 +4,13 @@ use std::io::{self, Write};
 use crate::process::*;
 use crate::virtual_frame_buffer::VirtualFrameBuffer;
 use crate::unicode;
+use f8b_app_macro::F8bAppMacro;
+use f8b_app_macro_derive::F8bAppMacro;
+
 const DEFAULT_BKG_COLOR: u8 = 7;
 const DEFAULT_COLOR: u8 = 0;
 
+#[derive(F8bAppMacro)]
 pub struct TextEdit {
     name: String,
     selected_color: u8,
@@ -39,20 +43,8 @@ impl TextEdit {
             ended: false
         }
     }
-}
 
-impl Process for TextEdit {
-
-    fn start(&mut self){}
-
-    fn end(&mut self) {
-        // self.app.started = false;
-        // self.app.drawing = false;
-        // self.app.updating = false;
-        // self.app.ended = true;
-    }
-
-    fn update(&mut self, character_received: Option<char>, key_pressed_os: Option<VirtualKeyCode>, key_released: Option<VirtualKeyCode>) -> ProcessResponse {
+    pub fn update(&mut self, character_received: Option<char>, key_pressed_os: Option<VirtualKeyCode>, key_released: Option<VirtualKeyCode>) -> ProcessResponse {
 
         let mut response = ProcessResponse::new();
 
@@ -123,7 +115,7 @@ impl Process for TextEdit {
         return response;
     }
 
-    fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    pub fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
 
         virtual_frame_buffer.get_text_layer().clear();
         virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
@@ -133,21 +125,5 @@ impl Process for TextEdit {
         }
 
         virtual_frame_buffer.get_text_layer().push_char('_', Some(self.selected_color), Some(self.selected_bkg_color), false);
-    }
-
-    fn get_name(&self) -> &str {
-        &self.name
-    }
-
-    fn set_state(&mut self, updating: bool, drawing: bool) {
-        self.updating = updating;
-        self.drawing = drawing;
-
-        if drawing {self.updating = true}
-        if !updating {self.drawing = false}
-    }
-
-    fn get_state(&self) -> (bool, bool) {
-        return (self.updating, self.drawing)
     }
 }
