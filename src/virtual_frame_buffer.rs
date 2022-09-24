@@ -62,7 +62,7 @@ pub struct Line {
 
 impl VirtualFrameBuffer {
     pub fn new(frame_time_ms: u64) -> VirtualFrameBuffer {
-        let mut virtual_frame_buffer = [0; VIRTUAL_WIDTH * VIRTUAL_HEIGHT];
+        let virtual_frame_buffer = [0; VIRTUAL_WIDTH * VIRTUAL_HEIGHT];
         let text_layer = TextLayer::new();
         let sprites = Vec::new();
         
@@ -121,7 +121,7 @@ impl VirtualFrameBuffer {
         let x1 = line.end_x as isize;
         let y1 = line.end_y as isize;
 
-        while true {
+        loop {
 
             self.set_pixel(x0 as usize, y0 as usize, line.color);
 
@@ -209,7 +209,7 @@ impl VirtualFrameBuffer {
     }
 
     /// Gets all the sprites listed in the sprite vector and renders them at the right place in the
-    /// pixel vector of the virtual frame buffer
+    /// the virtual frame buffer
     fn sprite_layer_renderer(&mut self) {
 
         for sprite in self.sprites.chunks_exact_mut(1) {

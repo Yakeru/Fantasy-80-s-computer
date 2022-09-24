@@ -3,7 +3,7 @@ use crate::text_layer::TextLayerChar;
 use std::io::{self, Write};
 use crate::process::*;
 use crate::virtual_frame_buffer::VirtualFrameBuffer;
-
+use crate::unicode;
 const DEFAULT_BKG_COLOR: u8 = 7;
 const DEFAULT_COLOR: u8 = 0;
 
@@ -64,15 +64,14 @@ impl Process for TextEdit {
         match character_received {
             Some(c) => {
                 match c {
-                    '\u{0008}' => { //Backspace
+                    unicode::BACKSPACE => {
                         self.buffer.pop();
                     } 
                     
-                    '\u{000D}' => { //Enter
-                        
+                    unicode::ENTER => {
                     }
                     
-                    '\u{001B}'  => { //Escape
+                    unicode::ESCAPE => {
                     }
                     
                     _ => {

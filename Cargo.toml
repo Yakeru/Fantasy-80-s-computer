@@ -10,3 +10,5 @@ winit = "0.27.3"
 winit_input_helper = "0.13.0"
 pixels = "0.9.0"
 openweathermap = "0.2.4"
+f8b_app_macro = { path = "../f8b_app_macro" }
+f8b_app_macro_derive = { path = "../f8b_app_macro/f8b_app_macro_derive" }

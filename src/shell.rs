@@ -5,6 +5,7 @@ use crate::apps::text_edit::*;
 use crate::apps::sprite_editor::*;
 use crate::text_layer::TextLayerChar;
 use crate::color_palettes::*;
+use crate::unicode;
 
 const SHELL_START_MESSAGE: &str = " SHELL 0.1\u{000D}\u{000D}Ready\u{000D}";
 
@@ -193,7 +194,7 @@ impl Process for Shell {
         match character_received {
             Some(unicode) => {
                 match unicode {
-                    '\u{0008}' => { //Backspace
+                    unicode::BACKSPACE => {
                         //Dont delete further than prompt
                         if self.command.len() == 0 {
                             self.last_character_received = None;
@@ -201,14 +202,14 @@ impl Process for Shell {
                         self.command.pop();
                     } 
                     
-                    '\u{000D}' => { //Enter
+                    unicode::ENTER => {
                         let string_command: String = String::from_iter(self.command.iter());
                         let cleaned_string_command = string_command.trim().to_lowercase();
                         response = self.interpret_command(cleaned_string_command);
                         self.command.clear();
                     }
                     
-                    '\u{001B}' => { //Escape
+                    unicode::ESCAPE => {
                         response.event = Some(ControlFlow::Exit);
                         response.set_message(String::from("Command 'quit' or 'exit' received; stopping"));
                         println!("Command 'quit' or 'exit' received; stopping");

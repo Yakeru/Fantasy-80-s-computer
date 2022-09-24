@@ -20,6 +20,7 @@ mod virtual_frame_buffer;
 mod color_palettes;
 mod process;
 mod sprite;
+mod unicode;
 
 //Apps
 mod shell;
@@ -30,6 +31,7 @@ use crate::apps::sprite_editor::*;
 use crate::apps::lines::*;
 use crate::apps::squares::*;
 use crate::apps::weather_app::*;
+use crate::apps::test::*;
 
 //Settings
 
@@ -96,6 +98,9 @@ fn main()-> Result<(), Error> {
     squares.set_state(false, false);
     let mut weather_app = WeatherApp::new();
     weather_app.set_state(false, false);
+
+    let mut toto: Test = Test::new();
+    
 
     // apps.push(Box::new(text_edit));
     // apps.push(Box::new(sprite_edit));

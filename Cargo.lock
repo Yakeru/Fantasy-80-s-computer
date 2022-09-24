@@ -397,6 +397,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "f8b_app_macro"
+version = "0.1.0"
+
+[[package]]
+name = "f8b_app_macro_derive"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "flate2"
 version = "1.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2139,6 +2151,8 @@ checksum = "e2e7917148b2812d1eeafaeb22a97e4813dfa60a3f8f78ebe204bcc88f12f024"
 name = "windows_project"
 version = "0.1.0"
 dependencies = [
+ "f8b_app_macro",
+ "f8b_app_macro_derive",
  "openweathermap",
  "pixels",
  "rand",
