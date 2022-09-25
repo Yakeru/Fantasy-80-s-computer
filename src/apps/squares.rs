@@ -1,10 +1,14 @@
-use crate::process::*;
+use app_macro::*;
+use app_macro_derive::AppMacro;
+
 use crate::virtual_frame_buffer::*;
 use winit::{event::VirtualKeyCode,event_loop::ControlFlow};
 use winit::dpi::PhysicalSize;
 use crate::text_layer::TextLayerChar;
 use rand::Rng;
 
+
+#[derive(AppMacro)]
 pub struct Squares {
     name: String,
     updating: bool,
@@ -25,20 +29,10 @@ impl Squares {
             draw_a_line: true
         }
     }
-}
 
-impl Process for Squares {
-    fn start(&mut self){
-        self.started = true;
-    }
+    fn update(&mut self, character_received: Option<char>, key_pressed_os: Option<VirtualKeyCode>, key_released: Option<VirtualKeyCode>) -> AppResponse {
 
-    fn end(&mut self) {
-        self.ended = true;
-    }
-
-    fn update(&mut self, character_received: Option<char>, key_pressed_os: Option<VirtualKeyCode>, key_released: Option<VirtualKeyCode>) -> ProcessResponse {
-
-        let mut response = ProcessResponse::new();
+        let mut response = AppResponse::new();
 
         if !self.started {
             self.start();
@@ -90,21 +84,5 @@ impl Process for Squares {
             };
             virtual_frame_buffer.draw_square(square);
         }
-    }
-
-    fn get_name(&self) -> &str {
-        &self.name
-    }
-
-    fn set_state(&mut self, updating: bool, drawing: bool) {
-        self.updating = updating;
-        self.drawing = drawing;
-
-        if drawing {self.updating = true}
-        if !updating {self.drawing = false}
-    }
-
-    fn get_state(&self) -> (bool, bool) {
-        return (self.updating, self.drawing)
     }
 }

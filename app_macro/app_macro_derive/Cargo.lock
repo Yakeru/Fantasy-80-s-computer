@@ -3,7 +3,7 @@
 version = 3
 
 [[package]]
-name = "f8b_app_macro_derive"
+name = "app_macro_derive"
 version = "0.1.0"
 dependencies = [
  "quote",

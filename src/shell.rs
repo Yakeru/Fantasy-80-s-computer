@@ -1,10 +1,8 @@
+use app_macro::*;
+use app_macro_derive::AppMacro;
 use winit::{event::VirtualKeyCode,event_loop::ControlFlow};
 use crate::virtual_frame_buffer::VirtualFrameBuffer;
-use crate::process::*;
-use crate::apps::text_edit::*;
-use crate::apps::sprite_editor::*;
 use crate::text_layer::TextLayerChar;
-use crate::color_palettes::*;
 use crate::unicode;
 
 const SHELL_START_MESSAGE: &str = " SHELL 0.1\u{000D}\u{000D}Ready\u{000D}";
@@ -12,6 +10,7 @@ const SHELL_START_MESSAGE: &str = " SHELL 0.1\u{000D}\u{000D}Ready\u{000D}";
 const DEFAULT_BKG_COLOR: u8 = 28;
 const DEFAULT_COLOR: u8 = 10;
 
+#[derive(AppMacro)]
 pub struct Shell {
     name: String,
     color: u8,
@@ -49,7 +48,7 @@ impl Shell {
 
         let display_buffer: Vec<StyledChar> = Vec::new();
         let command_history: Vec<String> = Vec::new();
-        let mut apps: Vec<Box<dyn Process>> = Vec::new();
+        //let mut apps: Vec<Box<dyn Process>> = Vec::new();
         
         Shell {
             name: String::from("shell"),
@@ -127,9 +126,9 @@ impl Shell {
         self.display_buffer.push(c);
     }
 
-    pub fn interpret_command(&mut self, command: String)  -> ProcessResponse {
+    pub fn interpret_command(&mut self, command: String) -> AppResponse {
 
-        let mut response: ProcessResponse = ProcessResponse::new();
+        let mut response: AppResponse = AppResponse::new();
 
         if command.len() > 0 {
             println!("Command: '{}'", command);
@@ -165,26 +164,16 @@ impl Shell {
         self.push_char(StyledChar::Default('>'));
         response
     }
-}
 
-impl Process for Shell {
-
-    fn start(&mut self) {
+    pub fn start(&mut self) {
         self.push_string(SHELL_START_MESSAGE, Style::Default);
         self.push_char(StyledChar::Default('>'));
         self.started = true;
     }
 
-    fn end(&mut self) {
-        self.started = false;
-        self.drawing = false;
-        self.updating = false;
-        self.ended = true;
-    }
+    pub fn update(&mut self, character_received: Option<char>, key_pressed_os: Option<VirtualKeyCode>, key_released: Option<VirtualKeyCode>) -> AppResponse {
 
-    fn update(&mut self, character_received: Option<char>, key_pressed_os: Option<VirtualKeyCode>, key_released: Option<VirtualKeyCode>) -> ProcessResponse {
-
-        let mut response = ProcessResponse::new();
+        let mut response = AppResponse::new();
         self.last_character_received = character_received;
 
         if !self.started {
@@ -268,7 +257,7 @@ impl Process for Shell {
         return response;
     }
 
-    fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    pub fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
 
         if self.clear_text_layer {
             virtual_frame_buffer.get_text_layer().clear();
@@ -291,21 +280,5 @@ impl Process for Shell {
         }
 
         self.display_buffer.clear();
-    }
-
-    fn get_name(&self) -> &str {
-        &self.name
-    }
-
-    fn set_state(&mut self, updating: bool, drawing: bool) {
-        self.updating = updating;
-        self.drawing = drawing;
-
-        if drawing {self.updating = true}
-        if !updating {self.drawing = false}
-    }
-
-    fn get_state(&self) -> (bool, bool) {
-        return (self.updating, self.drawing)
     }
 }

@@ -4,24 +4,20 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn;
 
-#[proc_macro_derive(F8bAppMacro)]
-pub fn f8b_app_macro_derive(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(AppMacro)]
+pub fn app_macro_derive(input: TokenStream) -> TokenStream {
     // Construct a representation of Rust code as a syntax tree
     // that we can manipulate
     let ast = syn::parse(input).unwrap();
 
     // Build the trait implementation
-    impl_f8b_app_macro(&ast)
+    impl_app_macro(&ast)
 }
 
-fn impl_f8b_app_macro(ast: &syn::DeriveInput) -> TokenStream {
+fn impl_app_macro(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
     let gen = quote! {
-        impl F8bAppMacro for #name {
-
-            // fn hello_macro() {
-            //     println!("Hello, Macro! My name is {}!", stringify!(#name));
-            // }
+        impl AppMacro for #name {
 
             fn start(&mut self) {
                 self.started = true;

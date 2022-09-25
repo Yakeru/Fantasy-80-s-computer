@@ -1,4 +1,4 @@
-use f8b_app_macro::F8bAppMacro;
+use app_macro::*;
 use winit::{
     event::{Event, WindowEvent, VirtualKeyCode, DeviceEvent, ElementState, ModifiersState},
     event_loop::{ControlFlow, EventLoop},
@@ -13,13 +13,11 @@ use std::time::{
 };
 use std::io::{self, Write};
 use crate::virtual_frame_buffer::{VirtualFrameBuffer, CrtEffectRenderer};
-use crate::process::*;
 
 mod characters_rom;
 mod text_layer;
 mod virtual_frame_buffer;
 mod color_palettes;
-mod process;
 mod sprite;
 mod unicode;
 
@@ -32,7 +30,6 @@ use crate::apps::sprite_editor::*;
 use crate::apps::lines::*;
 use crate::apps::squares::*;
 use crate::apps::weather_app::*;
-use crate::apps::test::*;
 
 //Settings
 
@@ -213,8 +210,8 @@ fn main()-> Result<(), Error> {
             Event::MainEventsCleared => {
                 
                 //Updating apps
-                //let process_response = shell.update(char_received, key_pressed_os, key_released);
-                let process_response = text_edit.update(char_received, key_pressed_os, key_released);                
+                let process_response = shell.update(char_received, key_pressed_os, key_released);
+                //let process_response = text_edit.update(char_received, key_pressed_os, key_released);                
                 
                 //Process app response
                 match process_response.event {
@@ -232,8 +229,9 @@ fn main()-> Result<(), Error> {
 
                 //Draw app
                 //let now = Instant::now();
-                //shell.draw(&mut virtual_frame_buffer);
-                text_edit.draw(&mut virtual_frame_buffer);
+                shell.draw(&mut virtual_frame_buffer);
+
+                //text_edit.draw(&mut virtual_frame_buffer);
                 virtual_frame_buffer.render();
                 //draw_loading_border(&mut virtual_frame_buffer.get_frame(), 40, 40);
                 crt_renderer.render(&virtual_frame_buffer, pixels.get_frame(), true);

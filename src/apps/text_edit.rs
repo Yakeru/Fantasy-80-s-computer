@@ -1,16 +1,16 @@
+use app_macro::*;
+use app_macro_derive::AppMacro;
+
 use winit::{event::VirtualKeyCode,event_loop::ControlFlow};
 use crate::text_layer::TextLayerChar;
 use std::io::{self, Write};
-use crate::process::*;
 use crate::virtual_frame_buffer::VirtualFrameBuffer;
 use crate::unicode;
-use f8b_app_macro::F8bAppMacro;
-use f8b_app_macro_derive::F8bAppMacro;
 
 const DEFAULT_BKG_COLOR: u8 = 7;
 const DEFAULT_COLOR: u8 = 0;
 
-#[derive(F8bAppMacro)]
+#[derive(AppMacro)]
 pub struct TextEdit {
     name: String,
     selected_color: u8,
@@ -44,9 +44,9 @@ impl TextEdit {
         }
     }
 
-    pub fn update(&mut self, character_received: Option<char>, key_pressed_os: Option<VirtualKeyCode>, key_released: Option<VirtualKeyCode>) -> ProcessResponse {
+    pub fn update(&mut self, character_received: Option<char>, key_pressed_os: Option<VirtualKeyCode>, key_released: Option<VirtualKeyCode>) -> AppResponse {
 
-        let mut response = ProcessResponse::new();
+        let mut response = AppResponse::new();
 
         if !self.started {
             self.start();

@@ -29,6 +29,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "app_macro"
+version = "0.1.0"
+dependencies = [
+ "winit",
+]
+
+[[package]]
+name = "app_macro_derive"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "arrayref"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -394,18 +409,6 @@ checksum = "658f19728920138342f68408b7cf7644d90d4784353d8ebc32e7e8663dbe45fa"
 dependencies = [
  "cmake",
  "pkg-config",
-]
-
-[[package]]
-name = "f8b_app_macro"
-version = "0.1.0"
-
-[[package]]
-name = "f8b_app_macro_derive"
-version = "0.1.0"
-dependencies = [
- "quote",
- "syn",
 ]
 
 [[package]]
@@ -2151,8 +2154,8 @@ checksum = "e2e7917148b2812d1eeafaeb22a97e4813dfa60a3f8f78ebe204bcc88f12f024"
 name = "windows_project"
 version = "0.1.0"
 dependencies = [
- "f8b_app_macro",
- "f8b_app_macro_derive",
+ "app_macro",
+ "app_macro_derive",
  "openweathermap",
  "pixels",
  "rand",

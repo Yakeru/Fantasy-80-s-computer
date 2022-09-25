@@ -1,4 +1,6 @@
-use crate::process::*;
+use app_macro::*;
+use app_macro_derive::AppMacro;
+
 use crate::virtual_frame_buffer::*;
 use winit::{event::VirtualKeyCode,event_loop::ControlFlow};
 use winit::dpi::PhysicalSize;
@@ -9,6 +11,7 @@ const SPRITE_SIZE: PhysicalSize<usize> = PhysicalSize::new(16, 16);
 const EDITOR_PIXEL_SIZE: PhysicalSize<usize> = PhysicalSize::new(10, 10);
 const EDITOR_PIXEL_HIGHLIGHT_SIZE: PhysicalSize<usize> = PhysicalSize::new(EDITOR_PIXEL_SIZE.width + 2, EDITOR_PIXEL_SIZE.height + 2);
 
+#[derive(AppMacro)]
 pub struct SpriteEditor {
     name: String,
     updating: bool,
@@ -35,39 +38,9 @@ impl SpriteEditor {
         }
     }
 
-    // fn draw_square(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer, square: Square) {
+    fn update(&mut self, character_received: Option<char>, key_pressed_os: Option<VirtualKeyCode>, key_released: Option<VirtualKeyCode>) -> AppResponse {
 
-    //     let start_offset: usize = virtual_frame_buffer.get_width() * square.pos_y + square.pos_x;
-
-    //     for row in 0..square.size.width {
-    //         for column in 0..square.size.height {
-    //             if square.fill {
-    //                 let offset = start_offset + column + virtual_frame_buffer.get_width() * row;
-    //                 virtual_frame_buffer.get_frame()[offset] = square.color;
-    //             } else {
-    //                 if row == 0 || row == square.size.width - 1 || column == 0 || column == square.size.height - 1 {
-    //                     let offset = start_offset + column + virtual_frame_buffer.get_width() * row;
-    //                     virtual_frame_buffer.get_frame()[offset] = square.color;
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-
-    // fn sprite_pixel_coord_to_index(x: usize, y: usize) -> usize {
-    //     return y * SPRITE_SIZE.width + x;
-    // }
-}
-
-impl Process for SpriteEditor {
-
-    fn start(&mut self){}
-
-    fn end(&mut self) {}
-
-    fn update(&mut self, character_received: Option<char>, key_pressed_os: Option<VirtualKeyCode>, key_released: Option<VirtualKeyCode>) -> ProcessResponse {
-
-        let mut response = ProcessResponse::new();
+        let mut response = AppResponse::new();
 
         if !self.started {
             self.start();
@@ -191,21 +164,5 @@ impl Process for SpriteEditor {
                 }
             }
         }   
-    }
-
-    fn get_name(&self) -> &str {
-        &self.name
-    }
-
-    fn set_state(&mut self, updating: bool, drawing: bool) {
-        self.updating = updating;
-        self.drawing = drawing;
-
-        if drawing {self.updating = true}
-        if !updating {self.drawing = false}
-    }
-
-    fn get_state(&self) -> (bool, bool) {
-        return (self.updating, self.drawing)
     }
 }

@@ -1,7 +1,9 @@
+use app_macro::*;
+use app_macro_derive::AppMacro;
+
 use winit::{event::VirtualKeyCode};
 use crate::text_layer::TextLayerChar;
-use std::io::{self, Write};
-use crate::process::*;
+
 use crate::virtual_frame_buffer::VirtualFrameBuffer;
 use openweathermap::Receiver;
 use std::time::{Duration, Instant};
@@ -9,6 +11,7 @@ use std::time::{Duration, Instant};
 const DEFAULT_BKG_COLOR: u8 = 7;
 const DEFAULT_COLOR: u8 = 0;
 
+#[derive(AppMacro)]
 pub struct WeatherApp {
     name: String,
     selected_color: u8,
@@ -49,24 +52,10 @@ impl WeatherApp {
             message: String::from("Loading...")
         }
     }
-}
 
-impl Process for WeatherApp {
+    fn update(&mut self, character_received: Option<char>, key_pressed_os: Option<VirtualKeyCode>, key_released: Option<VirtualKeyCode>) -> AppResponse {
 
-    fn start(&mut self) {
-        self.started = true;
-    }
-
-    fn end(&mut self) {
-        self.started = false;
-        self.drawing = false;
-        self.updating = false;
-        self.ended = true;
-    }
-
-    fn update(&mut self, character_received: Option<char>, key_pressed_os: Option<VirtualKeyCode>, key_released: Option<VirtualKeyCode>) -> ProcessResponse {
-
-        let mut response = ProcessResponse::new();
+        let mut response = AppResponse::new();
 
         //if Instant::now().duration_since(self.last_update) >= self.update_interval {
             let weather = openweathermap::update(&self.receiver);
@@ -162,21 +151,5 @@ impl Process for WeatherApp {
         virtual_frame_buffer.get_text_layer().clear();
         virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
         virtual_frame_buffer.get_text_layer().push_string(&self.message, None, None, false);
-    }
-
-    fn get_name(&self) -> &str {
-        &self.name
-    }
-
-    fn set_state(&mut self, updating: bool, drawing: bool) {
-        self.updating = updating;
-        self.drawing = drawing;
-
-        if drawing {self.updating = true}
-        if !updating {self.drawing = false}
-    }
-
-    fn get_state(&self) -> (bool, bool) {
-        return (self.updating, self.drawing)
     }
 }
