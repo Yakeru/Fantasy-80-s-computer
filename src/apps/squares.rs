@@ -2,9 +2,8 @@ use app_macro::*;
 use app_macro_derive::AppMacro;
 
 use crate::virtual_frame_buffer::*;
-use winit::{event::VirtualKeyCode,event_loop::ControlFlow};
+use winit::{event::VirtualKeyCode};
 use winit::dpi::PhysicalSize;
-use crate::text_layer::TextLayerChar;
 use rand::Rng;
 
 

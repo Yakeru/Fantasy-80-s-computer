@@ -1,6 +1,6 @@
 use app_macro::*;
 use winit::{
-    event::{Event, WindowEvent, VirtualKeyCode, DeviceEvent, ElementState, ModifiersState},
+    event::{Event, WindowEvent, VirtualKeyCode, DeviceEvent, ElementState, KeyboardInput},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
     dpi::PhysicalSize
@@ -11,7 +11,6 @@ use rand::Rng;
 use std::time::{
     Instant, Duration
 };
-use std::io::{self, Write};
 use crate::virtual_frame_buffer::{VirtualFrameBuffer, CrtEffectRenderer};
 
 mod characters_rom;
@@ -22,9 +21,8 @@ mod sprite;
 mod unicode;
 
 //Apps
-mod shell;
 mod apps;
-use crate::shell::*;
+use crate::apps::shell::*;
 use crate::apps::text_edit::*;
 use crate::apps::sprite_editor::*;
 use crate::apps::lines::*;
@@ -32,7 +30,6 @@ use crate::apps::squares::*;
 use crate::apps::weather_app::*;
 
 //Settings
-
 const FRAME_TIME_MS: u64 = 16; //ms per frame : 16 = 60fps, 32 = 30fps, 1000 = 1fps
 const SPLASH: &str = " Fantasy CPC Microcomputer V(0.1)\u{000D}\u{000D} 2022 Damien Torreilles\u{000D}\u{000D}";
 
@@ -55,7 +52,6 @@ fn main()-> Result<(), Error> {
         .with_resizable(false);
     let window = builder.build(&event_loop).expect("Window creation failed !");
     let mut input = WinitInputHelper::new();
-    let mut modifiers = ModifiersState::default();
 
     window.set_cursor_grab(winit::window::CursorGrabMode::None).unwrap();
     window.set_cursor_visible(false);
@@ -82,10 +78,6 @@ fn main()-> Result<(), Error> {
     //It is always updated in the event loop event if another process has the focus (updated and rendered) 
     let mut shell = Shell::new();
     shell.set_state(true, true);
-
-    //The vector containing the various "apps"
-    // let mut apps: Vec<Box<dyn Process>> = Vec::new();
-
     let mut text_edit = TextEdit::new();
     text_edit.set_state(false, false);
     let mut sprite_edit = SpriteEditor::new();
@@ -101,17 +93,14 @@ fn main()-> Result<(), Error> {
     // mouse_sprite.pos_x = VIRTUAL_WIDTH / 2;
     // mouse_sprite.pos_y = VIRTUAL_HEIGHT / 2;
     // virtual_frame_buffer.get_sprites().push(mouse_sprite);
-
-    //Variables used to collect all the events relevent to the shell and processes occuring during a loop.
-    //Once all the events have been cleared, they are sent to the shell for its update.
-    let mut key_released: Option<VirtualKeyCode> = None;
-    let mut key_pressed_os: Option<VirtualKeyCode> = None;
-    let mut char_received: Option<char> = None;
     let mut mouse_move_delta: (f64, f64) = (0.0, 0.0);
 
     //Push the splash screen to the text layer
     virtual_frame_buffer.clear_frame_buffer(0);
     virtual_frame_buffer.get_text_layer().push_string(SPLASH, None, None, false);
+
+    let mut keyboard_input: Option<KeyboardInput> = None;
+    let mut char_received: Option<char> = None;
 
     //The event loop here can be considered as a bios rom + terminal
     //it gathers all the keyborad inputs and sends them to the shell, the shell interprets them.
@@ -121,67 +110,8 @@ fn main()-> Result<(), Error> {
         //Control_flow::Poll used 100% of one CPU core (In Windows 10 at least)
         //WaitUntil polls every "const FPS" ms instead: droped global CPU usage from 20% to 4%.
         //The whole program loops (updates and draws) at "const FPS" fps.
-        let refresh_timer: Instant = Instant::now().checked_add(Duration::from_millis(FRAME_TIME_MS)).unwrap();
-        *control_flow = ControlFlow::WaitUntil(refresh_timer);
-
-        if input.update(&event) {
-            if input.key_pressed_os(VirtualKeyCode::Escape) || input.quit() {
-                key_pressed_os = Some(VirtualKeyCode::Escape);
-            }
-
-            if input.key_pressed_os(VirtualKeyCode::Left) {
-                key_pressed_os = Some(VirtualKeyCode::Left);
-            }
-
-            if input.key_pressed_os(VirtualKeyCode::Right) {
-                key_pressed_os = Some(VirtualKeyCode::Right);
-            }
-
-            if input.key_pressed_os(VirtualKeyCode::Up) {
-                key_pressed_os = Some(VirtualKeyCode::Up);
-            }
-
-            if input.key_pressed_os(VirtualKeyCode::Down) {
-                key_pressed_os = Some(VirtualKeyCode::Down);
-            }
-
-            if input.key_pressed_os(VirtualKeyCode::PageUp) {
-                key_pressed_os = Some(VirtualKeyCode::PageUp);
-            }
-
-            if input.key_pressed_os(VirtualKeyCode::PageDown) {
-                key_pressed_os = Some(VirtualKeyCode::PageDown);
-            }
-
-            if input.key_released(VirtualKeyCode::Escape) || input.quit() {
-                *control_flow = ControlFlow::Exit;
-                key_released = Some(VirtualKeyCode::Escape);
-            }
-
-            if input.key_released(VirtualKeyCode::Left) {
-                key_released = Some(VirtualKeyCode::Left);
-            }
-
-            if input.key_released(VirtualKeyCode::Right) {
-                key_released = Some(VirtualKeyCode::Right);
-            }
-
-            if input.key_released(VirtualKeyCode::Up) {
-                key_released = Some(VirtualKeyCode::Up);
-            }
-
-            if input.key_released(VirtualKeyCode::Down) {
-                key_released = Some(VirtualKeyCode::Down);
-            }
-
-            if input.key_released(VirtualKeyCode::PageUp) {
-                key_released = Some(VirtualKeyCode::PageUp);
-            }
-
-            if input.key_released(VirtualKeyCode::PageDown) {
-                key_released = Some(VirtualKeyCode::PageDown);
-            }
-        }
+        //let refresh_timer: Instant = Instant::now().checked_add(Duration::from_millis(FRAME_TIME_MS)).unwrap();
+        *control_flow = ControlFlow::Poll;//WaitUntil(refresh_timer);
 
         match event {
             Event::WindowEvent { event, .. } => match event {
@@ -192,6 +122,7 @@ fn main()-> Result<(), Error> {
                 }
                 WindowEvent::ReceivedCharacter(c) => {
                     char_received = Some(c);
+                    println!("Char received: {:?}", char_received);
                 }
                 _ => {
                     char_received = None;
@@ -205,12 +136,21 @@ fn main()-> Result<(), Error> {
                     ElementState::Pressed => (),
                     ElementState::Released => (),
                 },
+                DeviceEvent::Key(k) => {
+
+                    keyboard_input = Some(k);
+                    let toto = k.scancode;
+                    let titi = k.state;
+                    let tutu = k.virtual_keycode.unwrap();
+
+                    println!("Scan: {}, state: {:?}, virt. key code: {:?}", toto, titi, tutu);
+                },
                 _ => (),
             },
             Event::MainEventsCleared => {
                 
                 //Updating apps
-                let process_response = shell.update(char_received, key_pressed_os, key_released);
+                let process_response = shell.update(keyboard_input, char_received);
                 //let process_response = text_edit.update(char_received, key_pressed_os, key_released);                
                 
                 //Process app response
@@ -238,10 +178,10 @@ fn main()-> Result<(), Error> {
                 //println!("Render time: {} micros", Instant::now().duration_since(now).as_micros());
                 pixels.render().expect("Pixels render oups");
                 window.request_redraw();
+
                 //Reset input buffers for next loop
                 char_received = None;
-                key_pressed_os = None;
-                key_released = None;
+                keyboard_input = None;
                 mouse_move_delta.0 = 0.0;
                 mouse_move_delta.1 = 0.0;
             }

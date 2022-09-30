@@ -1,4 +1,5 @@
 use app_macro::*;
+use winit::event::KeyboardInput;
 use app_macro_derive::AppMacro;
 use winit::{event::VirtualKeyCode,event_loop::ControlFlow};
 use crate::virtual_frame_buffer::VirtualFrameBuffer;
@@ -170,17 +171,16 @@ impl Shell {
         self.push_char(StyledChar::Default('>'));
         self.started = true;
     }
-
-    pub fn update(&mut self, character_received: Option<char>, key_pressed_os: Option<VirtualKeyCode>, key_released: Option<VirtualKeyCode>) -> AppResponse {
-
+    
+    pub fn update(&mut self, keybord_input: Option<KeyboardInput>, char_received: Option<char>) -> AppResponse {
         let mut response = AppResponse::new();
-        self.last_character_received = character_received;
-
+        self.last_character_received = char_received;
+        
         if !self.started {
             self.start();
         }
 
-        match character_received {
+        match self.last_character_received {
             Some(unicode) => {
                 match unicode {
                     unicode::BACKSPACE => {
@@ -213,46 +213,46 @@ impl Shell {
             None => ()
         }
 
-        match key_released {
-            Some(k) => {
-                match k {
-                    VirtualKeyCode::Left => {
-                        // if self.color == 7 {self.color = 0} else {self.color += 1}
-                        // text_layer.pop_char();
-                        // text_layer.push_char('_', self.color, self.bkg_color, false);
-                    }
+        // match key_presses.key_released {
+        //     Some(k) => {
+        //         match k {
+        //             VirtualKeyCode::Left => {
+        //                 // if self.color == 7 {self.color = 0} else {self.color += 1}
+        //                 // text_layer.pop_char();
+        //                 // text_layer.push_char('_', self.color, self.bkg_color, false);
+        //             }
         
-                    VirtualKeyCode::Right => {
-                        // if self.color == 0 {self.color = 7} else {self.color -= 1}
-                        // text_layer.pop_char();
-                        // text_layer.push_char('_', self.color, self.bkg_color, false);
-                    }
+        //             VirtualKeyCode::Right => {
+        //                 // if self.color == 0 {self.color = 7} else {self.color -= 1}
+        //                 // text_layer.pop_char();
+        //                 // text_layer.push_char('_', self.color, self.bkg_color, false);
+        //             }
         
-                    VirtualKeyCode::Up => {
-                        // if self.bkg_color == 7 {self.bkg_color = 0} else {self.bkg_color += 1}
-                        // text_layer.pop_char();
-                        // text_layer.push_char('_', self.color, self.bkg_color, false);
-                    }
+        //             VirtualKeyCode::Up => {
+        //                 // if self.bkg_color == 7 {self.bkg_color = 0} else {self.bkg_color += 1}
+        //                 // text_layer.pop_char();
+        //                 // text_layer.push_char('_', self.color, self.bkg_color, false);
+        //             }
         
-                    VirtualKeyCode::Down => {
-                        // if self.bkg_color == 0 {self.bkg_color = 7} else {self.bkg_color -= 1}
-                        // text_layer.pop_char();
-                        // text_layer.push_char('_', self.color, self.bkg_color, false);
-                    }
+        //             VirtualKeyCode::Down => {
+        //                 // if self.bkg_color == 0 {self.bkg_color = 7} else {self.bkg_color -= 1}
+        //                 // text_layer.pop_char();
+        //                 // text_layer.push_char('_', self.color, self.bkg_color, false);
+        //             }
         
-                    VirtualKeyCode::PageUp => {
-                        // text_layer.scroll_up();
+        //             VirtualKeyCode::PageUp => {
+        //                 // text_layer.scroll_up();
         
-                        // if text_layer.get_characters().len() == 0 {
-                        //     text_layer.push_char('_', self.color, self.bkg_color, false);
-                        // }
-                    }
+        //                 // if text_layer.get_characters().len() == 0 {
+        //                 //     text_layer.push_char('_', self.color, self.bkg_color, false);
+        //                 // }
+        //             }
 
-                    _ => () 
-                }
-            }
-            None => ()
-        }
+        //             _ => () 
+        //         }
+        //     }
+        //     None => ()
+        // }
 
         return response;
     }
