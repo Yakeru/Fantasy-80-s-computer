@@ -6,6 +6,7 @@ use std::time::{
     Instant, Duration
 };
 use winit::dpi::PhysicalSize;
+use rand::Rng;
 
 //4K
 // const WIDTH: usize = 2560;
@@ -18,6 +19,8 @@ const WIDTH: usize = 1280;
 const HEIGHT: usize = 960;
 const VIRTUAL_WIDTH: usize = 426;  // 426*3 = 1278 draw one black line on each side of screen for perfectly centered *3 scale
 const VIRTUAL_HEIGHT: usize = 320; // 320*3 = 960
+const H_UPSCALE: usize = 3;
+const V_UPSCALE: usize = 3;
 
 const SCAN_LINE_STRENGTH: u8 = 25;
 const SUB_PIXEL_ATTENUATION: u8 = 230;
@@ -32,6 +35,7 @@ const RENDERED_LINE_LENGTH: usize = WIDTH * SUB_PIXEL_COUNT;
 pub struct VirtualFrameBuffer {
     frame_time_ms: u64,
     frame: [u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT],
+    line_scroll_list: [i8; VIRTUAL_HEIGHT],
     text_layer: TextLayer,
     sprites: Vec<Sprite>,
     //background_layer
@@ -71,6 +75,7 @@ impl VirtualFrameBuffer {
         VirtualFrameBuffer {
             frame_time_ms,
             frame: virtual_frame_buffer,
+            line_scroll_list: [0; VIRTUAL_HEIGHT],
             text_layer,
             sprites,
             frame_counter: 0,
@@ -104,6 +109,16 @@ impl VirtualFrameBuffer {
 
     pub fn coord_to_vec_index(x: usize, y: usize) -> usize {
         (y * VIRTUAL_WIDTH + x) % (VIRTUAL_WIDTH * VIRTUAL_HEIGHT)
+    }
+
+    pub fn get_line_scroll_list(&mut self) -> &mut [i8; VIRTUAL_HEIGHT] {
+        &mut self.line_scroll_list
+    }
+
+    pub fn set_line_scroll_list(&mut self, index: usize, value: i8) {
+        if index < self.line_scroll_list.len() {
+            self.line_scroll_list[index] = value;
+        }
     }
 
     pub fn draw_line(&mut self, line: Line) {
@@ -161,12 +176,29 @@ impl VirtualFrameBuffer {
         }
     }
 
+    pub fn apply_line_scroll_effect(&mut self) {
+
+        let mut line_index: usize = 0;
+
+        for line_scroll_value in self.line_scroll_list {
+            if line_scroll_value > 0 {
+                self.frame[VIRTUAL_WIDTH * line_index..VIRTUAL_WIDTH * line_index + VIRTUAL_WIDTH].rotate_right(line_scroll_value as usize);
+            }
+
+            if line_scroll_value < 0 {
+                self.frame[VIRTUAL_WIDTH * line_index..VIRTUAL_WIDTH * line_index + VIRTUAL_WIDTH].rotate_left((-line_scroll_value) as usize);
+            }
+
+            line_index += 1;
+        }
+    }
+
     /// Sets all the pixels to the specified color of the color palette
     /// Used to clear the screen between frames or set the background when
     /// redering only the text layer
     pub fn clear_frame_buffer(&mut self, color: u8) {
-        let clear_frame: [u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT] = [color; VIRTUAL_WIDTH * VIRTUAL_HEIGHT];
-        self.frame.copy_from_slice(&clear_frame);
+        //let clear_frame: [u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT] = [color; VIRTUAL_WIDTH * VIRTUAL_HEIGHT];
+        self.frame.copy_from_slice(&[color; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]);
     }
 
     pub fn get_text_layer(&mut self) -> &mut TextLayer {
@@ -206,6 +238,8 @@ impl VirtualFrameBuffer {
         self.text_layer_renderer();
         self.sprite_layer_renderer();
         //Add background renderees, sprite renderers etc...
+
+        self.apply_line_scroll_effect();
     }
 
     /// Gets all the sprites listed in the sprite vector and renders them at the right place in the
@@ -304,7 +338,7 @@ impl VirtualFrameBuffer {
 
 pub struct CrtEffectRenderer {
     scan_line_strength: u8,
-    sub_pixel_attenuation: u8,
+    sub_pixel_attenuation: u8
 }
 
 
@@ -322,7 +356,7 @@ impl CrtEffectRenderer {
         let mut rendered_line: [u8; RENDERED_LINE_LENGTH] = [0; RENDERED_LINE_LENGTH];
         let mut rendered_scanline: [u8; RENDERED_LINE_LENGTH] = [0; RENDERED_LINE_LENGTH]; 
 
-        let mut line_count: usize = 0;
+        let mut line_count:usize = 0;
 
         for virt_line in virtual_frame_buffer.get_frame_static().chunks_exact(VIRTUAL_WIDTH) {
 
@@ -342,35 +376,35 @@ impl CrtEffectRenderer {
                         rgb.2.checked_sub(self.scan_line_strength + self.sub_pixel_attenuation).unwrap_or(0));
                 }
                 
-                rendered_line[0 + 12 * count] = rgb.0;
-                rendered_line[1 + 12 * count] = attenuated_rgb.1;
-                rendered_line[2 + 12 * count] = attenuated_rgb.2;
-                rendered_line[3 + 12 * count] = 254;
+                rendered_line[0 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.0;
+                rendered_line[1 + SUB_PIXEL_COUNT * H_UPSCALE * count] = attenuated_rgb.1;
+                rendered_line[2 + SUB_PIXEL_COUNT * H_UPSCALE * count] = attenuated_rgb.2;
+                rendered_line[3 + SUB_PIXEL_COUNT * H_UPSCALE * count] = 254;
 
-                rendered_line[4 + 12 * count] = attenuated_rgb.0;
-                rendered_line[5 + 12 * count] = rgb.1;
-                rendered_line[6 + 12 * count] = attenuated_rgb.2;
-                rendered_line[7 + 12 * count] = 254;
+                rendered_line[4 + SUB_PIXEL_COUNT * H_UPSCALE * count] = attenuated_rgb.0;
+                rendered_line[5 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.1;
+                rendered_line[6 + SUB_PIXEL_COUNT * H_UPSCALE * count] = attenuated_rgb.2;
+                rendered_line[7 + SUB_PIXEL_COUNT * H_UPSCALE * count] = 254;
 
-                rendered_line[8 + 12 * count] = attenuated_rgb.0;
-                rendered_line[9 + 12 * count] = attenuated_rgb.1;
-                rendered_line[10 + 12 * count] = rgb.2;
-                rendered_line[11 + 12 * count] = 254;
+                rendered_line[8 + SUB_PIXEL_COUNT * H_UPSCALE * count] = attenuated_rgb.0;
+                rendered_line[9 + SUB_PIXEL_COUNT * H_UPSCALE * count] = attenuated_rgb.1;
+                rendered_line[10 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.2;
+                rendered_line[11 + SUB_PIXEL_COUNT * H_UPSCALE * count] = 254;
 
-                rendered_scanline[0 + 12 * count] = rgb.0;
-                rendered_scanline[1 + 12 * count] = scanline_rgb.1;
-                rendered_scanline[2 + 12 * count] = scanline_rgb.2;
-                rendered_scanline[3 + 12 * count] = 254;
+                rendered_scanline[0 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.0;
+                rendered_scanline[1 + SUB_PIXEL_COUNT * H_UPSCALE * count] = scanline_rgb.1;
+                rendered_scanline[2 + SUB_PIXEL_COUNT * H_UPSCALE * count] = scanline_rgb.2;
+                rendered_scanline[3 + SUB_PIXEL_COUNT * H_UPSCALE * count] = 254;
 
-                rendered_scanline[4 + 12 * count] = scanline_rgb.0;
-                rendered_scanline[5 + 12 * count] = rgb.1;
-                rendered_scanline[6 + 12 * count] = scanline_rgb.2;
-                rendered_scanline[7 + 12 * count] = 254;
+                rendered_scanline[4 + SUB_PIXEL_COUNT * H_UPSCALE * count] = scanline_rgb.0;
+                rendered_scanline[5 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.1;
+                rendered_scanline[6 + SUB_PIXEL_COUNT * H_UPSCALE * count] = scanline_rgb.2;
+                rendered_scanline[7 + SUB_PIXEL_COUNT * H_UPSCALE * count] = 254;
 
-                rendered_scanline[8 + 12 * count] = scanline_rgb.0;
-                rendered_scanline[9 + 12 * count] = scanline_rgb.1;
-                rendered_scanline[10 + 12 * count] = rgb.2;
-                rendered_scanline[11 + 12 * count] = 254;
+                rendered_scanline[8 + SUB_PIXEL_COUNT * H_UPSCALE * count] = scanline_rgb.0;
+                rendered_scanline[9 + SUB_PIXEL_COUNT * H_UPSCALE * count] = scanline_rgb.1;
+                rendered_scanline[10 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.2;
+                rendered_scanline[11 + SUB_PIXEL_COUNT * H_UPSCALE * count] = 254;
 
                 count += 1;
             }

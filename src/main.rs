@@ -170,10 +170,9 @@ fn main()-> Result<(), Error> {
                 //Draw app
                 //let now = Instant::now();
                 shell.draw(&mut virtual_frame_buffer);
-
                 //text_edit.draw(&mut virtual_frame_buffer);
+                draw_loading_border(&mut virtual_frame_buffer, 40, 40);
                 virtual_frame_buffer.render();
-                //draw_loading_border(&mut virtual_frame_buffer.get_frame(), 40, 40);
                 crt_renderer.render(&virtual_frame_buffer, pixels.get_frame(), true);
                 //println!("Render time: {} micros", Instant::now().duration_since(now).as_micros());
                 pixels.render().expect("Pixels render oups");
@@ -190,7 +189,8 @@ fn main()-> Result<(), Error> {
     });
 }
 
-fn draw_loading_border(virtual_frame_buffer: &VirtualFrameBuffer, frame_buffer: &mut[u8], vert_size: usize, horiz_size: usize) {
+///Just for fun
+fn draw_loading_border(virtual_frame_buffer: &mut VirtualFrameBuffer, vert_size: usize, horiz_size: usize) {
     let mut random = rand::thread_rng();
     let mut rgb_color: u8 = random.gen_range(0..32);
 
@@ -199,9 +199,12 @@ fn draw_loading_border(virtual_frame_buffer: &VirtualFrameBuffer, frame_buffer: 
     let mut band_count: u8 = 0;
     let mut band: u8 = random.gen_range(0..20) + 4;
 
-    for pixel in frame_buffer.chunks_exact_mut(1) {
+    let width = virtual_frame_buffer.get_width();
+    let height = virtual_frame_buffer.get_height();
 
-        if line_pixel_count < horiz_size || line_pixel_count > virtual_frame_buffer.get_width() - horiz_size || line_count < vert_size || line_count > virtual_frame_buffer.get_height() - vert_size {
+    for pixel in virtual_frame_buffer.get_frame().chunks_exact_mut(1) {
+
+        if line_pixel_count < horiz_size || line_pixel_count > width - horiz_size || line_count < vert_size || line_count > height - vert_size {
             if band_count >= band {
                 rgb_color = random.gen_range(0..32);
                 band_count = 0;
@@ -214,7 +217,7 @@ fn draw_loading_border(virtual_frame_buffer: &VirtualFrameBuffer, frame_buffer: 
         line_pixel_count += 1;
 
 
-        if line_pixel_count == virtual_frame_buffer.get_width() {
+        if line_pixel_count == width {
             band_count += 1;
             line_count += 1;
             line_pixel_count = 0;

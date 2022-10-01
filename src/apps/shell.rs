@@ -24,7 +24,8 @@ pub struct Shell {
     updating: bool,
     drawing: bool,
     started: bool,
-    ended: bool
+    ended: bool,
+    cos: f32
 }
 
 #[derive(Copy, Clone)]
@@ -64,6 +65,7 @@ impl Shell {
             drawing: false,
             started: false,
             ended: false,
+            cos: 0f32
         }
     }
 
@@ -213,6 +215,12 @@ impl Shell {
             None => ()
         }
 
+        self.cos += 0.1;
+
+        // if self.cos >= 1.0 {
+        //     self.cos = -1.0;
+        // }
+
         // match key_presses.key_released {
         //     Some(k) => {
         //         match k {
@@ -280,5 +288,16 @@ impl Shell {
         }
 
         self.display_buffer.clear();
+
+        let mut titi: f32 = 0.0f32;
+
+        for index in 0..virtual_frame_buffer.get_line_scroll_list().len() {
+            
+            let toto = (self.cos + titi).cos();
+            virtual_frame_buffer.set_line_scroll_list(index, (toto * 10.0) as i8);
+
+            titi += 0.1f32;
+        }
+
     }
 }
