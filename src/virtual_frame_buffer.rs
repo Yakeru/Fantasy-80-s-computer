@@ -35,6 +35,7 @@ const RENDERED_LINE_LENGTH: usize = WIDTH * SUB_PIXEL_COUNT;
 pub struct VirtualFrameBuffer {
     frame_time_ms: u64,
     frame: [u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT],
+    color_palette: ColorPalette,
     line_scroll_list: [i8; VIRTUAL_HEIGHT],
     text_layer: TextLayer,
     sprites: Vec<Sprite>,
@@ -75,6 +76,7 @@ impl VirtualFrameBuffer {
         VirtualFrameBuffer {
             frame_time_ms,
             frame: virtual_frame_buffer,
+            color_palette: ColorPalette::new(),
             line_scroll_list: [0; VIRTUAL_HEIGHT],
             text_layer,
             sprites,
@@ -191,7 +193,7 @@ impl VirtualFrameBuffer {
 
             line_index += 1;
         }
-    }
+    } 
 
     /// Sets all the pixels to the specified color of the color palette
     /// Used to clear the screen between frames or set the background when
@@ -364,7 +366,7 @@ impl CrtEffectRenderer {
 
             for virt_pixel in virt_line {
 
-                let rgb: (u8, u8, u8) = get_rgb(virt_pixel);
+                let rgb: (u8, u8, u8) = virtual_frame_buffer.color_palette.get_rgb_from_index(*virt_pixel);
                 let mut attenuated_rgb: (u8, u8, u8) = rgb;
                 let mut scanline_rgb: (u8, u8, u8) = rgb;
                 if ctr_effect_on {
