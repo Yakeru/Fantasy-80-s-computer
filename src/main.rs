@@ -1,15 +1,14 @@
 use app_macro::*;
 use winit::{
-    event::{Event, WindowEvent, VirtualKeyCode, DeviceEvent, ElementState, KeyboardInput},
+    event::{Event, WindowEvent, DeviceEvent, ElementState, KeyboardInput},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
     dpi::PhysicalSize
 };
-use winit_input_helper::WinitInputHelper;
 use pixels::{Error, Pixels, SurfaceTexture};
 use rand::Rng;
 use std::time::{
-    Instant, Duration
+    Instant
 };
 use crate::virtual_frame_buffer::{VirtualFrameBuffer, CrtEffectRenderer};
 
@@ -51,7 +50,6 @@ fn main()-> Result<(), Error> {
         .with_title("Yay, une fenêtre !")
         .with_resizable(false);
     let window = builder.build(&event_loop).expect("Window creation failed !");
-    let mut input = WinitInputHelper::new();
 
     window.set_cursor_grab(winit::window::CursorGrabMode::None).unwrap();
     window.set_cursor_visible(false);
@@ -60,10 +58,8 @@ fn main()-> Result<(), Error> {
     let mut pixels = {
         let window_size = window.inner_size();
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
-        Pixels::new(virtual_frame_buffer.get_window_size().0 as u32, virtual_frame_buffer.get_window_size().1 as u32, surface_texture)?
+        Pixels::new(virtual_frame_buffer.get_window_size().0 as u32, virtual_frame_buffer.get_window_size().1 as u32, surface_texture).expect("Pixels : Failed to setup rendering")
     };
-
-    
 
     //The crt renderer takes the virtual frame buffers's frame, upscales it 3 times in X and Y to matche the pixcel's frame and winow size,
     //then applyes an effect to evoke CRT sub-pixels and scanlines.
@@ -168,16 +164,15 @@ fn main()-> Result<(), Error> {
                 }
 
                 //Draw app
-                //let now = Instant::now();
+                
+                let now = Instant::now();
                 shell.draw(&mut virtual_frame_buffer);
                 //text_edit.draw(&mut virtual_frame_buffer);
-                draw_loading_border(&mut virtual_frame_buffer, 40, 40);
+                //draw_loading_border(&mut virtual_frame_buffer, 40, 40);
                 virtual_frame_buffer.render();
                 crt_renderer.render(&virtual_frame_buffer, pixels.get_frame(), true);
-                //println!("Render time: {} micros", Instant::now().duration_since(now).as_micros());
                 pixels.render().expect("Pixels render oups");
                 window.request_redraw();
-
                 //Reset input buffers for next loop
                 char_received = None;
                 keyboard_input = None;

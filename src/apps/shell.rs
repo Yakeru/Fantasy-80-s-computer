@@ -215,7 +215,7 @@ impl Shell {
             None => ()
         }
 
-        self.cos += 0.1;
+        // self.cos += 0.1;
 
         // if self.cos >= 1.0 {
         //     self.cos = -1.0;
@@ -289,15 +289,15 @@ impl Shell {
 
         self.display_buffer.clear();
 
-        let mut titi: f32 = 0.0f32;
+        // let mut titi: f32 = 0.0f32;
 
-        for index in 0..virtual_frame_buffer.get_line_scroll_list().len() {
+        // for index in 0..virtual_frame_buffer.get_line_scroll_list().len() {
             
-            let toto = (self.cos + titi).cos();
-            virtual_frame_buffer.set_line_scroll_list(index, (toto * 10.0) as i8);
+        //     let toto = (self.cos + titi).cos();
+        //     virtual_frame_buffer.set_line_scroll_list(index, (toto * 10.0) as i8);
 
-            titi += 0.1f32;
-        }
+        //     titi += 0.1f32;
+        // }
 
     }
 }
