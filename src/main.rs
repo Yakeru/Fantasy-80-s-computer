@@ -208,13 +208,12 @@ fn main() -> Result<(), Error> {
 
                 //Render to frame buffer
                 if now.elapsed().as_micros() >= (FRAME_TIME_MS * 1000) as u128 {
+                    now = Instant::now();
                     let render_time = Instant::now();
                     virtual_frame_buffer.render();
                     crt_renderer.render(&virtual_frame_buffer, pixels.get_frame(), true);
                     pixels.render().expect("Pixels render oups");
                     println!("drawing: {} micros", render_time.elapsed().as_micros());
-
-                    now = Instant::now();
                 }
 
                 window.request_redraw();
