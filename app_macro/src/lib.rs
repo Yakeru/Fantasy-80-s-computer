@@ -1,4 +1,4 @@
-use winit::{event::VirtualKeyCode,event_loop::ControlFlow};
+use winit::{event::VirtualKeyCode, event_loop::ControlFlow};
 
 pub trait AppMacro {
     fn start(&mut self);
@@ -13,7 +13,7 @@ pub trait AppMacro {
 #[derive(Clone)]
 pub struct AppResponse {
     pub event: Option<ControlFlow>,
-    pub message: Option<String>
+    pub message: Option<String>,
 }
 
 pub enum AppMessage {
@@ -25,11 +25,10 @@ pub enum AppMessage {
 }
 
 impl AppResponse {
-
     pub fn new() -> AppResponse {
         AppResponse {
             event: None,
-            message: None
+            message: None,
         }
     }
 

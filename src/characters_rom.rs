@@ -1,6 +1,6 @@
 /// The character "ROM", returns the 8x8 pixels drawing corresponding to each character.
 /// Inspired by the AMSTRAD character set.
-pub fn rom(character: &char) -> [u8;8] {
+pub fn rom(character: &char) -> [u8; 8] {
     match character {
         ' ' => [0, 0, 0, 0, 0, 0, 0, 0],
         '!' => [0x18, 0x18, 0x18, 0x18, 0x18, 0x00, 0x18, 0x00],
@@ -94,6 +94,6 @@ pub fn rom(character: &char) -> [u8;8] {
         'y' => [0x00, 0x00, 0x66, 0x66, 0x66, 0x3E, 0x06, 0x7C],
         'z' => [0x00, 0x00, 0x7E, 0x4C, 0x18, 0x30, 0x7E, 0x00],
         '\u{25AE}' => [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF],
-        _ => [0, 0, 0, 0, 0, 0, 0, 0]
+        _ => [0, 0, 0, 0, 0, 0, 0, 0],
     }
-}   
+}

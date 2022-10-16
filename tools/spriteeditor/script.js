@@ -1,13 +1,13 @@
 //Color palette inspired by PICO-8
 //var color_palette={0xAABBCC,0xBBCCDD};
-const palette = ["#000000","#1D2B53","#7E2553","#008751",
-               "#AB5236","#5F574F","#C2C3C7","#FFF1E8",
-               "#FF004D","#FFA300","#FFEC27","#00E436",
-               "#29ADFF","#83769C","#FF77A8","#FFCCAA"]
+const palette = ["#000000", "#1D2B53", "#7E2553", "#008751",
+  "#AB5236", "#5F574F", "#C2C3C7", "#FFF1E8",
+  "#FF004D", "#FFA300", "#FFEC27", "#00E436",
+  "#29ADFF", "#83769C", "#FF77A8", "#FFCCAA"]
 
 //Sprite canvas pixel size 16x16
-const editor_width_px=16;
-const editor_height_px=16;
+const editor_width_px = 16;
+const editor_height_px = 16;
 
 const log = true;
 
@@ -35,24 +35,24 @@ var selectedPaletteIndex = 0;
 
 function init() {
   spriteCanvas = document.getElementById("sprite");
-  spriteCanvas.addEventListener("mousedown", function(e){
+  spriteCanvas.addEventListener("mousedown", function (e) {
     spriteMouseDown(e);
   });
-  spriteCanvas.addEventListener("mousemove", function(e){
+  spriteCanvas.addEventListener("mousemove", function (e) {
     spriteMouseMove(e);
   });
-  spriteCanvas.addEventListener("mouseup", function(e){
+  spriteCanvas.addEventListener("mouseup", function (e) {
     spriteMouseUp(e);
   });
 
-  spriteCanvas.addEventListener("mouseout", function(e){
+  spriteCanvas.addEventListener("mouseout", function (e) {
     spriteMouseOut(e);
   });
 
   spriteContext = spriteCanvas.getContext("2d");
 
   paletteCanvas = document.getElementById("palette");
-  paletteCanvas.addEventListener("mousedown", function(e){
+  paletteCanvas.addEventListener("mousedown", function (e) {
     paletteClick(e);
   });
   paletteContext = paletteCanvas.getContext("2d");
@@ -71,15 +71,15 @@ function init() {
 function drawSpriteGrid(color) {
   let spriteWidth = spriteContext.canvas.clientWidth;
   let spriteHeight = spriteContext.canvas.clientHeight;
-  let square_width = spriteWidth/editor_width_px;
-  let square_height = spriteHeight/editor_height_px;
+  let square_width = spriteWidth / editor_width_px;
+  let square_height = spriteHeight / editor_height_px;
 
-  for(row_count = 0 ; row_count < editor_height_px ; row_count++) {
-    for(column_count = 0 ; column_count < editor_width_px ; column_count++) {
-      let square_x = square_width*column_count;
-      let square_y = square_height*row_count;
+  for (row_count = 0; row_count < editor_height_px; row_count++) {
+    for (column_count = 0; column_count < editor_width_px; column_count++) {
+      let square_x = square_width * column_count;
+      let square_y = square_height * row_count;
       spriteContext.fillStyle = color;
-      if(color == "#000000")
+      if (color == "#000000")
         spriteContext.strokeStyle = "White";
       else
         spriteContext.strokeStyle = "Black";
@@ -92,14 +92,14 @@ function drawSpriteGrid(color) {
 function drawColorPalette() {
   let paletteWidth = paletteContext.canvas.clientWidth;
   let paletteHeight = paletteContext.canvas.clientHeight;
-  let square_width = paletteWidth/4;
-  let square_height = paletteHeight/4;
+  let square_width = paletteWidth / 4;
+  let square_height = paletteHeight / 4;
   let paletteIndex = 0;
 
-  for(row_count = 0 ; row_count < 4 ; row_count++) {
-    for(column_count = 0 ; column_count < 4 ; column_count++) {
-      let square_x = square_width*column_count;
-      let square_y = square_height*row_count;
+  for (row_count = 0; row_count < 4; row_count++) {
+    for (column_count = 0; column_count < 4; column_count++) {
+      let square_x = square_width * column_count;
+      let square_y = square_height * row_count;
       paletteContext.fillStyle = palette[paletteIndex];
       paletteContext.fillRect(square_x, square_y, square_width, square_height);
       paletteIndex++;
@@ -110,7 +110,7 @@ function drawColorPalette() {
 var isDrawing = false;
 
 function spriteMouseDown(event) {
-  if(log) console.log("Sprite click !");
+  if (log) console.log("Sprite click !");
   isDrawing = true;
   draw();
 }
@@ -121,7 +121,7 @@ function spriteMouseMove(event) {
   let x = event.clientX - rect.left;
   let y = event.clientY - rect.top;
   spriteContext.fillStyle = selectedColor;
-  if(selectedColor == "#000000") {
+  if (selectedColor == "#000000") {
     spriteContext.strokeStyle = "White";
   } else {
     spriteContext.strokeStyle = "Black";
@@ -131,7 +131,7 @@ function spriteMouseMove(event) {
   paletteContext.fill();
   paletteContext.stroke();
 
-  if(isDrawing) draw();
+  if (isDrawing) draw();
 }
 
 function spriteMouseUp(event) {
@@ -142,60 +142,60 @@ function spriteMouseOut(event) {
   isDrawing = false;
 }
 
-function draw(){
+function draw() {
   let rect = spriteCanvas.getBoundingClientRect();
   let x = event.clientX - rect.left;
   let y = event.clientY - rect.top;
 
   let spriteWidth = spriteContext.canvas.clientWidth;
   let spriteHeight = spriteContext.canvas.clientHeight;
-  let square_width = spriteWidth/editor_width_px;
-  let square_height = spriteHeight/editor_height_px;
+  let square_width = spriteWidth / editor_width_px;
+  let square_height = spriteHeight / editor_height_px;
 
-  for(row_count = 0 ; row_count < editor_height_px ; row_count++) {
-    for(column_count = 0 ; column_count < editor_width_px ; column_count++) {
-      let square_x = square_width*column_count;
-      let square_y = square_height*row_count;
+  for (row_count = 0; row_count < editor_height_px; row_count++) {
+    for (column_count = 0; column_count < editor_width_px; column_count++) {
+      let square_x = square_width * column_count;
+      let square_y = square_height * row_count;
 
       spriteContext.fillStyle = selectedColor;
-      if(selectedColor == "#000000") {
+      if (selectedColor == "#000000") {
         spriteContext.strokeStyle = "White";
       } else {
         spriteContext.strokeStyle = "Black";
       }
 
-      if(x > square_x
+      if (x > square_x
         && x < square_x + square_width
         && y > square_y
         && y < square_y + square_height) {
-          if(log) console.log("    Column : " + column_count + " , Row : " + row_count);
-          drawingMatrix[column_count][row_count] = selectedPaletteIndex;
-          spriteContext.clearRect(square_x, square_y, square_width, square_height);
-          spriteContext.fillRect(square_x, square_y, square_width, square_height);
-          spriteContext.strokeRect(square_x, square_y, square_width, square_height);
+        if (log) console.log("    Column : " + column_count + " , Row : " + row_count);
+        drawingMatrix[column_count][row_count] = selectedPaletteIndex;
+        spriteContext.clearRect(square_x, square_y, square_width, square_height);
+        spriteContext.fillRect(square_x, square_y, square_width, square_height);
+        spriteContext.strokeRect(square_x, square_y, square_width, square_height);
       }
     }
   }
 }
 
 function paletteClick(event) {
-  if(log) console.log("Palette click !");
+  if (log) console.log("Palette click !");
   selectedColor = "#000000";
   selectedPaletteIndex = 0;
   let rect = paletteCanvas.getBoundingClientRect();
   let x = event.clientX - rect.left;
   let y = event.clientY - rect.top;
 
-  var imgData = paletteContext.getImageData(x,y,1,1).data;
+  var imgData = paletteContext.getImageData(x, y, 1, 1).data;
   var hexCode = "#" + ("000000" + rgbToHex(imgData[0], imgData[1], imgData[2])).slice(-6);
   hexCode = hexCode.toUpperCase();
-  if(log) console.log("    color: " + hexCode);
+  if (log) console.log("    color: " + hexCode);
 
-  for(index=0 ; index < palette.length ; index++) {
-    if(palette[index] == hexCode) {
+  for (index = 0; index < palette.length; index++) {
+    if (palette[index] == hexCode) {
       selectedColor = palette[index];
       selectedPaletteIndex = index;
-      if(log) console.log("    palette index: " + selectedPaletteIndex);
+      if (log) console.log("    palette index: " + selectedPaletteIndex);
     }
   }
 
@@ -203,27 +203,27 @@ function paletteClick(event) {
 }
 
 function fill() {
-  if(log) console.log("Fill click !");
+  if (log) console.log("Fill click !");
   initDrawingMatrix(selectedPaletteIndex);
   drawSpriteGrid(selectedColor);
-  if(log) printDrawingMatrix();
+  if (log) printDrawingMatrix();
 }
 
 function httpGetDisplay(theUrl) {
   var xmlHttp = new XMLHttpRequest();
-  xmlHttp.open( "GET", "display.html?sketch=" + printDrawingMatrixForESP(), false ); // false for synchronous request
-  xmlHttp.send( null );
+  xmlHttp.open("GET", "display.html?sketch=" + printDrawingMatrixForESP(), false); // false for synchronous request
+  xmlHttp.send(null);
   return xmlHttp.responseText;
 }
 
 function httpGetSave(theUrl) {
   var fileName = prompt("Quel nom veux-tu donner à ton dessin ?", "");
-  if(fileName != null) {
-    fileName = fileName.trim().replace(/[\W_]+/g,"").substring(0,20);
+  if (fileName != null) {
+    fileName = fileName.trim().replace(/[\W_]+/g, "").substring(0, 20);
 
     var xmlHttp = new XMLHttpRequest();
-    xmlHttp.open( "GET", "save.html?sketch=" + printDrawingMatrixForESP() + "&fileName=" + fileName, false ); // false for synchronous request
-    xmlHttp.send( null );
+    xmlHttp.open("GET", "save.html?sketch=" + printDrawingMatrixForESP() + "&fileName=" + fileName, false); // false for synchronous request
+    xmlHttp.send(null);
     return xmlHttp.responseText;
   }
 }
@@ -247,14 +247,14 @@ function printDrawingMatrixTuRustArray() {
   let text = "16,16,";
 
   for (var y = 0; y < editor_height_px; y++) {
-      for (var x = 0; x < editor_width_px; x++) {
-        text += drawingMatrix[x][y] + ",";
-      }
+    for (var x = 0; x < editor_width_px; x++) {
+      text += drawingMatrix[x][y] + ",";
+    }
   }
 
   text = text.slice(0, text.length - 1);
 
-  if(log) console.log(text);
+  if (log) console.log(text);
   return text;
 }
 

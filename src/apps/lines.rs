@@ -1,8 +1,11 @@
+use crate::virtual_frame_buffer::*;
 use app_macro::*;
 use app_macro_derive::AppMacro;
-use winit::{event::VirtualKeyCode,event_loop::ControlFlow};
-use crate::virtual_frame_buffer::*;
 use rand::Rng;
+use winit::{
+    event::{KeyboardInput, VirtualKeyCode},
+    event_loop::ControlFlow,
+};
 
 #[derive(AppMacro)]
 pub struct Lines {
@@ -11,7 +14,7 @@ pub struct Lines {
     drawing: bool,
     started: bool,
     ended: bool,
-    draw_a_line: bool
+    draw_a_line: bool,
 }
 
 impl Lines {
@@ -22,44 +25,54 @@ impl Lines {
             drawing: false,
             started: false,
             ended: false,
-            draw_a_line: true
+            draw_a_line: true,
         }
     }
 
-    fn update(&mut self, character_received: Option<char>, key_pressed_os: Option<VirtualKeyCode>, key_released: Option<VirtualKeyCode>) -> AppResponse {
-
+    pub fn update(
+        &mut self,
+        keybord_input: Option<KeyboardInput>,
+        char_received: Option<char>,
+    ) -> AppResponse {
         let mut response = AppResponse::new();
 
         if !self.started {
             self.start();
         }
 
-        match character_received {
-            Some(c) => {
-                match c {
-                    '\u{001B}'  => { //Escape
-                        self.updating = false;
-                        self.drawing = false;
-                        self.end();
-                    }
+        match keybord_input {
+            Some(key) => {
+                match key.virtual_keycode {
+                    Some(code) => {
+                        match code {
+                            VirtualKeyCode::Escape => {
+                                //Escape
+                                response.set_message("Escape key pressed".to_string());
+                                response.event = Some(ControlFlow::ExitWithCode(0));
+                                self.end();
+                            }
 
-                    '\u{000D}' => { //Enter
-                        self.draw_a_line = true;
+                            VirtualKeyCode::Return => {
+                                //Enter
+                                self.draw_a_line = true;
+                            }
+                            _ => (),
+                        }
                     }
-                    
-                    _ => ()
+                    None => (),
                 }
             }
-            None => ()
+            None => (),
         }
 
         return response;
     }
 
-    fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-
+    pub fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         let max_x = virtual_frame_buffer.get_width();
         let max_y = virtual_frame_buffer.get_height();
+
+        virtual_frame_buffer.get_text_layer().clear();
 
         let mut random = rand::thread_rng();
 
@@ -76,7 +89,7 @@ impl Lines {
                 start_y,
                 end_x,
                 end_y,
-                color
+                color,
             };
             virtual_frame_buffer.draw_line(line);
         }

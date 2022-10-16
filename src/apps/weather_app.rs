@@ -1,8 +1,8 @@
 use app_macro::*;
 use app_macro_derive::AppMacro;
 
-use winit::{event::VirtualKeyCode};
 use crate::text_layer::TextLayerChar;
+use winit::event::VirtualKeyCode;
 
 use crate::virtual_frame_buffer::VirtualFrameBuffer;
 use openweathermap::Receiver;
@@ -26,13 +26,11 @@ pub struct WeatherApp {
     receiver: Receiver,
     update_interval: Duration,
     last_update: Instant,
-    message: String
+    message: String,
 }
 
 impl WeatherApp {
-
     pub fn new() -> WeatherApp {
-
         let buffer = Vec::new();
 
         WeatherApp {
@@ -49,30 +47,33 @@ impl WeatherApp {
             receiver: openweathermap::init("45.4874487,-73.5745913", "metric", "fr", "", 1),
             update_interval: Duration::from_secs(60),
             last_update: Instant::now().checked_add(Duration::from_secs(55)).unwrap(),
-            message: String::from("Loading...")
+            message: String::from("Loading..."),
         }
     }
 
-    fn update(&mut self, character_received: Option<char>, key_pressed_os: Option<VirtualKeyCode>, key_released: Option<VirtualKeyCode>) -> AppResponse {
-
+    fn update(
+        &mut self,
+        character_received: Option<char>,
+        key_pressed_os: Option<VirtualKeyCode>,
+        key_released: Option<VirtualKeyCode>,
+    ) -> AppResponse {
         let mut response = AppResponse::new();
 
         //if Instant::now().duration_since(self.last_update) >= self.update_interval {
-            let weather = openweathermap::update(&self.receiver);
+        let weather = openweathermap::update(&self.receiver);
 
-            match weather {
-                Some(result) => {
-                    match result {
-                        Ok(current_weather) => {
-                            self.message = format!("Temp: {}c\u{000D}feels like: {}c\u{000D}Humidity: {}%\u{000D}Pressure: {}Kpa\u{000D}Description: {}", current_weather.main.temp, 
-                            current_weather.main.feels_like, current_weather.main.humidity, current_weather.main.pressure, &current_weather.weather[0].description);},
-                        Err(message) => println!("OpenWeather API message {}", message)
-                    }
+        match weather {
+            Some(result) => match result {
+                Ok(current_weather) => {
+                    self.message = format!("Temp: {}c\u{000D}feels like: {}c\u{000D}Humidity: {}%\u{000D}Pressure: {}Kpa\u{000D}Description: {}", current_weather.main.temp, 
+                            current_weather.main.feels_like, current_weather.main.humidity, current_weather.main.pressure, &current_weather.weather[0].description);
                 }
-                None => ()
-            }
+                Err(message) => println!("OpenWeather API message {}", message),
+            },
+            None => (),
+        }
 
-            self.last_update = Instant::now();
+        self.last_update = Instant::now();
         //}
 
         if !self.started {
@@ -84,19 +85,18 @@ impl WeatherApp {
             Some(c) => {
                 match c {
                     '\u{0008}' => { //Backspace
-
-                    } 
-                    
-                    '\u{000D}' => { //Enter
-                        
                     }
-                    
-                    '\u{001B}'  => { //Escape
+
+                    '\u{000D}' => { //Enter
+                    }
+
+                    '\u{001B}' => {
+                        //Escape
                         self.updating = false;
                         self.drawing = false;
                         self.end();
                     }
-                    
+
                     _ => {
                         // let plop: TextLayerChar = TextLayerChar {
                         //     unicode: c,
@@ -105,51 +105,67 @@ impl WeatherApp {
                         //     blink: false,
                         //     flipp: false
                         // };
-                        
+
                         // self.buffer.push(plop);
                     }
                 }
-
             }
-            None => ()
+            None => (),
         }
 
         match key_released {
             Some(k) => {
                 match k {
                     VirtualKeyCode::Left => {
-                        if self.selected_color == 31 {self.selected_color = 0} else {self.selected_color += 1}
+                        if self.selected_color == 31 {
+                            self.selected_color = 0
+                        } else {
+                            self.selected_color += 1
+                        }
                     }
-        
+
                     VirtualKeyCode::Right => {
-                        if self.selected_color == 0 {self.selected_color = 31} else {self.selected_color -= 1}
+                        if self.selected_color == 0 {
+                            self.selected_color = 31
+                        } else {
+                            self.selected_color -= 1
+                        }
                     }
-        
+
                     VirtualKeyCode::Up => {
-                        if self.selected_bkg_color == 31 {self.selected_bkg_color = 0} else {self.selected_bkg_color += 1}
+                        if self.selected_bkg_color == 31 {
+                            self.selected_bkg_color = 0
+                        } else {
+                            self.selected_bkg_color += 1
+                        }
                     }
-        
+
                     VirtualKeyCode::Down => {
-                        if self.selected_bkg_color == 0 {self.selected_bkg_color = 31} else {self.selected_bkg_color -= 1}
+                        if self.selected_bkg_color == 0 {
+                            self.selected_bkg_color = 31
+                        } else {
+                            self.selected_bkg_color -= 1
+                        }
                     }
-        
+
                     VirtualKeyCode::PageUp => {
                         //self.text_layer.scroll_up();
                     }
 
-                    _ => () 
+                    _ => (),
                 }
             }
-            None => ()
+            None => (),
         }
 
         return response;
     }
 
     fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-
         virtual_frame_buffer.get_text_layer().clear();
         virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
-        virtual_frame_buffer.get_text_layer().push_string(&self.message, None, None, false);
+        virtual_frame_buffer
+            .get_text_layer()
+            .push_string(&self.message, None, None, false);
     }
 }

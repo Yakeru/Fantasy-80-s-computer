@@ -1,11 +1,11 @@
 use app_macro::*;
 use app_macro_derive::AppMacro;
 
-use winit::{event::VirtualKeyCode,event_loop::ControlFlow};
 use crate::text_layer::TextLayerChar;
-use std::io::{self, Write};
-use crate::virtual_frame_buffer::VirtualFrameBuffer;
 use crate::unicode;
+use crate::virtual_frame_buffer::VirtualFrameBuffer;
+use std::io::{self, Write};
+use winit::{event::VirtualKeyCode, event_loop::ControlFlow};
 
 const DEFAULT_BKG_COLOR: u8 = 7;
 const DEFAULT_COLOR: u8 = 0;
@@ -25,9 +25,7 @@ pub struct TextEdit {
 }
 
 impl TextEdit {
-
     pub fn new() -> TextEdit {
-
         let buffer = Vec::new();
 
         TextEdit {
@@ -40,12 +38,16 @@ impl TextEdit {
             updating: false,
             drawing: false,
             started: false,
-            ended: false
+            ended: false,
         }
     }
 
-    pub fn update(&mut self, character_received: Option<char>, key_pressed_os: Option<VirtualKeyCode>, key_released: Option<VirtualKeyCode>) -> AppResponse {
-
+    pub fn update(
+        &mut self,
+        character_received: Option<char>,
+        key_pressed_os: Option<VirtualKeyCode>,
+        key_released: Option<VirtualKeyCode>,
+    ) -> AppResponse {
         let mut response = AppResponse::new();
 
         if !self.started {
@@ -54,76 +56,93 @@ impl TextEdit {
         }
 
         match character_received {
-            Some(c) => {
-                match c {
-                    unicode::BACKSPACE => {
-                        self.buffer.pop();
-                    } 
-                    
-                    unicode::ENTER => {
-                    }
-                    
-                    unicode::ESCAPE => {
-                    }
-                    
-                    _ => {
-                        let plop: TextLayerChar = TextLayerChar {
-                            unicode: c,
-                            color: self.selected_color,
-                            background_color: self.selected_bkg_color,
-                            blink: false,
-                            flipp: false
-                        };
-                        
-                        self.buffer.push(plop);
-                    }
+            Some(c) => match c {
+                unicode::BACKSPACE => {
+                    self.buffer.pop();
                 }
 
-            }
-            None => ()
+                unicode::ENTER => {}
+
+                unicode::ESCAPE => {}
+
+                _ => {
+                    let plop: TextLayerChar = TextLayerChar {
+                        unicode: c,
+                        color: self.selected_color,
+                        background_color: self.selected_bkg_color,
+                        blink: false,
+                        flipp: false,
+                    };
+
+                    self.buffer.push(plop);
+                }
+            },
+            None => (),
         }
 
         match key_released {
             Some(k) => {
                 match k {
                     VirtualKeyCode::Left => {
-                        if self.selected_color == 31 {self.selected_color = 0} else {self.selected_color += 1}
+                        if self.selected_color == 31 {
+                            self.selected_color = 0
+                        } else {
+                            self.selected_color += 1
+                        }
                     }
-        
+
                     VirtualKeyCode::Right => {
-                        if self.selected_color == 0 {self.selected_color = 31} else {self.selected_color -= 1}
+                        if self.selected_color == 0 {
+                            self.selected_color = 31
+                        } else {
+                            self.selected_color -= 1
+                        }
                     }
-        
+
                     VirtualKeyCode::Up => {
-                        if self.selected_bkg_color == 31 {self.selected_bkg_color = 0} else {self.selected_bkg_color += 1}
+                        if self.selected_bkg_color == 31 {
+                            self.selected_bkg_color = 0
+                        } else {
+                            self.selected_bkg_color += 1
+                        }
                     }
-        
+
                     VirtualKeyCode::Down => {
-                        if self.selected_bkg_color == 0 {self.selected_bkg_color = 31} else {self.selected_bkg_color -= 1}
+                        if self.selected_bkg_color == 0 {
+                            self.selected_bkg_color = 31
+                        } else {
+                            self.selected_bkg_color -= 1
+                        }
                     }
-        
+
                     VirtualKeyCode::PageUp => {
                         //self.text_layer.scroll_up();
                     }
 
-                    _ => () 
+                    _ => (),
                 }
             }
-            None => ()
+            None => (),
         }
 
         return response;
     }
 
     pub fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-
         virtual_frame_buffer.get_text_layer().clear();
         virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
 
         for text_layer_char in self.buffer.chunks_exact_mut(1) {
-            virtual_frame_buffer.get_text_layer().push_character(Some(text_layer_char[0]));
+            virtual_frame_buffer
+                .get_text_layer()
+                .push_character(Some(text_layer_char[0]));
         }
 
-        virtual_frame_buffer.get_text_layer().push_char('_', Some(self.selected_color), Some(self.selected_bkg_color), false);
+        virtual_frame_buffer.get_text_layer().push_char(
+            '_',
+            Some(self.selected_color),
+            Some(self.selected_bkg_color),
+            false,
+        );
     }
 }

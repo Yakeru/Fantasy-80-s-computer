@@ -4,4 +4,3 @@ pub const ESCAPE: char = '\u{001B}';
 pub const BACKSPACE: char = '\u{9003}';
 #[cfg(target_os = "windows")]
 pub const BACKSPACE: char = '\u{0008}';
-

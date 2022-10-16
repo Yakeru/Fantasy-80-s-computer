@@ -25,7 +25,7 @@ fn impl_app_macro(ast: &syn::DeriveInput) -> TokenStream {
                 self.updating = true;
                 self.ended = false;
             }
-        
+
             fn end(&mut self) {
                 self.started = false;
                 self.drawing = false;
@@ -36,16 +36,16 @@ fn impl_app_macro(ast: &syn::DeriveInput) -> TokenStream {
             fn get_name(&self) -> &str {
                 &self.name
             }
-        
+
             fn set_state(&mut self, updating: bool, drawing: bool) {
                 self.updating = updating;
                 self.drawing = drawing;
-        
+
                 if drawing {self.updating = true}
                 if !updating {self.drawing = false}
             }
-        
-            fn get_state(&self) -> (bool, bool) { 
+
+            fn get_state(&self) -> (bool, bool) {
                 (self.updating, self.drawing)
             }
         }
