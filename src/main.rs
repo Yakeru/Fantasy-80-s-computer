@@ -128,6 +128,8 @@ fn main() -> Result<(), Error> {
     let mut keyboard_input: Option<KeyboardInput> = None;
     let mut char_received: Option<char> = None;
 
+    let mut now = Instant::now();
+
     //The event loop here can be considered as a bios rom + terminal
     //it gathers all the keyborad inputs and sends them to the shell, the shell interprets them.
     //it always runs the shell and gives it the focus if no other app is running.
@@ -176,8 +178,8 @@ fn main() -> Result<(), Error> {
             },
             Event::MainEventsCleared => {
                 //Updating apps
-                //let process_response = shell.update(keyboard_input, char_received);
-                let process_response = lines.update(keyboard_input, char_received);
+                let process_response = shell.update(keyboard_input, char_received);
+                //let process_response = lines.update(keyboard_input, char_received);
                 //let process_response = text_edit.update(char_received, key_pressed_os, key_released);
 
                 //Process app response
@@ -199,20 +201,24 @@ fn main() -> Result<(), Error> {
                 }
 
                 //Draw app
-
-                //shell.draw(&mut virtual_frame_buffer);
-                lines.draw(&mut virtual_frame_buffer);
+                shell.draw(&mut virtual_frame_buffer);
+                //lines.draw(&mut virtual_frame_buffer);
                 //text_edit.draw(&mut virtual_frame_buffer);
                 //draw_loading_border(&mut virtual_frame_buffer, 40, 40);
-                virtual_frame_buffer.render();
-                crt_renderer.render(&virtual_frame_buffer, pixels.get_frame(), true);
 
-                let now = Instant::now();
-                pixels.render().expect("Pixels render oups");
-                println!("drawing: {} micros", now.elapsed().as_micros());
-                println!("{:?}", pixels.context().texture_format);
+                //Render to frame buffer
+                if now.elapsed().as_micros() >= (FRAME_TIME_MS * 1000) as u128 {
+                    let render_time = Instant::now();
+                    virtual_frame_buffer.render();
+                    crt_renderer.render(&virtual_frame_buffer, pixels.get_frame(), true);
+                    pixels.render().expect("Pixels render oups");
+                    println!("drawing: {} micros", render_time.elapsed().as_micros());
+
+                    now = Instant::now();
+                }
 
                 window.request_redraw();
+
                 //Reset input buffers for next loop
                 char_received = None;
                 keyboard_input = None;
