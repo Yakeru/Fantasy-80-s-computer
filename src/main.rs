@@ -178,9 +178,11 @@ fn main() -> Result<(), Error> {
             },
             Event::MainEventsCleared => {
                 //Updating apps
-                let process_response = shell.update(keyboard_input, char_received);
+                //let process_response = shell.update(keyboard_input, char_received);
                 //let process_response = lines.update(keyboard_input, char_received);
-                //let process_response = text_edit.update(char_received, key_pressed_os, key_released);
+                //let process_response = squares.update(keyboard_input, char_received);
+                let process_response = text_edit.update(keyboard_input, char_received);
+                //let process_response = sprite_edit.update(keyboard_input, char_received);
 
                 //Process app response
                 match process_response.event {
@@ -201,19 +203,21 @@ fn main() -> Result<(), Error> {
                 }
 
                 //Draw app
-                shell.draw(&mut virtual_frame_buffer);
+                //shell.draw(&mut virtual_frame_buffer);
                 //lines.draw(&mut virtual_frame_buffer);
-                //text_edit.draw(&mut virtual_frame_buffer);
-                //draw_loading_border(&mut virtual_frame_buffer, 40, 40);
+                //squares.draw(&mut virtual_frame_buffer);
+                text_edit.draw(&mut virtual_frame_buffer);
+                //sprite_edit.draw(&mut virtual_frame_buffer);
+                //draw_loading_border(&mut virtual_frame_buffer, 40, 40); 
 
                 //Render to frame buffer
                 if now.elapsed().as_micros() >= (FRAME_TIME_MS * 1000) as u128 {
                     now = Instant::now();
-                    let render_time = Instant::now();
+                    //let render_time = Instant::now();
                     virtual_frame_buffer.render();
                     crt_renderer.render(&virtual_frame_buffer, pixels.get_frame(), true);
                     pixels.render().expect("Pixels render oups");
-                    println!("drawing: {} micros", render_time.elapsed().as_micros());
+                    //println!("drawing: {} micros", render_time.elapsed().as_micros());
                 }
 
                 window.request_redraw();

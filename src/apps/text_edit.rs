@@ -5,7 +5,10 @@ use crate::text_layer::TextLayerChar;
 use crate::unicode;
 use crate::virtual_frame_buffer::VirtualFrameBuffer;
 use std::io::{self, Write};
-use winit::{event::VirtualKeyCode, event_loop::ControlFlow};
+use winit::{
+    event::{ElementState, KeyboardInput, VirtualKeyCode},
+    event_loop::ControlFlow,
+};
 
 const DEFAULT_BKG_COLOR: u8 = 7;
 const DEFAULT_COLOR: u8 = 0;
@@ -44,9 +47,8 @@ impl TextEdit {
 
     pub fn update(
         &mut self,
-        character_received: Option<char>,
-        key_pressed_os: Option<VirtualKeyCode>,
-        key_released: Option<VirtualKeyCode>,
+        keybord_input: Option<KeyboardInput>,
+        char_received: Option<char>,
     ) -> AppResponse {
         let mut response = AppResponse::new();
 
@@ -55,7 +57,7 @@ impl TextEdit {
             self.started = true;
         }
 
-        match character_received {
+        match char_received {
             Some(c) => match c {
                 unicode::BACKSPACE => {
                     self.buffer.pop();
@@ -80,46 +82,60 @@ impl TextEdit {
             None => (),
         }
 
-        match key_released {
+        match keybord_input {
             Some(k) => {
-                match k {
-                    VirtualKeyCode::Left => {
-                        if self.selected_color == 31 {
-                            self.selected_color = 0
-                        } else {
-                            self.selected_color += 1
+                if k.state == ElementState::Pressed {
+                    match k.virtual_keycode {
+                        Some(code) => {
+                            match code {
+                                VirtualKeyCode::Left => {
+                                    if self.selected_color == 31 {
+                                        self.selected_color = 0
+                                    } else {
+                                        self.selected_color += 1
+                                    }
+                                }
+
+                                VirtualKeyCode::Right => {
+                                    if self.selected_color == 0 {
+                                        self.selected_color = 31
+                                    } else {
+                                        self.selected_color -= 1
+                                    }
+                                }
+
+                                VirtualKeyCode::Up => {
+                                    if self.selected_bkg_color == 31 {
+                                        self.selected_bkg_color = 0
+                                    } else {
+                                        self.selected_bkg_color += 1
+                                    }
+                                }
+
+                                VirtualKeyCode::Down => {
+                                    if self.selected_bkg_color == 0 {
+                                        self.selected_bkg_color = 31
+                                    } else {
+                                        self.selected_bkg_color -= 1
+                                    }
+                                }
+
+                                VirtualKeyCode::PageUp => {
+                                    //self.text_layer.scroll_up();
+                                }
+
+                                VirtualKeyCode::Escape => {
+                                    //Escape
+                                    response.set_message("Escape key pressed".to_string());
+                                    response.event = Some(ControlFlow::ExitWithCode(0));
+                                    self.end();
+                                }
+
+                                _ => (),
+                            }
                         }
+                        None => (),
                     }
-
-                    VirtualKeyCode::Right => {
-                        if self.selected_color == 0 {
-                            self.selected_color = 31
-                        } else {
-                            self.selected_color -= 1
-                        }
-                    }
-
-                    VirtualKeyCode::Up => {
-                        if self.selected_bkg_color == 31 {
-                            self.selected_bkg_color = 0
-                        } else {
-                            self.selected_bkg_color += 1
-                        }
-                    }
-
-                    VirtualKeyCode::Down => {
-                        if self.selected_bkg_color == 0 {
-                            self.selected_bkg_color = 31
-                        } else {
-                            self.selected_bkg_color -= 1
-                        }
-                    }
-
-                    VirtualKeyCode::PageUp => {
-                        //self.text_layer.scroll_up();
-                    }
-
-                    _ => (),
                 }
             }
             None => (),
@@ -130,6 +146,7 @@ impl TextEdit {
 
     pub fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         virtual_frame_buffer.get_text_layer().clear();
+        virtual_frame_buffer.get_text_layer().show_cursor = false;
         virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
 
         for text_layer_char in self.buffer.chunks_exact_mut(1) {

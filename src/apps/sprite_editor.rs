@@ -1,5 +1,6 @@
 use app_macro::*;
 use app_macro_derive::AppMacro;
+use winit::event::{ElementState, KeyboardInput};
 
 use crate::text_layer::TextLayerChar;
 use crate::virtual_frame_buffer::*;
@@ -38,11 +39,10 @@ impl SpriteEditor {
         }
     }
 
-    fn update(
+    pub fn update(
         &mut self,
-        character_received: Option<char>,
-        key_pressed_os: Option<VirtualKeyCode>,
-        key_released: Option<VirtualKeyCode>,
+        keybord_input: Option<KeyboardInput>,
+        char_received: Option<char>,
     ) -> AppResponse {
         let mut response = AppResponse::new();
 
@@ -51,7 +51,7 @@ impl SpriteEditor {
             self.started = true;
         }
 
-        match character_received {
+        match char_received {
             Some(c) => {
                 match c {
                     '\u{0008}' => { //Backspace
@@ -69,51 +69,69 @@ impl SpriteEditor {
             None => (),
         }
 
-        match key_pressed_os {
-            Some(k) => match k {
-                VirtualKeyCode::Left => {
-                    if self.selected_pixel_x == 0 {
-                    } else {
-                        self.selected_pixel_x -= 1;
+        match keybord_input {
+            Some(k) => {
+                if (k.state == ElementState::Pressed) {
+                    match k.virtual_keycode {
+                        Some(code) => {
+                            match code {
+                                VirtualKeyCode::Left => {
+                                    if self.selected_pixel_x == 0 {
+                                    } else {
+                                        self.selected_pixel_x -= 1;
+                                    }
+                                }
+
+                                VirtualKeyCode::Right => {
+                                    if self.selected_pixel_x == SPRITE_SIZE.width - 1 {
+                                        self.selected_pixel_x = SPRITE_SIZE.width - 1
+                                    } else {
+                                        self.selected_pixel_x += 1;
+                                    }
+                                }
+
+                                VirtualKeyCode::Up => {
+                                    if self.selected_pixel_y == 0 {
+                                    } else {
+                                        self.selected_pixel_y -= 1;
+                                    }
+                                }
+
+                                VirtualKeyCode::Down => {
+                                    if self.selected_pixel_y == SPRITE_SIZE.height - 1 {
+                                        self.selected_pixel_y = SPRITE_SIZE.height - 1
+                                    } else {
+                                        self.selected_pixel_y += 1;
+                                    }
+                                }
+
+                                VirtualKeyCode::PageUp => {}
+
+                                VirtualKeyCode::Escape => {
+                                    //Escape
+                                    response.set_message("Escape key pressed".to_string());
+                                    response.event = Some(ControlFlow::ExitWithCode(0));
+                                    self.end();
+                                }
+
+                                _ => (),
+                            }
+                        }
+
+                        None => (),
                     }
                 }
-
-                VirtualKeyCode::Right => {
-                    if self.selected_pixel_x == SPRITE_SIZE.width - 1 {
-                        self.selected_pixel_x = SPRITE_SIZE.width - 1
-                    } else {
-                        self.selected_pixel_x += 1;
-                    }
-                }
-
-                VirtualKeyCode::Up => {
-                    if self.selected_pixel_y == 0 {
-                    } else {
-                        self.selected_pixel_y -= 1;
-                    }
-                }
-
-                VirtualKeyCode::Down => {
-                    if self.selected_pixel_y == SPRITE_SIZE.height - 1 {
-                        self.selected_pixel_y = SPRITE_SIZE.height - 1
-                    } else {
-                        self.selected_pixel_y += 1;
-                    }
-                }
-
-                VirtualKeyCode::PageUp => {}
-
-                _ => (),
-            },
+            }
             None => (),
         }
 
         return response;
     }
 
-    fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    pub fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
         virtual_frame_buffer.get_text_layer().clear();
+        virtual_frame_buffer.get_text_layer().show_cursor = false;
 
         //Drawing are Background square
         let bkg_square_width = SPRITE_SIZE.width * EDITOR_PIXEL_SIZE.width + SPRITE_SIZE.width + 3;

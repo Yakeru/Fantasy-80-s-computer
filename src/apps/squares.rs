@@ -1,10 +1,11 @@
 use app_macro::*;
 use app_macro_derive::AppMacro;
+use winit::event_loop::ControlFlow;
 
 use crate::virtual_frame_buffer::*;
 use rand::Rng;
 use winit::dpi::PhysicalSize;
-use winit::event::VirtualKeyCode;
+use winit::event::{KeyboardInput, VirtualKeyCode};
 
 #[derive(AppMacro)]
 pub struct Squares {
@@ -28,11 +29,10 @@ impl Squares {
         }
     }
 
-    fn update(
+    pub fn update(
         &mut self,
-        character_received: Option<char>,
-        key_pressed_os: Option<VirtualKeyCode>,
-        key_released: Option<VirtualKeyCode>,
+        keybord_input: Option<KeyboardInput>,
+        char_received: Option<char>,
     ) -> AppResponse {
         let mut response = AppResponse::new();
 
@@ -40,22 +40,26 @@ impl Squares {
             self.start();
         }
 
-        match character_received {
-            Some(c) => {
-                match c {
-                    '\u{001B}' => {
-                        //Escape
-                        self.updating = false;
-                        self.drawing = false;
-                        self.end();
-                    }
+        match keybord_input {
+            Some(key) => {
+                match key.virtual_keycode {
+                    Some(code) => {
+                        match code {
+                            VirtualKeyCode::Escape => {
+                                //Escape
+                                response.set_message("Escape key pressed".to_string());
+                                response.event = Some(ControlFlow::ExitWithCode(0));
+                                self.end();
+                            }
 
-                    '\u{000D}' => {
-                        //Enter
-                        self.draw_a_line = true;
+                            VirtualKeyCode::Return => {
+                                //Enter
+                                self.draw_a_line = true;
+                            }
+                            _ => (),
+                        }
                     }
-
-                    _ => (),
+                    None => (),
                 }
             }
             None => (),
@@ -64,7 +68,10 @@ impl Squares {
         return response;
     }
 
-    fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    pub fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+        virtual_frame_buffer.get_text_layer().clear();
+        virtual_frame_buffer.get_text_layer().show_cursor = false;
+
         let max_x = virtual_frame_buffer.get_width();
         let max_y = virtual_frame_buffer.get_height();
 
