@@ -181,8 +181,8 @@ fn main() -> Result<(), Error> {
                 //let process_response = shell.update(keyboard_input, char_received);
                 //let process_response = lines.update(keyboard_input, char_received);
                 //let process_response = squares.update(keyboard_input, char_received);
-                let process_response = text_edit.update(keyboard_input, char_received);
-                //let process_response = sprite_edit.update(keyboard_input, char_received);
+                //let process_response = text_edit.update(keyboard_input, char_received);
+                let process_response = sprite_edit.update(keyboard_input, char_received);
 
                 //Process app response
                 match process_response.event {
@@ -206,8 +206,8 @@ fn main() -> Result<(), Error> {
                 //shell.draw(&mut virtual_frame_buffer);
                 //lines.draw(&mut virtual_frame_buffer);
                 //squares.draw(&mut virtual_frame_buffer);
-                text_edit.draw(&mut virtual_frame_buffer);
-                //sprite_edit.draw(&mut virtual_frame_buffer);
+                //text_edit.draw(&mut virtual_frame_buffer);
+                sprite_edit.draw(&mut virtual_frame_buffer);
                 //draw_loading_border(&mut virtual_frame_buffer, 40, 40); 
 
                 //Render to frame buffer

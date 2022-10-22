@@ -21,6 +21,7 @@ pub struct SpriteEditor {
     pixel_grid: [u8; SPRITE_SIZE.width * SPRITE_SIZE.height],
     selected_pixel_x: usize,
     selected_pixel_y: usize,
+    selected_color: u8,
     started: bool,
     ended: bool,
 }
@@ -36,6 +37,7 @@ impl SpriteEditor {
             pixel_grid: [0; SPRITE_SIZE.width * SPRITE_SIZE.height],
             selected_pixel_x: 0,
             selected_pixel_y: 0,
+            selected_color: 7
         }
     }
 
@@ -71,7 +73,7 @@ impl SpriteEditor {
 
         match keybord_input {
             Some(k) => {
-                if (k.state == ElementState::Pressed) {
+                if k.state == ElementState::Pressed {
                     match k.virtual_keycode {
                         Some(code) => {
                             match code {
@@ -103,6 +105,14 @@ impl SpriteEditor {
                                     } else {
                                         self.selected_pixel_y += 1;
                                     }
+                                }
+
+                                VirtualKeyCode::Space => {
+                                    self.pixel_grid[self.selected_pixel_y * SPRITE_SIZE.width + self.selected_pixel_x] = self.selected_color;
+                                }
+
+                                VirtualKeyCode::Delete => {
+                                    self.pixel_grid[self.selected_pixel_y * SPRITE_SIZE.width + self.selected_pixel_x] = 0;
                                 }
 
                                 VirtualKeyCode::PageUp => {}
@@ -160,7 +170,7 @@ impl SpriteEditor {
                     pos_x,
                     pos_y,
                     size: EDITOR_PIXEL_SIZE,
-                    color: 0,
+                    color: self.pixel_grid[row * SPRITE_SIZE.width + column],
                     fill: true,
                 };
 
