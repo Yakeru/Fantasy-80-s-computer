@@ -7,16 +7,18 @@ use std::time::{Duration, Instant};
 use winit::dpi::PhysicalSize;
 
 //4K
-// const WIDTH: usize = 2560;
-// const HEIGHT: usize = 1920;
-// const VIRTUAL_WIDTH: usize = 853;
-// const VIRTUAL_HEIGHT: usize = 640;
+const WIDTH: usize = 2560;
+const HEIGHT: usize = 1920;
+const VIRTUAL_WIDTH: usize = 853;
+const VIRTUAL_HEIGHT: usize = 640;
 
 //1080
-const WIDTH: usize = 1280;
-const HEIGHT: usize = 960;
-const VIRTUAL_WIDTH: usize = 426; // 426*3 = 1278 draw one black line on each side of screen for perfectly centered *3 scale
-const VIRTUAL_HEIGHT: usize = 320; // 320*3 = 960
+// const WIDTH: usize = 1280;
+// const HEIGHT: usize = 960;
+// const VIRTUAL_WIDTH: usize = 426; // 426*3 = 1278 draw one black line on each side of screen for perfectly centered *3 scale
+// const VIRTUAL_HEIGHT: usize = 320; // 320*3 = 960
+
+let key: Option<&'static str> = option_env!("SECRET_KEY");
 
 const H_UPSCALE: usize = 3;
 const V_UPSCALE: usize = 3;

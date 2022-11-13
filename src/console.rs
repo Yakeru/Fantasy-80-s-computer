@@ -1,3 +1,5 @@
+const TEXT_COLUMNS: usize = 40;
+const TEXT_ROWS: usize = 30;
 const DEFAULT_COLOR: u8 = 10;
 const DEFAULT_BKG_COLOR: u8 = 28;
 const DEFAULT_CURSOR: char = '\u{25AE}';
@@ -25,7 +27,7 @@ pub struct Console {
 
 impl Console {
     pub fn new(origin: (u8, u8), size: (u8, u8)) -> TextLayer {
-        let mut fb: Vec<Option<ConsoleChar>> = Vec::new();
+        let mut buffer: Vec<Option<ConsoleChar>> = Vec::new();
         fb.push(Some(ConsoleChar {
             unicode: DEFAULT_CURSOR,
             color: DEFAULT_COLOR,
@@ -39,23 +41,13 @@ impl Console {
             color: DEFAULT_COLOR,
             bkg_color: DEFAULT_BKG_COLOR,
             cursor: DEFAULT_CURSOR,
-            color_map: [0; TEXT_COLUMNS * TEXT_ROWS],
-            char_map: [' '; TEXT_COLUMNS * TEXT_ROWS],
-            // characters: fb,
+            characters: buffer,
             show_cursor: true,
         }
     }
 
     pub fn get_size(&self) -> (usize, usize) {
-        return (TEXT_COLUMNS, TEXT_ROWS);
-    }
-
-    pub fn get_char_map(&self) -> &[char] {
-        return &self.char_map;
-    }
-
-    pub fn get_color_map(&self) -> &[u16] {
-        return &self.color_map;
+        return self.size;
     }
 
     pub fn set_default_color(&mut self, color: u8) {
@@ -74,7 +66,7 @@ impl Console {
         self.cursor = cursor;
     }
 
-    /// Pushes a character struct to the text layer
+    /// Pushes a character struct to the console
     pub fn push_character(&mut self, text_layer_char: Option<ConsoleChar>) {
         if self.show_cursor {
             self.characters.pop();
@@ -87,13 +79,11 @@ impl Console {
         match text_layer_char {
             Some(c) => {
                 match c.unicode {
-                    '\u{0008}' => {
-                        //Backspace
+                    unicode::BACKSPACE => {
                         self.characters.pop();
                     }
 
-                    '\u{000D}' => {
-                        //Enter
+                    unicode::ENTER => {
                         if self.characters.len() % TEXT_COLUMNS == 0 {
                             for _i in 0..TEXT_COLUMNS {
                                 self.characters.push(None);
@@ -125,7 +115,7 @@ impl Console {
         }
     }
 
-    /// Pushes a char to the text layer, must specify the color
+    /// Pushes a char to the console, must specify the color
     pub fn push_char(&mut self, c: char, color: Option<u8>, back_color: Option<u8>, blink: bool) {
         let a_char = ConsoleChar {
             unicode: c,

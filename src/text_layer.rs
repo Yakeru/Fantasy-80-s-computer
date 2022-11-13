@@ -1,5 +1,12 @@
-const TEXT_COLUMNS: usize = 40;
-const TEXT_ROWS: usize = 30;
+
+//1080p
+// const TEXT_COLUMNS: usize = 40;
+// const TEXT_ROWS: usize = 30;
+
+//4K
+const TEXT_COLUMNS: usize = 80;
+const TEXT_ROWS: usize = 50;
+
 const DEFAULT_COLOR: u8 = 7;
 const DEFAULT_BKG_COLOR: u8 = 0;
 
