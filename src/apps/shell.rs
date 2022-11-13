@@ -1,4 +1,4 @@
-use crate::text_layer::TextLayerChar;
+// use crate::text_layer::TextLayerChar;
 use crate::unicode;
 use crate::virtual_frame_buffer::VirtualFrameBuffer;
 use app_macro::*;
@@ -74,38 +74,38 @@ impl Shell {
         }
     }
 
-    fn get_text_layer_char_from_style(&self, style: StyledChar) -> TextLayerChar {
-        match style {
-            StyledChar::Default(c) => TextLayerChar {
-                unicode: c,
-                color: self.color,
-                background_color: self.bkg_color,
-                blink: false,
-                flipp: false,
-            },
-            StyledChar::Highlight(c) => TextLayerChar {
-                unicode: c,
-                color: self.color,
-                background_color: self.bkg_color,
-                blink: false,
-                flipp: true,
-            },
-            StyledChar::Warning(c) => TextLayerChar {
-                unicode: c,
-                color: 10,
-                background_color: 0,
-                blink: false,
-                flipp: false,
-            },
-            StyledChar::Error(c) => TextLayerChar {
-                unicode: c,
-                color: 8,
-                background_color: 0,
-                blink: true,
-                flipp: false,
-            },
-        }
-    }
+    // fn get_text_layer_char_from_style(&self, style: StyledChar) -> TextLayerChar {
+    //     match style {
+    //         StyledChar::Default(c) => TextLayerChar {
+    //             unicode: c,
+    //             color: self.color,
+    //             background_color: self.bkg_color,
+    //             blink: false,
+    //             flipp: false,
+    //         },
+    //         StyledChar::Highlight(c) => TextLayerChar {
+    //             unicode: c,
+    //             color: self.color,
+    //             background_color: self.bkg_color,
+    //             blink: false,
+    //             flipp: true,
+    //         },
+    //         StyledChar::Warning(c) => TextLayerChar {
+    //             unicode: c,
+    //             color: 10,
+    //             background_color: 0,
+    //             blink: false,
+    //             flipp: false,
+    //         },
+    //         StyledChar::Error(c) => TextLayerChar {
+    //             unicode: c,
+    //             color: 8,
+    //             background_color: 0,
+    //             blink: true,
+    //             flipp: false,
+    //         },
+    //     }
+    // }
 
     fn push_string(&mut self, string: &str, style: Style) {
         for c in string.chars() {
@@ -261,29 +261,29 @@ impl Shell {
     }
 
     pub fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-        if self.clear_text_layer {
-            virtual_frame_buffer.get_text_layer().clear();
-            self.clear_text_layer = false;
-            self.last_character_received = None;
-        }
+        // if self.clear_text_layer {
+        //     virtual_frame_buffer.get_text_layer().clear();
+        //     self.clear_text_layer = false;
+        //     self.last_character_received = None;
+        // }
 
-        virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
+        // virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
 
-        match self.last_character_received {
-            Some(c) => {
-                virtual_frame_buffer.get_text_layer().push_character(Some(
-                    self.get_text_layer_char_from_style(StyledChar::Default(c)),
-                ));
-            }
+        // match self.last_character_received {
+        //     Some(c) => {
+        //         virtual_frame_buffer.get_text_layer().push_character(Some(
+        //             self.get_text_layer_char_from_style(StyledChar::Default(c)),
+        //         ));
+        //     }
 
-            None => (),
-        }
+        //     None => (),
+        // }
 
-        for c in &self.display_buffer {
-            virtual_frame_buffer
-                .get_text_layer()
-                .push_character(Some(self.get_text_layer_char_from_style(*c)));
-        }
+        // for c in &self.display_buffer {
+        //     virtual_frame_buffer
+        //         .get_text_layer()
+        //         .push_character(Some(self.get_text_layer_char_from_style(*c)));
+        // }
 
         self.display_buffer.clear();
 

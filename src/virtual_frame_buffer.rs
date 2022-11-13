@@ -278,29 +278,55 @@ impl VirtualFrameBuffer {
         let mut text_row_count = 0;
         let mut text_col_count = 0;
 
-        for character in self.text_layer.get_characters() {
-            match character {
-                Some(text_mode_char) => {
-                    let mut flipp = text_mode_char.flipp;
+        let mut char_counter = 0;
 
-                    //Blink
-                    if text_mode_char.blink && self.half_second_latch {
-                        flipp = !flipp;
+        for char_counter in 0..self.text_layer.get_length() {
+
+            let text_layer_char = self.text_layer.get_char_map()[char_counter];
+            let text_layer_color = self.text_layer.get_color_map()[char_counter];
+
+            match text_layer_char {
+                Some(char) => {
+
+                    let mut char_color = self.text_layer.get_default_color();
+                    let mut bck_color = self.text_layer.get_default_bkg_color();
+                    let mut blink = false;
+                    let mut swap = false;
+                    let mut shadowed = false;
+
+                    match text_layer_color {
+                        Some(color) => {
+                            char_color = (color & 0b0000000000001111) as u8;
+                            bck_color = ((color & 0b0000000011110000) >> 4) as u8;
+                            swap = color & 0b0000000100000000 > 0;
+                            blink = color & 0b0000001000000000 > 0;
+                            shadowed = color & 0b0000010000000000 > 0;
+                        }
+
+                        None => ()
                     }
 
-                    let text_color = if flipp {
-                        text_mode_char.background_color
+                    //Blink
+                    if blink && self.half_second_latch {
+                        swap = !swap;
+                    }
+
+                    //set color, swap or not
+                    let text_color = if swap {
+                        bck_color
                     } else {
-                        text_mode_char.color
+                        char_color
                     };
-                    let text_bkg_color = if flipp {
-                        text_color
+                    let text_bkg_color = if swap {
+                        char_color
                     } else {
-                        text_mode_char.background_color
+                        bck_color
                     };
 
-                    let pic = rom(&text_mode_char.unicode);
+                    //Get char picture from  "character rom"
+                    let pic = rom(&char);
 
+                    //Draw picture pixel by pixel in frame buffer
                     for row_count in 0..8 {
                         let row = pic[row_count];
                         let row_in_binary = &format!("{:0>8b}", row);
@@ -319,11 +345,13 @@ impl VirtualFrameBuffer {
                             character_sprite_col_count += 1;
                         }
                     }
+
                 }
 
-                None => (),
+                None => ()
             }
 
+            //Move to next character coordinates
             text_col_count += 1;
             x_pos += 8;
 
@@ -341,8 +369,6 @@ impl VirtualFrameBuffer {
                 y_pos = vertical_border;
             }
         }
-
-        //println!("text: {} micros", now.elapsed().as_micros());
     }
 
     fn apply_line_scroll_effect(&mut self) {

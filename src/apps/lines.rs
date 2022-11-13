@@ -72,8 +72,8 @@ impl Lines {
         let max_x = virtual_frame_buffer.get_width();
         let max_y = virtual_frame_buffer.get_height();
 
-        virtual_frame_buffer.get_text_layer().clear();
-        virtual_frame_buffer.get_text_layer().show_cursor = false;
+        //virtual_frame_buffer.get_text_layer().clear();
+        //virtual_frame_buffer.get_text_layer().show_cursor = false;
 
         let mut random = rand::thread_rng();
 

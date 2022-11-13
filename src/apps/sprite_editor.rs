@@ -2,7 +2,7 @@ use app_macro::*;
 use app_macro_derive::AppMacro;
 use winit::event::{ElementState, KeyboardInput};
 
-use crate::text_layer::TextLayerChar;
+//use crate::text_layer::TextLayerChar;
 use crate::virtual_frame_buffer::*;
 use winit::dpi::PhysicalSize;
 use winit::{event::VirtualKeyCode, event_loop::ControlFlow};
@@ -130,8 +130,8 @@ impl SpriteEditor {
 
     pub fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
-        virtual_frame_buffer.get_text_layer().clear();
-        virtual_frame_buffer.get_text_layer().show_cursor = false;
+        //virtual_frame_buffer.get_text_layer().clear();
+        //virtual_frame_buffer.get_text_layer().show_cursor = false;
 
         //Drawing are Background square
         let bkg_square_width = SPRITE_SIZE.width * EDITOR_PIXEL_SIZE.width + SPRITE_SIZE.width + 3;

@@ -1,7 +1,7 @@
 use app_macro::*;
 use app_macro_derive::AppMacro;
 
-use crate::text_layer::TextLayerChar;
+// use crate::text_layer::TextLayerChar;
 use winit::event::VirtualKeyCode;
 
 use crate::virtual_frame_buffer::VirtualFrameBuffer;
@@ -18,7 +18,7 @@ pub struct WeatherApp {
     selected_bkg_color: u8,
     columns: u8,
     rows: u8,
-    buffer: Vec<TextLayerChar>,
+    // buffer: Vec<TextLayerChar>,
     updating: bool,
     drawing: bool,
     started: bool,
@@ -31,7 +31,7 @@ pub struct WeatherApp {
 
 impl WeatherApp {
     pub fn new() -> WeatherApp {
-        let buffer = Vec::new();
+        // let buffer = Vec::new();
 
         WeatherApp {
             name: String::from("Weather"),
@@ -39,7 +39,7 @@ impl WeatherApp {
             selected_bkg_color: DEFAULT_BKG_COLOR,
             columns: 0,
             rows: 0,
-            buffer,
+            // buffer,
             updating: false,
             drawing: false,
             started: false,
@@ -162,10 +162,10 @@ impl WeatherApp {
     }
 
     fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-        virtual_frame_buffer.get_text_layer().clear();
-        virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
-        virtual_frame_buffer
-            .get_text_layer()
-            .push_string(&self.message, None, None, false);
+        // virtual_frame_buffer.get_text_layer().clear();
+        // virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
+        // virtual_frame_buffer
+        //     .get_text_layer()
+        //     .push_string(&self.message, None, None, false);
     }
 }

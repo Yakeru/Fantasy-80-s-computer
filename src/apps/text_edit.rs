@@ -1,7 +1,5 @@
 use app_macro::*;
 use app_macro_derive::AppMacro;
-
-use crate::text_layer::TextLayerChar;
 use crate::unicode;
 use crate::virtual_frame_buffer::VirtualFrameBuffer;
 use std::io::{self, Write};
@@ -20,7 +18,7 @@ pub struct TextEdit {
     selected_bkg_color: u8,
     columns: u8,
     rows: u8,
-    buffer: Vec<TextLayerChar>,
+    // buffer: Vec<TextLayerChar>,
     updating: bool,
     drawing: bool,
     started: bool,
@@ -29,7 +27,7 @@ pub struct TextEdit {
 
 impl TextEdit {
     pub fn new() -> TextEdit {
-        let buffer = Vec::new();
+        // let buffer = Vec::new();
 
         TextEdit {
             name: String::from("textEdit"),
@@ -37,7 +35,7 @@ impl TextEdit {
             selected_bkg_color: DEFAULT_BKG_COLOR,
             columns: 0,
             rows: 0,
-            buffer,
+            // buffer,
             updating: false,
             drawing: false,
             started: false,
@@ -57,30 +55,30 @@ impl TextEdit {
             self.started = true;
         }
 
-        match char_received {
-            Some(c) => match c {
-                unicode::BACKSPACE => {
-                    self.buffer.pop();
-                }
+        // match char_received {
+            // Some(c) => match c {
+                // unicode::BACKSPACE => {
+                //     self.buffer.pop();
+                // }
 
-                unicode::ENTER => {}
+                // unicode::ENTER => {}
 
-                unicode::ESCAPE => {}
+                // unicode::ESCAPE => {}
 
-                _ => {
-                    let plop: TextLayerChar = TextLayerChar {
-                        unicode: c,
-                        color: self.selected_color,
-                        background_color: self.selected_bkg_color,
-                        blink: false,
-                        flipp: false,
-                    };
+                // _ => {
+                //     let plop: TextLayerChar = TextLayerChar {
+                //         unicode: c,
+                //         color: self.selected_color,
+                //         background_color: self.selected_bkg_color,
+                //         blink: false,
+                //         flipp: false,
+                //     };
 
-                    self.buffer.push(plop);
-                }
-            },
-            None => (),
-        }
+                //     self.buffer.push(plop);
+                // }
+        //     },
+        //     None => (),
+        // }
 
         match keybord_input {
             Some(k) => {
@@ -145,21 +143,21 @@ impl TextEdit {
     }
 
     pub fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-        virtual_frame_buffer.get_text_layer().clear();
-        virtual_frame_buffer.get_text_layer().show_cursor = false;
-        virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
+        // virtual_frame_buffer.get_text_layer().clear();
+        // virtual_frame_buffer.get_text_layer().show_cursor = false;
+        // virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
 
-        for text_layer_char in self.buffer.chunks_exact_mut(1) {
-            virtual_frame_buffer
-                .get_text_layer()
-                .push_character(Some(text_layer_char[0]));
-        }
+        // for text_layer_char in self.buffer.chunks_exact_mut(1) {
+        //     virtual_frame_buffer
+        //         .get_text_layer()
+        //         .push_character(Some(text_layer_char[0]));
+        // }
 
-        virtual_frame_buffer.get_text_layer().push_char(
-            '_',
-            Some(self.selected_color),
-            Some(self.selected_bkg_color),
-            false,
-        );
+        // virtual_frame_buffer.get_text_layer().push_char(
+        //     '_',
+        //     Some(self.selected_color),
+        //     Some(self.selected_bkg_color),
+        //     false,
+        // );
     }
 }

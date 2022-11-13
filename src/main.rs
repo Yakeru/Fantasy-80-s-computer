@@ -121,9 +121,11 @@ fn main() -> Result<(), Error> {
 
     //Push the splash screen to the text layer
     virtual_frame_buffer.clear_frame_buffer(0);
-    virtual_frame_buffer
-        .get_text_layer()
-        .push_string(SPLASH, None, None, false);
+    // virtual_frame_buffer
+    //     .get_text_layer()
+    //     .push_string(SPLASH, None, None, false);
+
+    virtual_frame_buffer.get_text_layer().get_char_map()[0] = Some('A');
 
     let mut keyboard_input: Option<KeyboardInput> = None;
     let mut char_received: Option<char> = None;
@@ -192,12 +194,12 @@ fn main() -> Result<(), Error> {
 
                 match process_response.message {
                     Some(message) => {
-                        virtual_frame_buffer
-                            .get_text_layer()
-                            .push_char('\u{000D}', None, None, false);
-                        virtual_frame_buffer
-                            .get_text_layer()
-                            .push_string(&message, None, None, false);
+                        // virtual_frame_buffer
+                        //     .get_text_layer()
+                        //     .push_char('\u{000D}', None, None, false);
+                        // virtual_frame_buffer
+                        //     .get_text_layer()
+                        //     .push_string(&message, None, None, false);
                     }
                     None => (),
                 }
