@@ -4,7 +4,7 @@ use app_macro_derive::AppMacro;
 // use crate::text_layer::TextLayerChar;
 use winit::event::VirtualKeyCode;
 
-use crate::virtual_frame_buffer::VirtualFrameBuffer;
+use crate::{virtual_frame_buffer::VirtualFrameBuffer, unicode};
 use openweathermap::Receiver;
 use std::time::{Duration, Instant};
 
@@ -33,6 +33,17 @@ impl WeatherApp {
     pub fn new() -> WeatherApp {
         // let buffer = Vec::new();
 
+        let key_env: Option<&'static str> = option_env!("SECRET_KEY");
+        let mut key = ""; 
+
+        match key_env {
+            Some(string) => {
+                key = string;
+            },
+
+            None => ()
+        }
+
         WeatherApp {
             name: String::from("Weather"),
             selected_color: DEFAULT_COLOR,
@@ -44,7 +55,7 @@ impl WeatherApp {
             drawing: false,
             started: false,
             ended: false,
-            receiver: openweathermap::init("45.4874487,-73.5745913", "metric", "fr", "", 1),
+            receiver: openweathermap::init("45.4874487,-73.5745913", "metric", "fr", key, 1),
             update_interval: Duration::from_secs(60),
             last_update: Instant::now().checked_add(Duration::from_secs(55)).unwrap(),
             message: String::from("Loading..."),
@@ -84,14 +95,13 @@ impl WeatherApp {
         match character_received {
             Some(c) => {
                 match c {
-                    '\u{0008}' => { //Backspace
+                    unicode::BACKSPACE => {
                     }
 
-                    '\u{000D}' => { //Enter
+                    unicode::ENTER => {
                     }
 
-                    '\u{001B}' => {
-                        //Escape
+                    unicode::ESCAPE => {
                         self.updating = false;
                         self.drawing = false;
                         self.end();

@@ -13,6 +13,7 @@ use winit::{
 mod characters_rom;
 mod color_palettes;
 mod sprite;
+mod console;
 mod text_layer;
 mod unicode;
 mod virtual_frame_buffer;
@@ -126,6 +127,21 @@ fn main() -> Result<(), Error> {
     //     .push_string(SPLASH, None, None, false);
 
     virtual_frame_buffer.get_text_layer().get_char_map()[0] = Some('A');
+    virtual_frame_buffer.get_text_layer().get_char_map()[1] = Some('B');
+    virtual_frame_buffer.get_text_layer().get_char_map()[2] = Some('C');
+    virtual_frame_buffer.get_text_layer().get_char_map()[3] = Some('@');
+    virtual_frame_buffer.get_text_layer().get_char_map()[79] = Some('@');
+    virtual_frame_buffer.get_text_layer().get_char_map()[80] = Some('1');
+    virtual_frame_buffer.get_text_layer().get_char_map()[81] = Some('2');
+    virtual_frame_buffer.get_text_layer().get_char_map()[82] = Some('3');
+    virtual_frame_buffer.get_text_layer().get_char_map()[83] = Some('4');
+    virtual_frame_buffer.get_text_layer().get_char_map()[80*49] = Some('@');
+    virtual_frame_buffer.get_text_layer().get_char_map()[80*50-1] = Some('@');
+
+    virtual_frame_buffer.get_text_layer().get_color_map()[0] = None;
+    virtual_frame_buffer.get_text_layer().get_color_map()[1] = Some(0x00C9);
+    virtual_frame_buffer.get_text_layer().get_color_map()[2] = Some(0x020D);
+    virtual_frame_buffer.get_text_layer().get_color_map()[3] = Some(0x04B7);
 
     let mut keyboard_input: Option<KeyboardInput> = None;
     let mut char_received: Option<char> = None;
@@ -180,11 +196,11 @@ fn main() -> Result<(), Error> {
             },
             Event::MainEventsCleared => {
                 //Updating apps
-                //let process_response = shell.update(keyboard_input, char_received);
+                let process_response = shell.update(keyboard_input, char_received);
                 //let process_response = lines.update(keyboard_input, char_received);
                 //let process_response = squares.update(keyboard_input, char_received);
                 //let process_response = text_edit.update(keyboard_input, char_received);
-                let process_response = sprite_edit.update(keyboard_input, char_received);
+                //let process_response = sprite_edit.update(keyboard_input, char_received);
 
                 //Process app response
                 match process_response.event {
@@ -205,11 +221,11 @@ fn main() -> Result<(), Error> {
                 }
 
                 //Draw app
-                //shell.draw(&mut virtual_frame_buffer);
+                shell.draw(&mut virtual_frame_buffer);
                 //lines.draw(&mut virtual_frame_buffer);
                 //squares.draw(&mut virtual_frame_buffer);
                 //text_edit.draw(&mut virtual_frame_buffer);
-                sprite_edit.draw(&mut virtual_frame_buffer);
+                //sprite_edit.draw(&mut virtual_frame_buffer);
                 //draw_loading_border(&mut virtual_frame_buffer, 40, 40); 
 
                 //Render to frame buffer

@@ -1,3 +1,5 @@
+use crate::unicode;
+
 const TEXT_COLUMNS: usize = 40;
 const TEXT_ROWS: usize = 30;
 const DEFAULT_COLOR: u8 = 10;
@@ -20,33 +22,35 @@ pub struct Console {
     size: (u8, u8),
     color: u8,
     bkg_color: u8,
-    cursor: char,
+    cursor: ConsoleChar,
+    cursor_position: usize,
     characters: Vec<Option<ConsoleChar>>,
     pub show_cursor: bool,
 }
 
 impl Console {
-    pub fn new(origin: (u8, u8), size: (u8, u8)) -> TextLayer {
+    pub fn new(origin: (u8, u8), size: (u8, u8)) -> Console {
         let mut buffer: Vec<Option<ConsoleChar>> = Vec::new();
-        fb.push(Some(ConsoleChar {
-            unicode: DEFAULT_CURSOR,
-            color: DEFAULT_COLOR,
-            background_color: DEFAULT_BKG_COLOR,
-            flipp: false,
-            blink: true,
-        }));
-        TextLayer {
+        
+        Console {
             origin,
             size,
             color: DEFAULT_COLOR,
             bkg_color: DEFAULT_BKG_COLOR,
-            cursor: DEFAULT_CURSOR,
+            cursor: ConsoleChar {
+                    unicode: DEFAULT_CURSOR,
+                    color: DEFAULT_COLOR,
+                    background_color: DEFAULT_BKG_COLOR,
+                    flipp: false,
+                    blink: true
+            },
+            cursor_position: 0,
             characters: buffer,
             show_cursor: true,
         }
     }
 
-    pub fn get_size(&self) -> (usize, usize) {
+    pub fn get_size(&self) -> (u8, u8) {
         return self.size;
     }
 
@@ -62,7 +66,7 @@ impl Console {
         self.bkg_color
     }
 
-    pub fn set_cursor(&mut self, cursor: char) {
+    pub fn set_cursor(&mut self, cursor: ConsoleChar) {
         self.cursor = cursor;
     }
 
@@ -102,16 +106,6 @@ impl Console {
             None => {
                 self.characters.push(None);
             }
-        }
-
-        if self.show_cursor {
-            self.characters.push(Some(ConsoleChar {
-                unicode: self.cursor,
-                color: self.color,
-                background_color: self.bkg_color,
-                flipp: false,
-                blink: true,
-            }));
         }
     }
 
@@ -180,7 +174,7 @@ impl Console {
             //Returns a Option<Option<ConsoleChar>> ...
             Some(plop) => match plop {
                 Some(t) => match t.unicode {
-                    '\u{000D}' => {
+                    unicode::ENTER => {
                         stop = true;
                         true
                     }
@@ -191,6 +185,7 @@ impl Console {
             None => false,
         } {
             self.characters.pop();
+            self.cursor_position = self.cursor_position - 1;
             if stop {
                 return;
             }
@@ -200,15 +195,7 @@ impl Console {
     /// Clears the entire vector
     pub fn clear(&mut self) {
         self.characters.clear();
-        if self.show_cursor {
-            self.characters.push(Some(ConsoleChar {
-                unicode: self.cursor,
-                color: self.color,
-                background_color: self.bkg_color,
-                flipp: false,
-                blink: true,
-            }));
-        }
+        self.cursor_position = 0;
     }
 
     /// Moves the entire content of the vector one line up

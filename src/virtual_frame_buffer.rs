@@ -1,4 +1,4 @@
-use crate::characters_rom::rom;
+use crate::{characters_rom::rom, console::Console};
 use crate::color_palettes::*;
 use crate::sprite::Sprite;
 use crate::text_layer::TextLayer;
@@ -17,8 +17,6 @@ const VIRTUAL_HEIGHT: usize = 640;
 // const HEIGHT: usize = 960;
 // const VIRTUAL_WIDTH: usize = 426; // 426*3 = 1278 draw one black line on each side of screen for perfectly centered *3 scale
 // const VIRTUAL_HEIGHT: usize = 320; // 320*3 = 960
-
-let key: Option<&'static str> = option_env!("SECRET_KEY");
 
 const H_UPSCALE: usize = 3;
 const V_UPSCALE: usize = 3;
@@ -68,9 +66,9 @@ pub struct Line {
 
 impl VirtualFrameBuffer {
     pub fn new(frame_time_ms: u64) -> VirtualFrameBuffer {
-        let virtual_frame_buffer = [0; VIRTUAL_WIDTH * VIRTUAL_HEIGHT];
-        let text_layer = TextLayer::new();
-        let sprites = Vec::new();
+        let virtual_frame_buffer: [u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT] = [0; VIRTUAL_WIDTH * VIRTUAL_HEIGHT];
+        let text_layer: TextLayer = TextLayer::new();
+        let sprites: Vec<Sprite> = Vec::new();
 
         //TODO init background_layers, tiles_layers, sprites_layers... and correesponding renderes
 
@@ -298,11 +296,11 @@ impl VirtualFrameBuffer {
 
                     match text_layer_color {
                         Some(color) => {
-                            char_color = (color & 0b0000000000001111) as u8;
-                            bck_color = ((color & 0b0000000011110000) >> 4) as u8;
-                            swap = color & 0b0000000100000000 > 0;
-                            blink = color & 0b0000001000000000 > 0;
-                            shadowed = color & 0b0000010000000000 > 0;
+                            char_color = ((color & 0x00F0) >> 4) as u8;
+                            bck_color = (color & 0x000F) as u8;
+                            swap = color & 0x0100 != 0;
+                            blink = color & 0x0200 != 0;
+                            shadowed = color & 0x0400 != 0;
                         }
 
                         None => ()
@@ -331,23 +329,32 @@ impl VirtualFrameBuffer {
                     //Draw picture pixel by pixel in frame buffer
                     for row_count in 0..8 {
                         let row = pic[row_count];
-                        let row_in_binary = &format!("{:0>8b}", row);
-                        let mut character_sprite_col_count = 0;
+                        let mut mask: u8 = 128;
 
-                        for c in row_in_binary.chars() {
+                        for col_count in 0..8 {
                             let virtual_frame_buffer_pos = x_pos
-                                + character_sprite_col_count
+                                + col_count
                                 + (y_pos + row_count) * VIRTUAL_WIDTH;
 
-                            match c {
-                                '0' => self.frame[virtual_frame_buffer_pos] = text_bkg_color,
-                                '1' => self.frame[virtual_frame_buffer_pos] = text_color,
-                                _ => (),
+                            if shadowed {
+                                let shadow_mask:u8 = if row_count % 2 == 0 {0b10101010} else {0b01010101};
+                                match shadow_mask & mask {
+                                    0 => self.frame[virtual_frame_buffer_pos] = 0,
+                                    _ => match row & mask {
+                                        0 => self.frame[virtual_frame_buffer_pos] = text_bkg_color,
+                                        _ => self.frame[virtual_frame_buffer_pos] = text_color,
+                                    }
+                                }
+                            } else {
+                                match row & mask {
+                                    0 => self.frame[virtual_frame_buffer_pos] = text_bkg_color,
+                                    _ => self.frame[virtual_frame_buffer_pos] = text_color,
+                                }
                             }
-                            character_sprite_col_count += 1;
+
+                            mask = mask >> 1;
                         }
                     }
-
                 }
 
                 None => ()
