@@ -1,4 +1,4 @@
-use crate::virtual_frame_buffer::*;
+use crate::{virtual_frame_buffer::*, unicode};
 use app_macro::*;
 use app_macro_derive::AppMacro;
 use rand::Rng;
@@ -15,6 +15,7 @@ pub struct Lines {
     started: bool,
     ended: bool,
     draw_a_line: bool,
+    clear: bool
 }
 
 impl Lines {
@@ -25,7 +26,8 @@ impl Lines {
             drawing: false,
             started: false,
             ended: false,
-            draw_a_line: true,
+            draw_a_line: false,
+            clear: false
         }
     }
 
@@ -40,6 +42,22 @@ impl Lines {
             self.start();
         }
 
+        match char_received {
+            Some(unicode) => {
+                match unicode {
+                    unicode::ENTER => {
+                        self.draw_a_line = true;
+                    },
+                    'c' => {
+                        self.clear = true;
+                    }
+
+                    _ => ()
+                }
+            }
+            None => (),
+        }
+
         match keybord_input {
             Some(key) => {
                 match key.virtual_keycode {
@@ -50,11 +68,6 @@ impl Lines {
                                 response.set_message("Escape key pressed".to_string());
                                 response.event = Some(ControlFlow::ExitWithCode(0));
                                 self.end();
-                            }
-
-                            VirtualKeyCode::Return => {
-                                //Enter
-                                self.draw_a_line = true;
                             }
                             _ => (),
                         }
@@ -77,7 +90,7 @@ impl Lines {
 
         let mut random = rand::thread_rng();
 
-        for _i in 0..10 {
+        if self.draw_a_line {
             let start_x: usize = random.gen_range(0..max_x);
             let start_y: usize = random.gen_range(0..max_y);
             let end_x: usize = random.gen_range(0..max_x);
@@ -93,6 +106,12 @@ impl Lines {
                 color,
             };
             virtual_frame_buffer.draw_line(line);
+            self.draw_a_line = false;
+        }
+
+        if self.clear {
+            virtual_frame_buffer.clear_frame_buffer(0);
+            self.clear = false;
         }
     }
 }

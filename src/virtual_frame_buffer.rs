@@ -1,28 +1,22 @@
-use crate::{characters_rom::rom, console::Console};
+use crate::{characters_rom::rom};
 use crate::color_palettes::*;
 use crate::sprite::Sprite;
 use crate::text_layer::TextLayer;
 use rand::Rng;
 use std::time::{Duration, Instant};
 use winit::dpi::PhysicalSize;
+use crate::config;
 
-//4K
-const WIDTH: usize = 2560;
-const HEIGHT: usize = 1920;
-const VIRTUAL_WIDTH: usize = 853;
-const VIRTUAL_HEIGHT: usize = 640;
+const WIDTH: usize = config::WIDTH;
+const HEIGHT: usize = config::HEIGHT;
+const VIRTUAL_WIDTH: usize = config::VIRTUAL_WIDTH;
+const VIRTUAL_HEIGHT: usize = config::VIRTUAL_HEIGHT;
 
-//1080
-// const WIDTH: usize = 1280;
-// const HEIGHT: usize = 960;
-// const VIRTUAL_WIDTH: usize = 426; // 426*3 = 1278 draw one black line on each side of screen for perfectly centered *3 scale
-// const VIRTUAL_HEIGHT: usize = 320; // 320*3 = 960
+const H_UPSCALE: usize = 6;
+const V_UPSCALE: usize = 6;
 
-const H_UPSCALE: usize = 3;
-const V_UPSCALE: usize = 3;
-
-const SCAN_LINE_STRENGTH: u8 = 25;
-const SUB_PIXEL_ATTENUATION: u8 = 230;
+const SCAN_LINE_STRENGTH: u8 = 100;
+const SUB_PIXEL_ATTENUATION: u8 = 200;
 
 const SUB_PIXEL_COUNT: usize = 4;
 const RENDERED_LINE_LENGTH: usize = WIDTH * SUB_PIXEL_COUNT;
@@ -33,7 +27,7 @@ const RENDERED_LINE_LENGTH: usize = WIDTH * SUB_PIXEL_COUNT;
 /// will be upscaled into the final pixel 2D frame buffer.
 pub struct VirtualFrameBuffer {
     frame_time_ms: u64,
-    frame: [u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT],
+    frame: Box<[u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]>,
     color_palette: ColorPalette,
     line_scroll_list: [i8; VIRTUAL_HEIGHT],
     text_layer: TextLayer,
@@ -66,7 +60,7 @@ pub struct Line {
 
 impl VirtualFrameBuffer {
     pub fn new(frame_time_ms: u64) -> VirtualFrameBuffer {
-        let virtual_frame_buffer: [u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT] = [0; VIRTUAL_WIDTH * VIRTUAL_HEIGHT];
+        let virtual_frame_buffer: Box<[u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]> = Box::new([0; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]);
         let text_layer: TextLayer = TextLayer::new();
         let sprites: Vec<Sprite> = Vec::new();
 
@@ -90,11 +84,11 @@ impl VirtualFrameBuffer {
         (WIDTH, HEIGHT)
     }
 
-    pub fn get_frame(&mut self) -> &mut [u8] {
+    pub fn get_frame(&mut self) -> &mut Box<[u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]> {
         &mut self.frame
     }
 
-    pub fn get_frame_static(&self) -> &[u8] {
+    pub fn get_frame_static(&self) -> &Box<[u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]> {
         &self.frame
     }
 
@@ -231,15 +225,14 @@ impl VirtualFrameBuffer {
             self.frame_counter += 1;
         }
 
-        self.text_layer_renderer();
         self.sprite_layer_renderer();
+        self.text_layer_renderer();
         self.apply_line_scroll_effect();
     }
 
     /// Gets all the sprites listed in the sprite vector and renders them at the right place in the
     /// the virtual frame buffer
     fn sprite_layer_renderer(&mut self) {
-        //let now = Instant::now();
 
         for sprite in self.sprites.chunks_exact_mut(1) {
             let mut pixel_count = 0;
@@ -264,23 +257,18 @@ impl VirtualFrameBuffer {
                 }
             }
         }
-
-        //println!("sprite: {} micros", now.elapsed().as_micros());
     }
 
     fn text_layer_renderer(&mut self) {
-        //let now = Instant::now();
 
-        let horizontal_border: usize = (VIRTUAL_HEIGHT - self.text_layer.get_size().1 * 8) / 2;
-        let vertical_border: usize = (VIRTUAL_WIDTH - self.text_layer.get_size().0 * 8) / 2;
+        let horizontal_border: usize = (VIRTUAL_HEIGHT - self.text_layer.get_dimensions().1 * 8) / 2;
+        let vertical_border: usize = (VIRTUAL_WIDTH - self.text_layer.get_dimensions().0 * 8) / 2;
         let mut x_pos = horizontal_border;
         let mut y_pos = vertical_border;
         let mut text_row_count = 0;
         let mut text_col_count = 0;
 
-        let mut char_counter = 0;
-
-        for char_counter in 0..self.text_layer.get_length() {
+        for char_counter in 0..self.text_layer.get_size() {
 
             let text_layer_char = self.text_layer.get_char_map()[char_counter];
             let text_layer_color = self.text_layer.get_color_map()[char_counter];
@@ -364,14 +352,14 @@ impl VirtualFrameBuffer {
             text_col_count += 1;
             x_pos += 8;
 
-            if text_col_count == self.text_layer.get_size().0 {
+            if text_col_count == self.text_layer.get_dimensions().0 {
                 text_col_count = 0;
                 text_row_count += 1;
                 x_pos = horizontal_border;
                 y_pos += 8;
             }
 
-            if text_row_count == self.text_layer.get_size().1 {
+            if text_row_count == self.text_layer.get_dimensions().1 {
                 text_col_count = 0;
                 text_row_count = 0;
                 x_pos = horizontal_border;
@@ -420,9 +408,10 @@ impl CrtEffectRenderer {
     ) {
         //let now = Instant::now();
 
+        let mut rendered_scanline: [u8; RENDERED_LINE_LENGTH] = [254 - self.scan_line_strength; RENDERED_LINE_LENGTH];
         let mut rendered_line: [u8; RENDERED_LINE_LENGTH] = [254; RENDERED_LINE_LENGTH];
-        let mut rendered_scanline: [u8; RENDERED_LINE_LENGTH] =
-            [254 - self.scan_line_strength; RENDERED_LINE_LENGTH];
+        let mut rendered_ramp_line: [u8; RENDERED_LINE_LENGTH] = [254; RENDERED_LINE_LENGTH];
+
         let mut line_count: usize = 0;
 
         for virt_line in virtual_frame_buffer
@@ -431,51 +420,282 @@ impl CrtEffectRenderer {
         {
             let mut count = 0;
 
-            for virt_pixel in virt_line {
+            let mut rgb_before: (u8, u8, u8) = (0,0,0);
+            let mut rgb_after: (u8, u8, u8) = (0,0,0);
+
+            for pixel_index in 0..VIRTUAL_WIDTH {
+
                 let rgb: (u8, u8, u8) = virtual_frame_buffer
                     .color_palette
-                    .get_rgb_from_index(*virt_pixel);
-                let mut attenuated_rgb: (u8, u8, u8) = rgb;
+                    .get_rgb_from_index(virt_line[pixel_index]);
+
+                rgb_after = if pixel_index < VIRTUAL_WIDTH - 1 {
+                    virtual_frame_buffer
+                    .color_palette
+                    .get_rgb_from_index(virt_line[pixel_index + 1])
+                } else {
+                    (0,0,0)
+                };
+
+                let mut sub_rgb: (u8, u8, u8) = rgb;
+
                 if ctr_effect_on {
-                    attenuated_rgb = (
+                    sub_rgb = (
                         rgb.0.checked_sub(self.sub_pixel_attenuation).unwrap_or(0),
                         rgb.1.checked_sub(self.sub_pixel_attenuation).unwrap_or(0),
                         rgb.2.checked_sub(self.sub_pixel_attenuation).unwrap_or(0),
                     );
                 }
 
-                rendered_line[0 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.0;
-                rendered_line[1 + SUB_PIXEL_COUNT * H_UPSCALE * count] = attenuated_rgb.1;
-                rendered_line[2 + SUB_PIXEL_COUNT * H_UPSCALE * count] = attenuated_rgb.2;
+                if rgb.0 > rgb_before.0 {
+                    rendered_scanline[0 + SUB_PIXEL_COUNT * H_UPSCALE * count] = (rgb.0 - ((rgb.0 - rgb_before.0)/5))/2;
+                    rendered_scanline[1 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_scanline[2 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                } else if rgb.0 < rgb_before.0{
+                    rendered_scanline[0 + SUB_PIXEL_COUNT * H_UPSCALE * count] = (rgb.0 + ((rgb_before.0 - rgb.0)/5))/2;
+                    rendered_scanline[1 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_scanline[2 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                } else {
+                    rendered_scanline[0 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.0;
+                    rendered_scanline[1 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_scanline[2 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                }
 
-                rendered_line[4 + SUB_PIXEL_COUNT * H_UPSCALE * count] = attenuated_rgb.0;
-                rendered_line[5 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.1;
-                rendered_line[6 + SUB_PIXEL_COUNT * H_UPSCALE * count] = attenuated_rgb.2;
+                if rgb.1 > rgb_before.1 {
+                    rendered_scanline[4 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_scanline[5 + SUB_PIXEL_COUNT * H_UPSCALE * count] = (rgb.1 - ((rgb.1 - rgb_before.1)/5))/2;
+                    rendered_scanline[6 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                } else if rgb.1 < rgb_before.1{
+                    rendered_scanline[4 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_scanline[5 + SUB_PIXEL_COUNT * H_UPSCALE * count] = (rgb.1 + ((rgb_before.1 - rgb.1)/5))/2;
+                    rendered_scanline[6 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                } else {
+                    rendered_scanline[4 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_scanline[5 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.1;
+                    rendered_scanline[6 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                }
 
-                rendered_line[8 + SUB_PIXEL_COUNT * H_UPSCALE * count] = attenuated_rgb.0;
-                rendered_line[9 + SUB_PIXEL_COUNT * H_UPSCALE * count] = attenuated_rgb.1;
-                rendered_line[10 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.2;
+                if rgb.2 > rgb_before.2 {
+                    rendered_scanline[8 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_scanline[9 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_scanline[10 + SUB_PIXEL_COUNT * H_UPSCALE * count] = (rgb.2 - ((rgb.2 - rgb_before.2)/5))/2;
+                } else if rgb.2 < rgb_before.2 {
+                    rendered_scanline[8 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_scanline[9 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_scanline[10 + SUB_PIXEL_COUNT * H_UPSCALE * count] = (rgb.2 + ((rgb_before.2 - rgb.2)/5))/2;
+                } else {
+                    rendered_scanline[8 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_scanline[9 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_scanline[10 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.2;
+                }
 
-                rendered_scanline[0 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.0;
-                rendered_scanline[1 + SUB_PIXEL_COUNT * H_UPSCALE * count] = attenuated_rgb.1;
-                rendered_scanline[2 + SUB_PIXEL_COUNT * H_UPSCALE * count] = attenuated_rgb.2;
+                if rgb.0 > rgb_after.0 {
+                    rendered_scanline[12 + SUB_PIXEL_COUNT * H_UPSCALE * count] = (rgb.0 - ((rgb.0 - rgb_after.0)/5))/2;
+                    rendered_scanline[13 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_scanline[14 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                } else if rgb.0 < rgb_after.0 {
+                    rendered_scanline[12 + SUB_PIXEL_COUNT * H_UPSCALE * count] = (rgb.0 + ((rgb_after.0 - rgb.0)/5))/2;
+                    rendered_scanline[13 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_scanline[14 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                } else {
+                    rendered_scanline[12 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.0;
+                    rendered_scanline[13 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_scanline[14 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                }
 
-                rendered_scanline[4 + SUB_PIXEL_COUNT * H_UPSCALE * count] = attenuated_rgb.0;
-                rendered_scanline[5 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.1;
-                rendered_scanline[6 + SUB_PIXEL_COUNT * H_UPSCALE * count] = attenuated_rgb.2;
+                if rgb.1 > rgb_after.1 {
+                    rendered_scanline[16 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_scanline[17 + SUB_PIXEL_COUNT * H_UPSCALE * count] = (rgb.1 - ((rgb.1 - rgb_after.1)/5))/2;
+                    rendered_scanline[18 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                } else if rgb.1 < rgb_after.1 {
+                    rendered_scanline[16 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_scanline[17 + SUB_PIXEL_COUNT * H_UPSCALE * count] = (rgb.1 + ((rgb_after.1 - rgb.1)/5))/2;
+                    rendered_scanline[18 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                } else {
+                    rendered_scanline[16 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_scanline[17 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.1;
+                    rendered_scanline[18 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                }
 
-                rendered_scanline[8 + SUB_PIXEL_COUNT * H_UPSCALE * count] = attenuated_rgb.0;
-                rendered_scanline[9 + SUB_PIXEL_COUNT * H_UPSCALE * count] = attenuated_rgb.1;
-                rendered_scanline[10 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.2;
+                if rgb.2 > rgb_after.2 {
+                    rendered_scanline[20 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_scanline[21 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_scanline[22 + SUB_PIXEL_COUNT * H_UPSCALE * count] = (rgb.2 - ((rgb.2 - rgb_after.2)/5))/2;
+                } else if rgb.2 < rgb_after.2 {
+                    rendered_scanline[20 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_scanline[21 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_scanline[22 + SUB_PIXEL_COUNT * H_UPSCALE * count] = (rgb.2 + ((rgb_after.2 - rgb.2)/5))/2;
+                } else {
+                    rendered_scanline[20 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_scanline[21 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_scanline[22 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.2;
+                }
+
+                //--------------------------------------------------------------------------------------
+
+                if rgb.0 > rgb_before.0 {
+                    rendered_line[0 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.0 - ((rgb.0 - rgb_before.0)/5);
+                    rendered_line[1 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_line[2 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                } else {
+                    rendered_line[0 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.0 + ((rgb_before.0 - rgb.0)/5);
+                    rendered_line[1 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_line[2 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                }
+
+                if rgb.1 > rgb_before.1 {
+                    rendered_line[4 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_line[5 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.1 - ((rgb.1 - rgb_before.1)/5);
+                    rendered_line[6 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                } else {
+                    rendered_line[4 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_line[5 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.1 + ((rgb_before.1 - rgb.1)/5);
+                    rendered_line[6 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                }
+
+                if rgb.2 > rgb_before.2 {
+                    rendered_line[8 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_line[9 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_line[10 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.2 - ((rgb.2 - rgb_before.2)/5);
+                } else {
+                    rendered_line[8 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_line[9 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_line[10 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.2 + ((rgb_before.2 - rgb.2)/5);
+                }
+
+                if rgb.0 > rgb_after.0 {
+                    rendered_line[12 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.0 - ((rgb.0 - rgb_after.0)/5);
+                    rendered_line[13 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_line[14 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                } else {
+                    rendered_line[12 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.0 + ((rgb_after.0 - rgb.0)/5);
+                    rendered_line[13 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_line[14 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                }
+
+                if rgb.1 > rgb_after.1 {
+                    rendered_line[16 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_line[17 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.1 - ((rgb.1 - rgb_after.1)/5);
+                    rendered_line[18 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                } else {
+                    rendered_line[16 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_line[17 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.1 + ((rgb_after.1 - rgb.1)/5);
+                    rendered_line[18 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                }
+
+                if rgb.2 > rgb_after.2 {
+                    rendered_line[20+ SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_line[21+ SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_line[22 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.2 - ((rgb.2 - rgb_after.2)/5);
+                } else {
+                    rendered_line[20+ SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_line[21+ SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_line[22 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.2 + ((rgb_after.2 - rgb.2)/5);
+                }
+
+                //--------------------------------------------------------------------------------------
+
+                if rgb.0 > rgb_before.0 {
+                    rendered_ramp_line[0 + SUB_PIXEL_COUNT * H_UPSCALE * count] = (rgb.0 - ((rgb.0 - rgb_before.0)/5))/2;
+                    rendered_ramp_line[1 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_ramp_line[2 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                } else if rgb.0 < rgb_before.0{
+                    rendered_ramp_line[0 + SUB_PIXEL_COUNT * H_UPSCALE * count] = (rgb.0 + ((rgb_before.0 - rgb.0)/5))/2;
+                    rendered_ramp_line[1 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_ramp_line[2 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                } else {
+                    rendered_ramp_line[0 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.0;
+                    rendered_ramp_line[1 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_ramp_line[2 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                }
+
+                if rgb.1 > rgb_before.1 {
+                    rendered_ramp_line[4 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_ramp_line[5 + SUB_PIXEL_COUNT * H_UPSCALE * count] = (rgb.1 - ((rgb.1 - rgb_before.1)/5))/2;
+                    rendered_ramp_line[6 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                } else if rgb.1 < rgb_before.1{
+                    rendered_ramp_line[4 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_ramp_line[5 + SUB_PIXEL_COUNT * H_UPSCALE * count] = (rgb.1 + ((rgb_before.1 - rgb.1)/5))/2;
+                    rendered_ramp_line[6 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                } else {
+                    rendered_ramp_line[4 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_ramp_line[5 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.1;
+                    rendered_ramp_line[6 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                }
+
+                if rgb.2 > rgb_before.2 {
+                    rendered_ramp_line[8 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_ramp_line[9 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_ramp_line[10 + SUB_PIXEL_COUNT * H_UPSCALE * count] = (rgb.2 - ((rgb.2 - rgb_before.2)/5))/2;
+                } else if rgb.2 < rgb_before.2 {
+                    rendered_ramp_line[8 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_ramp_line[9 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_ramp_line[10 + SUB_PIXEL_COUNT * H_UPSCALE * count] = (rgb.2 + ((rgb_before.2 - rgb.2)/5))/2;
+                } else {
+                    rendered_ramp_line[8 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_ramp_line[9 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_ramp_line[10 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.2;
+                }
+
+                if rgb.0 > rgb_after.0 {
+                    rendered_ramp_line[12 + SUB_PIXEL_COUNT * H_UPSCALE * count] = (rgb.0 - ((rgb.0 - rgb_after.0)/5))/2;
+                    rendered_ramp_line[13 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_ramp_line[14 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                } else if rgb.0 < rgb_after.0 {
+                    rendered_ramp_line[12 + SUB_PIXEL_COUNT * H_UPSCALE * count] = (rgb.0 + ((rgb_after.0 - rgb.0)/5))/2;
+                    rendered_ramp_line[13 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_ramp_line[14 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                } else {
+                    rendered_ramp_line[12 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.0;
+                    rendered_ramp_line[13 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_ramp_line[14 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                }
+
+                if rgb.1 > rgb_after.1 {
+                    rendered_ramp_line[16 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_ramp_line[17 + SUB_PIXEL_COUNT * H_UPSCALE * count] = (rgb.1 - ((rgb.1 - rgb_after.1)/5))/2;
+                    rendered_ramp_line[18 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                } else if rgb.1 < rgb_after.1 {
+                    rendered_ramp_line[16 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_ramp_line[17 + SUB_PIXEL_COUNT * H_UPSCALE * count] = (rgb.1 + ((rgb_after.1 - rgb.1)/5))/2;
+                    rendered_ramp_line[18 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                } else {
+                    rendered_ramp_line[16 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_ramp_line[17 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.1;
+                    rendered_ramp_line[18 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.2;
+                }
+
+                if rgb.2 > rgb_after.2 {
+                    rendered_ramp_line[20 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_ramp_line[21 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_ramp_line[22 + SUB_PIXEL_COUNT * H_UPSCALE * count] = (rgb.2 - ((rgb.2 - rgb_after.2)/5))/2;
+                } else if rgb.2 < rgb_after.2 {
+                    rendered_ramp_line[20 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_ramp_line[21 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_ramp_line[22 + SUB_PIXEL_COUNT * H_UPSCALE * count] = (rgb.2 + ((rgb_after.2 - rgb.2)/5))/2;
+                } else {
+                    rendered_ramp_line[20 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.0;
+                    rendered_ramp_line[21 + SUB_PIXEL_COUNT * H_UPSCALE * count] = sub_rgb.1;
+                    rendered_ramp_line[22 + SUB_PIXEL_COUNT * H_UPSCALE * count] = rgb.2;
+                }
 
                 count += 1;
+
+                rgb_before = rgb;
             }
 
-            let start = line_count * 3 * RENDERED_LINE_LENGTH;
-            output_frame[start..start + RENDERED_LINE_LENGTH].copy_from_slice(&rendered_line);
+            let start = line_count * 6 * RENDERED_LINE_LENGTH;
+            output_frame[start..start + RENDERED_LINE_LENGTH]
+                .copy_from_slice(&rendered_scanline);
             output_frame[start + RENDERED_LINE_LENGTH..start + 2 * RENDERED_LINE_LENGTH]
-                .copy_from_slice(&rendered_line);
+                .copy_from_slice(&rendered_ramp_line);
             output_frame[start + 2 * RENDERED_LINE_LENGTH..start + 3 * RENDERED_LINE_LENGTH]
+                .copy_from_slice(&rendered_line);
+            output_frame[start + 3 * RENDERED_LINE_LENGTH..start + 4 * RENDERED_LINE_LENGTH]
+                .copy_from_slice(&rendered_line);
+            output_frame[start + 4 * RENDERED_LINE_LENGTH..start + 5 * RENDERED_LINE_LENGTH]
+                .copy_from_slice(&rendered_ramp_line);
+            output_frame[start + 5 * RENDERED_LINE_LENGTH..start + 6 * RENDERED_LINE_LENGTH]
                 .copy_from_slice(&rendered_scanline);
 
             line_count += 1;

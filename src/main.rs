@@ -10,16 +10,17 @@ use winit::{
     window::WindowBuilder,
 };
 
+mod config;
+mod unicode;
 mod characters_rom;
 mod color_palettes;
 mod sprite;
-mod console;
 mod text_layer;
-mod unicode;
 mod virtual_frame_buffer;
 
 //Apps
 mod apps;
+use crate::apps::console::*;
 use crate::apps::lines::*;
 use crate::apps::shell::*;
 use crate::apps::sprite_editor::*;
@@ -35,7 +36,7 @@ const SPLASH: &str =
 ///*********************************************************THE MAIN
 fn main() -> Result<(), Error> {
     //Custom intermediate frame buffer
-    //Has 1/3 the horizontal resolution and 1/3 the vertical resoluton of pixels surface texture ans winit window size.
+    //Has 1/3 the horizontal resolution and 1/3 the vertical resoluton of pixels surface texture and winit window size.
     //The virtual frame buffer has a text layer, sprite lists, background layers and tiles layers that can be accessed
     //by Processes (structs implemeting "process") to build their image.
     //Its rendere combines all the layers in its frame to produce the complete image.
@@ -61,28 +62,14 @@ fn main() -> Result<(), Error> {
         .unwrap();
     window.set_cursor_visible(false);
 
-    //Pixels frame buffer init and setup
-    // let mut pixels = {
-    //     let window_size = window.inner_size();
-    //     let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
-    //     Pixels::new(virtual_frame_buffer.get_window_size().0 as u32, virtual_frame_buffer.get_window_size().1 as u32, surface_texture)
-    //     .expect("Pixels : Failed to setup rendering")
-    // };
-
     let mut pixels = {
         let window_size = window.inner_size();
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
         PixelsBuilder::new(
-            virtual_frame_buffer.get_window_size().0 as u32,
-            virtual_frame_buffer.get_window_size().1 as u32,
+            window_size.width,
+            window_size.height,
             surface_texture,
         )
-        // .request_adapter_options(RequestAdapterOptions {
-        //     power_preference: PowerPreference::LowPower,
-        //     force_fallback_adapter: false,
-        //     compatible_surface: None
-        // })
-        //.render_texture_format(TextureFormat::Bgra8UnormSrgb) //Bgra8UnormSrgb
         .enable_vsync(false)
         .build()
         .expect("Pixels : Failed to setup rendering")
@@ -99,18 +86,21 @@ fn main() -> Result<(), Error> {
     //no other process is running or has the focus.
     //It manages the start, stop, render, update of all the other processes.
     //It is always updated in the event loop event if another process has the focus (updated and rendered)
-    let mut shell = Box::new(Shell::new());
-    shell.set_state(true, true);
-    let mut text_edit = Box::new(TextEdit::new());
-    text_edit.set_state(false, false);
-    let mut sprite_edit = Box::new(SpriteEditor::new());
-    sprite_edit.set_state(false, false);
+
+    // let mut shell = Box::new(Shell::new());
+    // shell.set_state(true, true);
+    // let mut text_edit = Box::new(TextEdit::new());
+    // text_edit.set_state(false, false);
+    // let mut sprite_edit = Box::new(SpriteEditor::new());
+    // sprite_edit.set_state(false, false);
     let mut lines = Box::new(Lines::new());
-    lines.set_state(false, false);
+    lines.set_state(true, true);
     let mut squares = Box::new(Squares::new());
     squares.set_state(false, false);
-    let mut weather_app = Box::new(WeatherApp::new());
-    weather_app.set_state(false, false);
+    // let mut weather_app = Box::new(WeatherApp::new());
+    // weather_app.set_state(false, false);
+    let mut console = Box::new(Console::new((5,5), (20,10)));
+    console.set_state(true, true);
 
     //let mut app_list: Box<dyn AppMacro> = Vec::new();
 
@@ -125,23 +115,6 @@ fn main() -> Result<(), Error> {
     // virtual_frame_buffer
     //     .get_text_layer()
     //     .push_string(SPLASH, None, None, false);
-
-    virtual_frame_buffer.get_text_layer().get_char_map()[0] = Some('A');
-    virtual_frame_buffer.get_text_layer().get_char_map()[1] = Some('B');
-    virtual_frame_buffer.get_text_layer().get_char_map()[2] = Some('C');
-    virtual_frame_buffer.get_text_layer().get_char_map()[3] = Some('@');
-    virtual_frame_buffer.get_text_layer().get_char_map()[79] = Some('@');
-    virtual_frame_buffer.get_text_layer().get_char_map()[80] = Some('1');
-    virtual_frame_buffer.get_text_layer().get_char_map()[81] = Some('2');
-    virtual_frame_buffer.get_text_layer().get_char_map()[82] = Some('3');
-    virtual_frame_buffer.get_text_layer().get_char_map()[83] = Some('4');
-    virtual_frame_buffer.get_text_layer().get_char_map()[80*49] = Some('@');
-    virtual_frame_buffer.get_text_layer().get_char_map()[80*50-1] = Some('@');
-
-    virtual_frame_buffer.get_text_layer().get_color_map()[0] = None;
-    virtual_frame_buffer.get_text_layer().get_color_map()[1] = Some(0x00C9);
-    virtual_frame_buffer.get_text_layer().get_color_map()[2] = Some(0x020D);
-    virtual_frame_buffer.get_text_layer().get_color_map()[3] = Some(0x04B7);
 
     let mut keyboard_input: Option<KeyboardInput> = None;
     let mut char_received: Option<char> = None;
@@ -196,9 +169,10 @@ fn main() -> Result<(), Error> {
             },
             Event::MainEventsCleared => {
                 //Updating apps
-                let process_response = shell.update(keyboard_input, char_received);
-                //let process_response = lines.update(keyboard_input, char_received);
-                //let process_response = squares.update(keyboard_input, char_received);
+                let process_response = console.update(keyboard_input, char_received);
+                //let process_response = shell.update(keyboard_input, char_received);
+                let process_response = lines.update(keyboard_input, char_received);
+                // let process_response = squares.update(keyboard_input, char_received);
                 //let process_response = text_edit.update(keyboard_input, char_received);
                 //let process_response = sprite_edit.update(keyboard_input, char_received);
 
@@ -221,9 +195,10 @@ fn main() -> Result<(), Error> {
                 }
 
                 //Draw app
-                shell.draw(&mut virtual_frame_buffer);
-                //lines.draw(&mut virtual_frame_buffer);
-                //squares.draw(&mut virtual_frame_buffer);
+                console.draw(&mut virtual_frame_buffer);
+                //shell.draw(&mut virtual_frame_buffer);
+                lines.draw(&mut virtual_frame_buffer);
+                // squares.draw(&mut virtual_frame_buffer);
                 //text_edit.draw(&mut virtual_frame_buffer);
                 //sprite_edit.draw(&mut virtual_frame_buffer);
                 //draw_loading_border(&mut virtual_frame_buffer, 40, 40); 

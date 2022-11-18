@@ -1,11 +1,7 @@
+use crate::config;
 
-//1080p
-// const TEXT_COLUMNS: usize = 40;
-// const TEXT_ROWS: usize = 30;
-
-//4K
-const TEXT_COLUMNS: usize = 80;
-const TEXT_ROWS: usize = 50;
+const TEXT_COLUMNS: usize = config::TEXT_COLUMNS;
+const TEXT_ROWS: usize = config::TEXT_ROWS;
 
 const DEFAULT_COLOR: u8 = 7;
 const DEFAULT_BKG_COLOR: u8 = 0;
@@ -36,11 +32,11 @@ impl TextLayer {
         }
     }
 
-    pub fn get_size(&self) -> (usize, usize) {
+    pub fn get_dimensions(&self) -> (usize, usize) {
         return (TEXT_COLUMNS, TEXT_ROWS);
     }
 
-    pub fn get_length(&self) -> usize {
+    pub fn get_size(&self) -> usize {
         return TEXT_COLUMNS * TEXT_ROWS;
     }
 
@@ -66,5 +62,40 @@ impl TextLayer {
 
     pub fn get_default_bkg_color(&self) -> u8 {
         self.default_bkg_color
+    }
+
+    pub fn coord_to_vec_index(&self, x: usize, y: usize) -> usize {
+        (y * TEXT_COLUMNS + x) % (TEXT_COLUMNS * TEXT_ROWS)
+    }
+
+    pub fn insert_char_coord(&mut self, x: usize, y: usize, char: char, color: Option<u16>) {
+        let index = self.coord_to_vec_index(x, y);
+        self.char_map[index] = Some(char);
+
+        match color {
+            Some(_c) => self.color_map[index] = color,
+            None => ()
+        }
+    }
+
+    pub fn insert_char(&mut self, index: usize, char: char, color: Option<u16>) {
+        
+        self.char_map[index] = Some(char);
+
+        match color {
+            Some(_c) => self.color_map[index] = color,
+            None => ()
+        }
+    }
+
+    pub fn insert_string_coord(&mut self, x: usize, y: usize, string: &str, color: Option<u16>) {
+
+        let index = self.coord_to_vec_index(x, y);
+        let mut offset = 0;
+
+        for c in string.chars() {
+            self.insert_char(index + offset, c, color);
+            offset = offset + 1;
+        } 
     }
 }

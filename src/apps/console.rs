@@ -1,4 +1,10 @@
+use crate::text_layer::TextLayer;
 use crate::unicode;
+use crate::virtual_frame_buffer::VirtualFrameBuffer;
+use app_macro::*;
+use app_macro_derive::AppMacro;
+use winit::event::KeyboardInput;
+use winit::{event::VirtualKeyCode, event_loop::ControlFlow};
 
 const TEXT_COLUMNS: usize = 40;
 const TEXT_ROWS: usize = 30;
@@ -16,10 +22,15 @@ pub struct ConsoleChar {
     pub blink: bool,
 }
 
-/// The text layer buffer
+#[derive(AppMacro)]
 pub struct Console {
-    origin: (u8, u8),
-    size: (u8, u8),
+    name: String,
+    updating: bool,
+    drawing: bool,
+    started: bool,
+    ended: bool,
+    position: (usize, usize),
+    size: (usize, usize),
     color: u8,
     bkg_color: u8,
     cursor: ConsoleChar,
@@ -29,19 +40,24 @@ pub struct Console {
 }
 
 impl Console {
-    pub fn new(origin: (u8, u8), size: (u8, u8)) -> Console {
+    pub fn new(position: (usize, usize), size: (usize, usize)) -> Console {
         let mut buffer: Vec<Option<ConsoleChar>> = Vec::new();
         
         Console {
-            origin,
+            name: String::from("Console"),
+            updating: false,
+            drawing: false,
+            started: false,
+            ended: false,
+            position,
             size,
             color: DEFAULT_COLOR,
             bkg_color: DEFAULT_BKG_COLOR,
             cursor: ConsoleChar {
-                    unicode: DEFAULT_CURSOR,
-                    color: DEFAULT_COLOR,
-                    background_color: DEFAULT_BKG_COLOR,
-                    flipp: false,
+            unicode: DEFAULT_CURSOR,
+            color: DEFAULT_COLOR,
+            background_color: DEFAULT_BKG_COLOR,
+            flipp: false,
                     blink: true
             },
             cursor_position: 0,
@@ -50,7 +66,7 @@ impl Console {
         }
     }
 
-    pub fn get_size(&self) -> (u8, u8) {
+    pub fn get_size(&self) -> (usize, usize) {
         return self.size;
     }
 
@@ -72,13 +88,8 @@ impl Console {
 
     /// Pushes a character struct to the console
     pub fn push_character(&mut self, text_layer_char: Option<ConsoleChar>) {
-        if self.show_cursor {
-            self.characters.pop();
-        }
-
-        if self.characters.len() >= TEXT_COLUMNS * TEXT_ROWS {
-            self.scroll_up();
-        }
+        
+        self.characters.pop();
 
         match text_layer_char {
             Some(c) => {
@@ -209,5 +220,51 @@ impl Console {
         for _i in 0..TEXT_COLUMNS {
             self.pop_char();
         }
+    }
+
+    pub fn update(
+        &mut self,
+        keybord_input: Option<KeyboardInput>,
+        char_received: Option<char>,
+    ) -> AppResponse {
+        let mut response = AppResponse::new();
+
+        if !self.started {
+            self.start();
+        }
+
+        match char_received {
+            Some(unicode) => {
+                match unicode {
+                    unicode::ESCAPE => {
+                        response.event = Some(ControlFlow::Exit);
+                        response.set_message(String::from(
+                            "Command 'quit' or 'exit' received; stopping",
+                        ));
+                        println!("Command 'quit' or 'exit' received; stopping");
+                        return response;
+                    }
+
+                    _ => ()
+                }
+            }
+            None => (),
+        }
+
+        return response
+    }
+
+    pub fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+
+        //Draw title bar
+        for i in self.position.0..self.position.0 + self.size.0 {
+            virtual_frame_buffer.get_text_layer().insert_char_coord(i, self.position.1, ' ', Some(0x00 + i as u16));
+        }
+
+        virtual_frame_buffer.get_text_layer().insert_string_coord(self.position.0, self.position.1, "- Console -", None);
+
+        //Fill square of console size with default background color
+
+        //Display text from Vector
     }
 }
