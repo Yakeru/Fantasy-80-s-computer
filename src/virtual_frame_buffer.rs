@@ -15,8 +15,8 @@ const VIRTUAL_HEIGHT: usize = config::VIRTUAL_HEIGHT;
 const H_UPSCALE: usize = 6;
 const V_UPSCALE: usize = 6;
 
-const SCAN_LINE_STRENGTH: u8 = 100;
-const SUB_PIXEL_ATTENUATION: u8 = 200;
+const SCAN_LINE_STRENGTH: u8 = 254;
+const SUB_PIXEL_ATTENUATION: u8 = 254;
 
 const SUB_PIXEL_COUNT: usize = 4;
 const RENDERED_LINE_LENGTH: usize = WIDTH * SUB_PIXEL_COUNT;
