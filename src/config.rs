@@ -11,8 +11,8 @@ pub const HEIGHT: usize = 960;
 pub const UPSCALE: usize = 3;
 pub const SCAN_LINE_STRENGTH: u8 = 100;
 
-//
+//Global, no need to change
 pub const VIRTUAL_WIDTH: usize = 426;
 pub const VIRTUAL_HEIGHT: usize = 320;
-pub const TEXT_COLUMNS: usize = 40;
-pub const TEXT_ROWS: usize = 25;
+pub const TEXT_COLUMNS: usize = 46;
+pub const TEXT_ROWS: usize = 34;

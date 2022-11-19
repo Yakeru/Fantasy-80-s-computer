@@ -257,8 +257,8 @@ impl VirtualFrameBuffer {
 
     fn text_layer_renderer(&mut self) {
 
-        let horizontal_border: usize = (VIRTUAL_HEIGHT - self.text_layer.get_dimensions().1 * 8) / 2;
-        let vertical_border: usize = (VIRTUAL_WIDTH - self.text_layer.get_dimensions().0 * 8) / 2;
+        let horizontal_border: usize = (VIRTUAL_WIDTH - self.text_layer.get_dimensions().0 * 8) / 2;
+        let vertical_border: usize = (VIRTUAL_HEIGHT - self.text_layer.get_dimensions().1 * 8) / 2;
         let mut x_pos = horizontal_border;
         let mut y_pos = vertical_border;
         let mut text_row_count = 0;
@@ -280,11 +280,11 @@ impl VirtualFrameBuffer {
 
                     match text_layer_color {
                         Some(color) => {
-                            char_color = ((color & 0x00F0) >> 4) as u8;
-                            bck_color = (color & 0x000F) as u8;
-                            swap = color & 0x0100 != 0;
-                            blink = color & 0x0200 != 0;
-                            shadowed = color & 0x0400 != 0;
+                            char_color = ((color & 0x03E0) >> 5) as u8;
+                            bck_color = (color & 0x001F) as u8;
+                            swap = color & 0x0400 != 0;
+                            blink = color & 0x0800 != 0;
+                            shadowed = color & 0x1000 != 0;
                         }
 
                         None => ()
@@ -399,7 +399,6 @@ impl CrtEffectRenderer {
         virtual_frame_buffer: &VirtualFrameBuffer,
         output_frame: &mut [u8],
     ) {
-        let now = Instant::now();
 
         if UPSCALE == 6 {
 
@@ -516,17 +515,17 @@ impl CrtEffectRenderer {
 
                     //--------------------------------------------------------------------------------------
 
-                    rendered_ramp_line[r1_index] = r1/2;
+                    rendered_ramp_line[r1_index] = r1 >> 1;
                     rendered_ramp_line[ar1_index] = u8::MAX;
-                    rendered_ramp_line[g1_index] = g1/2;
+                    rendered_ramp_line[g1_index] = g1 >> 1;
                     rendered_ramp_line[ag1_index] = u8::MAX;
-                    rendered_ramp_line[b1_index] = b1/2;
+                    rendered_ramp_line[b1_index] = b1 >> 1;
                     rendered_ramp_line[ab1_index] = u8::MAX;
-                    rendered_ramp_line[r2_index] = r2/2;
+                    rendered_ramp_line[r2_index] = r2 >> 1;
                     rendered_ramp_line[ar2_index] = u8::MAX;
-                    rendered_ramp_line[g2_index] = g2/2;
+                    rendered_ramp_line[g2_index] = g2 >> 1;
                     rendered_ramp_line[ag2_index] = u8::MAX;
-                    rendered_ramp_line[b2_index] = b2/2;
+                    rendered_ramp_line[b2_index] = b2 >> 1;
                     rendered_ramp_line[ab2_index] = u8::MAX;   
 
                     //--------------------------------------------------------------------------------------
@@ -619,7 +618,5 @@ impl CrtEffectRenderer {
                 line_count += 1;
             }
         }
-
-        println!("crt: {} micros", now.elapsed().as_micros());
     }
 }

@@ -1,5 +1,6 @@
 use crate::virtual_frame_buffer::{CrtEffectRenderer, VirtualFrameBuffer};
 use app_macro::*;
+use characters_rom::CHARS;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
 use std::time::Instant;
@@ -80,6 +81,21 @@ fn main() -> Result<(), Error> {
     //The upscaled and "crt'ed" image is then pushed into pixel's frame for final render.
     let crt_renderer: CrtEffectRenderer = CrtEffectRenderer::new();
 
+    //Fill text layer with garbage just for fun
+    let mut random = rand::thread_rng();
+    let color_map = virtual_frame_buffer.get_text_layer().get_color_map();
+    for index in 0..color_map.len() {
+        let toto:u16 = random.gen_range(0..u16::MAX);
+        color_map[index] = Some(toto);
+    }
+
+    let char_map = virtual_frame_buffer.get_text_layer().get_char_map();
+    for index in 0..char_map.len() {
+        let toto:usize = random.gen_range(0..CHARS.len());
+        char_map[index] = Some(CHARS[toto]);
+    }
+
+
     //Init Shell
     //The Shell is the command line interpreter.
     //It is launched at startup, the winit event loop will update and render the shell by default if
@@ -156,48 +172,48 @@ fn main() -> Result<(), Error> {
                 },
                 DeviceEvent::Key(k) => {
                     keyboard_input = Some(k);
-                    let toto = k.scancode;
-                    let titi = k.state;
-                    let tutu = k.virtual_keycode.unwrap();
+                    let scan_code = k.scancode;
+                    let state = k.state;
+                    let key_code = k.virtual_keycode.unwrap();
 
                     println!(
                         "Scan: {}, state: {:?}, virt. key code: {:?}",
-                        toto, titi, tutu
+                        scan_code, state, key_code
                     );
                 }
                 _ => (),
             },
             Event::MainEventsCleared => {
                 //Updating apps
-                let process_response = console.update(keyboard_input, char_received);
+                //let process_response = console.update(keyboard_input, char_received);
                 // let process_response = shell.update(keyboard_input, char_received);
-                let process_response = lines.update(keyboard_input, char_received);
+                //let process_response = lines.update(keyboard_input, char_received);
                 // let process_response = squares.update(keyboard_input, char_received);
                 // let process_response = text_edit.update(keyboard_input, char_received);
-                // let process_response = sprite_edit.update(keyboard_input, char_received);
+                // let process_response = sprite_edit.update(keyboard_input, char_received);  
 
                 //Process app response
-                match process_response.event {
-                    Some(event) => *control_flow = event,
-                    None => (),
-                }
+                // match process_response.event {
+                //     Some(event) => *control_flow = event,
+                //     None => (),
+                // }
 
-                match process_response.message {
-                    Some(message) => {
-                        // virtual_frame_buffer
-                        //     .get_text_layer()
-                        //     .push_char('\u{000D}', None, None, false);
-                        // virtual_frame_buffer
-                        //     .get_text_layer()
-                        //     .push_string(&message, None, None, false);
-                    }
-                    None => (),
-                }
+                // match process_response.message {
+                //     Some(message) => {
+                //         // virtual_frame_buffer
+                //         //     .get_text_layer()
+                //         //     .push_char('\u{000D}', None, None, false);
+                //         // virtual_frame_buffer
+                //         //     .get_text_layer()
+                //         //     .push_string(&message, None, None, false);
+                //     }
+                //     None => (),
+                // }
 
                 //Draw app
-                console.draw(&mut virtual_frame_buffer);
+                //console.draw(&mut virtual_frame_buffer);
                 // shell.draw(&mut virtual_frame_buffer);
-                lines.draw(&mut virtual_frame_buffer);
+                //lines.draw(&mut virtual_frame_buffer);
                 // squares.draw(&mut virtual_frame_buffer);
                 // text_edit.draw(&mut virtual_frame_buffer);
                 // sprite_edit.draw(&mut virtual_frame_buffer);
@@ -208,7 +224,7 @@ fn main() -> Result<(), Error> {
                     now = Instant::now();
                     //let render_time = Instant::now();
                     virtual_frame_buffer.render();
-                    crt_renderer.render(&virtual_frame_buffer, pixels.get_frame());
+                    crt_renderer.render(&mut virtual_frame_buffer, pixels.get_frame());
                     pixels.render().expect("Pixels render oups");
                     //println!("drawing: {} micros", render_time.elapsed().as_micros());
                 }

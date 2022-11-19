@@ -6,20 +6,30 @@ const TEXT_ROWS: usize = config::TEXT_ROWS;
 const DEFAULT_COLOR: u8 = 7;
 const DEFAULT_BKG_COLOR: u8 = 0;
 
-// u32 color_map structure :
-// 0000 0000 0000 0000
-//       |||   |   |___ 4 bit background color index
-//       |||   |__ 4 bit char color index
-//       |||__ swap colors flag
-//       ||__ blink flag
-//       |__ shadowed (draws a black checkered pattern on top)
+// u16 color_map structure :
+// 0000 00|00 000|0 0000
+//    | ||    |     |___ 5 bit background color index
+//    | ||    |__ 5 bit char color index
+//    | ||__ swap colors flag
+//    | |__ blink flag
+//    |__ shadowed (draws a black checkered pattern on top)
+
+#[derive(Copy, Clone)]
+pub struct TextLayerChar {
+    pub unicode: char,
+    pub color: u8,
+    pub background_color: u8,
+    pub flipp: bool,
+    pub blink: bool,
+    pub shadowed: bool,
+}
 
 /// The text layer buffer
 pub struct TextLayer {
     default_color: u8,
     default_bkg_color: u8,
     color_map: [Option<u16>; TEXT_COLUMNS * TEXT_ROWS],
-    char_map: [Option<char>; TEXT_COLUMNS * TEXT_ROWS],
+    char_map: [Option<char>; TEXT_COLUMNS * TEXT_ROWS]
 }
 
 impl TextLayer {
