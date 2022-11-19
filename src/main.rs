@@ -169,7 +169,7 @@ fn main() -> Result<(), Error> {
                     keyboard_input = Some(k);
                     let scan_code = k.scancode;
                     let state = k.state;
-                    let key_code = k.virtual_keycode.unwrap();
+                    let key_code = k.virtual_keycode.unwrap_or(VirtualKeyCode::NoConvert);
 
                     println!(
                         "Scan: {}, state: {:?}, virt. key code: {:?}",
