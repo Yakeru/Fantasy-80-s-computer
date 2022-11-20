@@ -258,10 +258,10 @@ impl Console {
 
         //Draw title bar
         for i in self.position.0..self.position.0 + self.size.0 {
-            virtual_frame_buffer.get_text_layer().insert_char_coord(i, self.position.1, ' ', Some(0x00 + i as u16));
+            virtual_frame_buffer.get_text_layer().insert_char_coord(i, self.position.1, ' ', Some(0x00 + i as u16), None);
         }
 
-        virtual_frame_buffer.get_text_layer().insert_string_coord(self.position.0, self.position.1, "- Console -", None);
+        virtual_frame_buffer.get_text_layer().insert_string_coord(self.position.0, self.position.1, "- Console -", None, None);
 
         //Fill square of console size with default background color
 

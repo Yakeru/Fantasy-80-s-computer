@@ -1,11 +1,11 @@
-use crate::{characters_rom::rom};
+use crate::characters_rom::rom;
 use crate::color_palettes::*;
+use crate::config;
 use crate::sprite::Sprite;
 use crate::text_layer::TextLayer;
 use rand::Rng;
 use std::time::{Duration, Instant};
 use winit::dpi::PhysicalSize;
-use crate::config;
 
 const WIDTH: usize = config::WIDTH;
 const HEIGHT: usize = config::HEIGHT;
@@ -22,7 +22,7 @@ const RENDERED_LINE_LENGTH: usize = WIDTH * SUB_PIXEL_COUNT;
 /// This frame buffer is meant to contain a low resolution low color picure that
 /// will be upscaled into the final pixel 2D frame buffer.
 pub struct VirtualFrameBuffer {
-    frame_time_ms: u64,
+    frame_time_ms: u128,
     frame: Box<[u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]>,
     color_palette: ColorPalette,
     line_scroll_list: [i8; VIRTUAL_HEIGHT],
@@ -55,8 +55,9 @@ pub struct Line {
 }
 
 impl VirtualFrameBuffer {
-    pub fn new(frame_time_ms: u64) -> VirtualFrameBuffer {
-        let virtual_frame_buffer: Box<[u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]> = Box::new([0; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]);
+    pub fn new(frame_time_ms: u128) -> VirtualFrameBuffer {
+        let virtual_frame_buffer: Box<[u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]> =
+            Box::new([0; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]);
         let text_layer: TextLayer = TextLayer::new();
         let sprites: Vec<Sprite> = Vec::new();
 
@@ -229,7 +230,6 @@ impl VirtualFrameBuffer {
     /// Gets all the sprites listed in the sprite vector and renders them at the right place in the
     /// the virtual frame buffer
     fn sprite_layer_renderer(&mut self) {
-
         for sprite in self.sprites.chunks_exact_mut(1) {
             let mut pixel_count = 0;
             let mut sprite_line_count = 0;
@@ -256,7 +256,6 @@ impl VirtualFrameBuffer {
     }
 
     fn text_layer_renderer(&mut self) {
-
         let horizontal_border: usize = (VIRTUAL_WIDTH - self.text_layer.get_dimensions().0 * 8) / 2;
         let vertical_border: usize = (VIRTUAL_HEIGHT - self.text_layer.get_dimensions().1 * 8) / 2;
         let mut x_pos = horizontal_border;
@@ -265,13 +264,12 @@ impl VirtualFrameBuffer {
         let mut text_col_count = 0;
 
         for char_counter in 0..self.text_layer.get_size() {
-
             let text_layer_char = self.text_layer.get_char_map()[char_counter];
             let text_layer_color = self.text_layer.get_color_map()[char_counter];
+            let text_layer_effect = self.text_layer.get_effect_map()[char_counter];
 
             match text_layer_char {
                 Some(char) => {
-
                     let mut char_color = self.text_layer.get_default_color();
                     let mut bck_color = self.text_layer.get_default_bkg_color();
                     let mut blink = false;
@@ -280,14 +278,21 @@ impl VirtualFrameBuffer {
 
                     match text_layer_color {
                         Some(color) => {
-                            char_color = ((color & 0x03E0) >> 5) as u8;
-                            bck_color = (color & 0x001F) as u8;
-                            swap = color & 0x0400 != 0;
-                            blink = color & 0x0800 != 0;
-                            shadowed = color & 0x1000 != 0;
+                            char_color = ((color & 0xFF00) >> 8) as u8;
+                            bck_color = (color & 0x00FF) as u8;
                         }
 
-                        None => ()
+                        None => (),
+                    }
+
+                    match text_layer_effect {
+                        Some(effect) => {
+                            swap = effect & 0x01 != 0;
+                            blink = effect & 0x02 != 0;
+                            shadowed = effect & 0x04 != 0;
+                        }
+
+                        None => (),
                     }
 
                     //Blink
@@ -296,16 +301,8 @@ impl VirtualFrameBuffer {
                     }
 
                     //set color, swap or not
-                    let text_color = if swap {
-                        bck_color
-                    } else {
-                        char_color
-                    };
-                    let text_bkg_color = if swap {
-                        char_color
-                    } else {
-                        bck_color
-                    };
+                    let text_color = if swap { bck_color } else { char_color };
+                    let text_bkg_color = if swap { char_color } else { bck_color };
 
                     //Get char picture from  "character rom"
                     let pic = rom(&char);
@@ -316,18 +313,21 @@ impl VirtualFrameBuffer {
                         let mut mask: u8 = 128;
 
                         for col_count in 0..8 {
-                            let virtual_frame_buffer_pos = x_pos
-                                + col_count
-                                + (y_pos + row_count) * VIRTUAL_WIDTH;
+                            let virtual_frame_buffer_pos =
+                                x_pos + col_count + (y_pos + row_count) * VIRTUAL_WIDTH;
 
                             if shadowed {
-                                let shadow_mask:u8 = if row_count % 2 == 0 {0b10101010} else {0b01010101};
+                                let shadow_mask: u8 = if row_count % 2 == 0 {
+                                    0b10101010
+                                } else {
+                                    0b01010101
+                                };
                                 match shadow_mask & mask {
                                     0 => self.frame[virtual_frame_buffer_pos] = 0,
                                     _ => match row & mask {
                                         0 => self.frame[virtual_frame_buffer_pos] = text_bkg_color,
                                         _ => self.frame[virtual_frame_buffer_pos] = text_color,
-                                    }
+                                    },
                                 }
                             } else {
                                 match row & mask {
@@ -341,7 +341,7 @@ impl VirtualFrameBuffer {
                     }
                 }
 
-                None => ()
+                None => (),
             }
 
             //Move to next character coordinates
@@ -385,24 +385,27 @@ impl VirtualFrameBuffer {
 
 pub struct CrtEffectRenderer {
     scan_line_strength: u8,
+    brightness: u8,
 }
 
 impl CrtEffectRenderer {
     pub fn new() -> CrtEffectRenderer {
         CrtEffectRenderer {
             scan_line_strength: SCAN_LINE_STRENGTH,
+            brightness: u8::MAX,
         }
     }
 
-    pub fn render(
-        &self,
-        virtual_frame_buffer: &VirtualFrameBuffer,
-        output_frame: &mut [u8],
-    ) {
+    pub fn set_brightness(&mut self, br: u8) {
+        self.brightness = br;
+    }
+
+    pub fn render(&self, virtual_frame_buffer: &VirtualFrameBuffer, output_frame: &mut [u8]) {
+        //list of values to draw rounded corners (nb of pixels to turn of per line in corner)
+        let circle_list: [usize; 17] = [17, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 3, 2, 2, 1, 1, 1];
 
         if UPSCALE == 6 {
-
-            //let rendered_scanline: [u8; RENDERED_LINE_LENGTH] = [0; RENDERED_LINE_LENGTH];
+            let mut rendered_scanline: [u8; RENDERED_LINE_LENGTH] = [0; RENDERED_LINE_LENGTH];
             let mut rendered_line: [u8; RENDERED_LINE_LENGTH] = [0; RENDERED_LINE_LENGTH];
             let mut rendered_ramp_line: [u8; RENDERED_LINE_LENGTH] = [0; RENDERED_LINE_LENGTH];
 
@@ -412,74 +415,79 @@ impl CrtEffectRenderer {
                 .get_frame_static()
                 .chunks_exact(VIRTUAL_WIDTH)
             {
-                let mut rgb_before: (u8, u8, u8) = (0,0,0);
+                let mut rgb_before: (u8, u8, u8) = (0, 0, 0);
 
                 for pixel_index in 0..VIRTUAL_WIDTH {
 
-                    let rgb: (u8, u8, u8) = virtual_frame_buffer
-                        .color_palette
-                        .get_rgb_from_index(virt_line[pixel_index]);
-
-                    let rgb_after = if pixel_index < VIRTUAL_WIDTH - 1 {
-                        virtual_frame_buffer
-                        .color_palette
-                        .get_rgb_from_index(virt_line[pixel_index + 1])
+                    let rgb: (u8, u8, u8) = if line_count < circle_list.len()
+                        && pixel_index < circle_list[line_count]
+                    {
+                        (0, 0, 0)
                     } else {
-                        (0,0,0)
+                        virtual_frame_buffer
+                            .color_palette
+                            .get_rgb_from_index(virt_line[pixel_index])
                     };
 
-                    let scanline_alpha = u8::MAX - SCAN_LINE_STRENGTH;
+                    let rgb_after = if (pixel_index < VIRTUAL_WIDTH - 1) && !(line_count < circle_list.len()
+                    && pixel_index + 1 < circle_list[line_count]) {
+                        virtual_frame_buffer
+                            .color_palette
+                            .get_rgb_from_index(virt_line[pixel_index + 1])
+                    } else {
+                        (0, 0, 0)
+                    };
+
+                    let scanline_alpha =
+                        self.brightness.checked_sub(SCAN_LINE_STRENGTH).unwrap_or(0);
 
                     let r1 = if rgb.0 > rgb_before.0 {
-                            rgb.0 - ((rgb.0 - rgb_before.0)/5)
-                        } 
-                        else if rgb.0 < rgb_before.0 {
-                            rgb.0 + ((rgb_before.0 - rgb.0)/5)
-                        } else {
-                            rgb.0
-                        };
+                        rgb.0 - ((rgb.0 - rgb_before.0) / 5)
+                    } else if rgb.0 < rgb_before.0 {
+                        rgb.0 + ((rgb_before.0 - rgb.0) / 5)
+                    } else {
+                        rgb.0
+                    };
 
                     let g1 = if rgb.1 > rgb_before.1 {
-                            rgb.1 - ((rgb.1 - rgb_before.1)/5)
-                        } 
-                        else if rgb.1 < rgb_before.1 {
-                            rgb.1 + ((rgb_before.1 - rgb.1)/5)
-                        } else {
-                            rgb.1
-                        };
+                        rgb.1 - ((rgb.1 - rgb_before.1) / 5)
+                    } else if rgb.1 < rgb_before.1 {
+                        rgb.1 + ((rgb_before.1 - rgb.1) / 5)
+                    } else {
+                        rgb.1
+                    };
 
                     let b1 = if rgb.2 > rgb_before.2 {
-                            rgb.2 - ((rgb.2 - rgb_before.2)/5)
-                        } 
-                        else if rgb.2 < rgb_before.2 {
-                            rgb.2 + ((rgb_before.2 - rgb.2)/5)
-                        } else {
-                            rgb.2
-                        };
+                        rgb.2 - ((rgb.2 - rgb_before.2) / 5)
+                    } else if rgb.2 < rgb_before.2 {
+                        rgb.2 + ((rgb_before.2 - rgb.2) / 5)
+                    } else {
+                        rgb.2
+                    };
 
                     let r2 = if rgb.0 > rgb_after.0 {
-                            rgb.0 - ((rgb.0 - rgb_after.0)/5)
-                        } else if rgb.0 < rgb_after.0 {
-                            rgb.0 + ((rgb_after.0 - rgb.0)/5)
-                        } else {
-                            rgb.0
-                        };
+                        rgb.0 - ((rgb.0 - rgb_after.0) / 5)
+                    } else if rgb.0 < rgb_after.0 {
+                        rgb.0 + ((rgb_after.0 - rgb.0) / 5)
+                    } else {
+                        rgb.0
+                    };
 
                     let g2 = if rgb.1 > rgb_after.1 {
-                            rgb.1 - ((rgb.1 - rgb_after.1)/5)
-                        } else if rgb.1 < rgb_after.1 {
-                            rgb.1 + ((rgb_after.1 - rgb.1)/5)
-                        } else {
-                            rgb.1
-                        };
+                        rgb.1 - ((rgb.1 - rgb_after.1) / 5)
+                    } else if rgb.1 < rgb_after.1 {
+                        rgb.1 + ((rgb_after.1 - rgb.1) / 5)
+                    } else {
+                        rgb.1
+                    };
 
                     let b2 = if rgb.2 > rgb_after.2 {
-                            rgb.2 - ((rgb.2 - rgb_after.2)/5)
-                        } else if rgb.2 < rgb_after.2 {
-                            rgb.2 + ((rgb_after.2 - rgb.2)/5)
-                        } else {
-                            rgb.2
-                        };
+                        rgb.2 - ((rgb.2 - rgb_after.2) / 5)
+                    } else if rgb.2 < rgb_after.2 {
+                        rgb.2 + ((rgb_after.2 - rgb.2) / 5)
+                    } else {
+                        rgb.2
+                    };
 
                     let r1_index = 0 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
                     let ar1_index = 3 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
@@ -499,56 +507,55 @@ impl CrtEffectRenderer {
                     let b2_index = 22 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
                     let ab2_index = 23 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
 
-                        
-                    // rendered_scanline[r1_index] = r1/2;
-                    // rendered_scanline[ar1_index] = scanline_alpha;
-                    // rendered_scanline[g1_index] = g1/2;
-                    // rendered_scanline[ag1_index] = scanline_alpha;
-                    // rendered_scanline[b1_index] = b1/2;
-                    // rendered_scanline[ab1_index] = scanline_alpha;
-                    // rendered_scanline[r2_index] = r2/2;
-                    // rendered_scanline[ar2_index] = scanline_alpha;
-                    // rendered_scanline[g2_index] = g2/2;
-                    // rendered_scanline[ag2_index] = scanline_alpha;
-                    // rendered_scanline[b2_index] = b2/2;
-                    // rendered_scanline[ab2_index] = scanline_alpha;
+                    rendered_scanline[r1_index] = r1 >> 1;
+                    rendered_scanline[ar1_index] = scanline_alpha;
+                    rendered_scanline[g1_index] = g1 >> 1;
+                    rendered_scanline[ag1_index] = scanline_alpha;
+                    rendered_scanline[b1_index] = b1 >> 1;
+                    rendered_scanline[ab1_index] = scanline_alpha;
+                    rendered_scanline[r2_index] = r2 >> 1;
+                    rendered_scanline[ar2_index] = scanline_alpha;
+                    rendered_scanline[g2_index] = g2 >> 1;
+                    rendered_scanline[ag2_index] = scanline_alpha;
+                    rendered_scanline[b2_index] = b2 >> 1;
+                    rendered_scanline[ab2_index] = scanline_alpha;
 
                     //--------------------------------------------------------------------------------------
 
                     rendered_ramp_line[r1_index] = r1 >> 1;
-                    rendered_ramp_line[ar1_index] = u8::MAX;
+                    rendered_ramp_line[ar1_index] = self.brightness;
                     rendered_ramp_line[g1_index] = g1 >> 1;
-                    rendered_ramp_line[ag1_index] = u8::MAX;
+                    rendered_ramp_line[ag1_index] = self.brightness;
                     rendered_ramp_line[b1_index] = b1 >> 1;
-                    rendered_ramp_line[ab1_index] = u8::MAX;
+                    rendered_ramp_line[ab1_index] = self.brightness;
                     rendered_ramp_line[r2_index] = r2 >> 1;
-                    rendered_ramp_line[ar2_index] = u8::MAX;
+                    rendered_ramp_line[ar2_index] = self.brightness;
                     rendered_ramp_line[g2_index] = g2 >> 1;
-                    rendered_ramp_line[ag2_index] = u8::MAX;
+                    rendered_ramp_line[ag2_index] = self.brightness;
                     rendered_ramp_line[b2_index] = b2 >> 1;
-                    rendered_ramp_line[ab2_index] = u8::MAX;   
+                    rendered_ramp_line[ab2_index] = self.brightness;
 
                     //--------------------------------------------------------------------------------------
 
                     rendered_line[r1_index] = r1;
-                    rendered_line[ar1_index] = u8::MAX;
+                    rendered_line[ar1_index] = self.brightness;
                     rendered_line[g1_index] = g1;
-                    rendered_line[ag1_index] = u8::MAX;
+                    rendered_line[ag1_index] = self.brightness;
                     rendered_line[b1_index] = b1;
-                    rendered_line[ab1_index] = u8::MAX;
+                    rendered_line[ab1_index] = self.brightness;
                     rendered_line[r2_index] = r2;
-                    rendered_line[ar2_index] = u8::MAX;
+                    rendered_line[ar2_index] = self.brightness;
                     rendered_line[g2_index] = g2;
-                    rendered_line[ag2_index] = u8::MAX;
+                    rendered_line[ag2_index] = self.brightness;
                     rendered_line[b2_index] = b2;
-                    rendered_line[ab2_index] = u8::MAX;
+                    rendered_line[ab2_index] = self.brightness;
 
                     rgb_before = rgb;
                 }
 
                 let start = line_count * UPSCALE * RENDERED_LINE_LENGTH;
-                // output_frame[start..start + RENDERED_LINE_LENGTH]
-                //     .copy_from_slice(&rendered_scanline);
+                output_frame[start..start + RENDERED_LINE_LENGTH]
+                    .copy_from_slice(&rendered_scanline);
                 output_frame[start + RENDERED_LINE_LENGTH..start + 2 * RENDERED_LINE_LENGTH]
                     .copy_from_slice(&rendered_ramp_line);
                 output_frame[start + 2 * RENDERED_LINE_LENGTH..start + 3 * RENDERED_LINE_LENGTH]
@@ -557,13 +564,12 @@ impl CrtEffectRenderer {
                     .copy_from_slice(&rendered_line);
                 output_frame[start + 4 * RENDERED_LINE_LENGTH..start + 5 * RENDERED_LINE_LENGTH]
                     .copy_from_slice(&rendered_ramp_line);
-                // output_frame[start + 5 * RENDERED_LINE_LENGTH..start + 6 * RENDERED_LINE_LENGTH]
-                //     .copy_from_slice(&rendered_scanline);
+                output_frame[start + 5 * RENDERED_LINE_LENGTH..start + 6 * RENDERED_LINE_LENGTH]
+                    .copy_from_slice(&rendered_scanline);
 
                 line_count += 1;
             }
         } else {
-
             let mut rendered_scanline: [u8; RENDERED_LINE_LENGTH] = [0; RENDERED_LINE_LENGTH];
             let mut rendered_line: [u8; RENDERED_LINE_LENGTH] = [0; RENDERED_LINE_LENGTH];
 
@@ -573,43 +579,53 @@ impl CrtEffectRenderer {
                 .get_frame_static()
                 .chunks_exact(VIRTUAL_WIDTH)
             {
+                //Check if we are inside rounded corner, if true set to black else get color
                 for pixel_index in 0..VIRTUAL_WIDTH {
 
-                    let rgb: (u8, u8, u8) = virtual_frame_buffer
-                        .color_palette
-                        .get_rgb_from_index(virt_line[pixel_index]);
+                    let rgb: (u8, u8, u8) = if line_count < circle_list.len()
+                        && pixel_index < circle_list[line_count]
+                    {
+                        (0, 0, 0)
+                    } else {
+                        virtual_frame_buffer
+                            .color_palette
+                            .get_rgb_from_index(virt_line[pixel_index])
+                    };
 
-                    let scanline_alpha = u8::MAX - SCAN_LINE_STRENGTH;
+                    let scanline_alpha =
+                        self.brightness.checked_sub(SCAN_LINE_STRENGTH).unwrap_or(0);
 
+                    let r = rgb.0;
                     let r_index = 0 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
                     let ar_index = 3 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
 
+                    let g = rgb.1;
                     let g_index = 5 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
                     let ag_index = 7 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
 
+                    let b = rgb.2;
                     let b_index = 10 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
                     let ab_index = 11 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
-                        
-                    rendered_scanline[r_index] = rgb.0;
+
+                    rendered_scanline[r_index] = r;
                     rendered_scanline[ar_index] = scanline_alpha;
-                    rendered_scanline[g_index] = rgb.1;
+                    rendered_scanline[g_index] = g;
                     rendered_scanline[ag_index] = scanline_alpha;
-                    rendered_scanline[b_index] = rgb.2;
+                    rendered_scanline[b_index] = b;
                     rendered_scanline[ab_index] = scanline_alpha;
 
                     //--------------------------------------------------------------------------------------
 
-                    rendered_line[r_index] = rgb.0;
-                    rendered_line[ar_index] = u8::MAX;
-                    rendered_line[g_index] = rgb.1;
-                    rendered_line[ag_index] = u8::MAX;
-                    rendered_line[b_index] = rgb.2;
-                    rendered_line[ab_index] = u8::MAX;
+                    rendered_line[r_index] = r;
+                    rendered_line[ar_index] = self.brightness;
+                    rendered_line[g_index] = g;
+                    rendered_line[ag_index] = self.brightness;
+                    rendered_line[b_index] = b;
+                    rendered_line[ab_index] = self.brightness;
                 }
 
                 let start = line_count * UPSCALE * RENDERED_LINE_LENGTH;
-                output_frame[start..start + RENDERED_LINE_LENGTH]
-                    .copy_from_slice(&rendered_line);
+                output_frame[start..start + RENDERED_LINE_LENGTH].copy_from_slice(&rendered_line);
                 output_frame[start + RENDERED_LINE_LENGTH..start + 2 * RENDERED_LINE_LENGTH]
                     .copy_from_slice(&rendered_line);
                 output_frame[start + 2 * RENDERED_LINE_LENGTH..start + 3 * RENDERED_LINE_LENGTH]

@@ -1,7 +1,7 @@
 use crate::virtual_frame_buffer::{CrtEffectRenderer, VirtualFrameBuffer};
 use app_macro::*;
 use characters_rom::CHARS;
-use pixels::{Error, PixelsBuilder, SurfaceTexture};
+use pixels::{Error, PixelsBuilder, SurfaceTexture, wgpu::FragmentState};
 use rand::Rng;
 use std::time::Instant;
 use winit::{
@@ -10,6 +10,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
+use chrono;
 
 mod config;
 mod unicode;
@@ -30,12 +31,26 @@ use crate::apps::text_edit::*;
 use crate::apps::weather_app::*;
 
 //Settings
-const FRAME_TIME_MS: u64 = 16; //ms per frame : 16 = 60fps, 32 = 30fps, 1000 = 1fps
+const FRAME_TIME_MS: u128 = 16; //ms per frame : 16 = 60fps, 32 = 30fps, 1000 = 1fps
+const FRAMES_PER_SEC: u128 = 60;
 const SPLASH: &str =
     " Fantasy CPC Microcomputer V(0.1)\u{000D}\u{000D} 2022 Damien Torreilles\u{000D}\u{000D}";
 
 ///*********************************************************THE MAIN
 fn main() -> Result<(), Error> {
+
+    //Boolean used to play boot animation once.
+    let mut booting = true;
+
+    //Time of boot
+    let boot_time = Instant::now();
+
+    //Fraae counter
+    let mut frame_counter:  u128 = 0;
+
+    //Instant used to time frame refresh
+    let mut now = Instant::now();
+
     //Custom intermediate frame buffer
     //Has 1/3 the horizontal resolution and 1/3 the vertical resoluton of pixels surface texture and winit window size.
     //The virtual frame buffer has a text layer, sprite lists, background layers and tiles layers that can be accessed
@@ -79,22 +94,7 @@ fn main() -> Result<(), Error> {
     //The crt renderer takes the virtual frame buffers's frame, upscales it 3 times in X and Y to matche the pixcel's frame and winow size,
     //then applyes an effect to evoke CRT sub-pixels and scanlines.
     //The upscaled and "crt'ed" image is then pushed into pixel's frame for final render.
-    let crt_renderer: CrtEffectRenderer = CrtEffectRenderer::new();
-
-    //Fill text layer with garbage just for fun
-    let mut random = rand::thread_rng();
-    let color_map = virtual_frame_buffer.get_text_layer().get_color_map();
-    for index in 0..color_map.len() {
-        let toto:u16 = random.gen_range(0..u16::MAX);
-        color_map[index] = Some(toto);
-    }
-
-    let char_map = virtual_frame_buffer.get_text_layer().get_char_map();
-    for index in 0..char_map.len() {
-        let toto:usize = random.gen_range(0..CHARS.len());
-        char_map[index] = Some(CHARS[toto]);
-    }
-
+    let mut crt_renderer: CrtEffectRenderer = CrtEffectRenderer::new();
 
     //Init Shell
     //The Shell is the command line interpreter.
@@ -135,7 +135,7 @@ fn main() -> Result<(), Error> {
     let mut keyboard_input: Option<KeyboardInput> = None;
     let mut char_received: Option<char> = None;
 
-    let mut now = Instant::now();
+    
 
     //The event loop here can be considered as a bios rom + terminal
     //it gathers all the keyborad inputs and sends them to the shell, the shell interprets them.
@@ -184,6 +184,13 @@ fn main() -> Result<(), Error> {
                 _ => (),
             },
             Event::MainEventsCleared => {
+                //BOOT, play boot animation once
+                if booting {
+                    booting = boot_animation(&mut virtual_frame_buffer, &mut crt_renderer, frame_counter);
+                }
+
+                
+
                 //Updating apps
                 //let process_response = console.update(keyboard_input, char_received);
                 // let process_response = shell.update(keyboard_input, char_received);
@@ -219,14 +226,15 @@ fn main() -> Result<(), Error> {
                 // sprite_edit.draw(&mut virtual_frame_buffer);
                 // draw_loading_border(&mut virtual_frame_buffer, 40, 40); 
 
-                //Render to frame buffer
-                if now.elapsed().as_micros() >= (FRAME_TIME_MS * 1000) as u128 {
+                //Render virtual frame buffer to pixels frame buffer with upscaling and CRT effect
+                if now.elapsed().as_micros() >= FRAME_TIME_MS * 1000 {
                     now = Instant::now();
                     //let render_time = Instant::now();
                     virtual_frame_buffer.render();
                     crt_renderer.render(&mut virtual_frame_buffer, pixels.get_frame());
                     pixels.render().expect("Pixels render oups");
-                    //println!("drawing: {} micros", render_time.elapsed().as_micros());
+                    //println!("drawing: {} micros", render_time.elapsed().as_secs());
+                    frame_counter = frame_counter + 1;
                 }
 
                 window.request_redraw();
@@ -236,18 +244,19 @@ fn main() -> Result<(), Error> {
                 keyboard_input = None;
                 mouse_move_delta.0 = 0.0;
                 mouse_move_delta.1 = 0.0;
+
+                if !booting { 
+                    booting = true;
+                    frame_counter = 0;
+                }
             }
             _ => (),
         }
     });
 }
 
-///Just for fun
-fn draw_loading_border(
-    virtual_frame_buffer: &mut VirtualFrameBuffer,
-    vert_size: usize,
-    horiz_size: usize,
-) {
+///Just for fun, random colored lines in overscan zone, Amstrad style
+fn draw_loading_border(virtual_frame_buffer: &mut VirtualFrameBuffer) {
     let mut random = rand::thread_rng();
     let mut rgb_color: u8 = random.gen_range(0..32);
 
@@ -258,6 +267,8 @@ fn draw_loading_border(
 
     let width = virtual_frame_buffer.get_width();
     let height = virtual_frame_buffer.get_height();
+    let horiz_size = (config::VIRTUAL_WIDTH - config::TEXT_COLUMNS * 8)/2;
+    let vert_size = (config::VIRTUAL_HEIGHT - config::TEXT_ROWS * 8)/2;
 
     for pixel in virtual_frame_buffer.get_frame().chunks_exact_mut(1) {
         if line_pixel_count < horiz_size
@@ -282,4 +293,86 @@ fn draw_loading_border(
             line_pixel_count = 0;
         }
     }
+}
+
+///Boot animation
+fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &mut CrtEffectRenderer, frame_counter: u128) -> bool {
+    
+    //CRT warm up
+    let br = if frame_counter > 255 {255} else {frame_counter as u8};
+    crt_renderer.set_brightness(br);
+
+    //Fill text layer with random garbage
+    if frame_counter == 0 {
+        genrate_random_garbage(virtual_frame_buffer);
+    }
+
+    //Clear garbage and display char and color test after 2 seconds
+    if frame_counter == FRAMES_PER_SEC * 2 {
+
+        //Clear text layer
+        virtual_frame_buffer.get_text_layer().clear();
+
+        //Clear frame buffer
+        virtual_frame_buffer.clear_frame_buffer(0);
+
+        //Display all possible colors on first row
+        for i in 0..32_u16 {
+            virtual_frame_buffer.get_text_layer().insert_char(i as usize, ' ', Some(i), None);
+        }
+
+        //Display all chars starting on second row
+        let width = virtual_frame_buffer.get_text_layer().get_dimensions().0;
+        for i in 0..characters_rom::ROM.len() {
+            virtual_frame_buffer.get_text_layer().insert_char(width + i as usize, characters_rom::CHARS[i], Some(0x0700), None);
+        }
+    }
+
+    //After 4 seconds, show loading message
+    if frame_counter == FRAMES_PER_SEC * 4 {
+        virtual_frame_buffer.get_text_layer().insert_string_coord(0, 4, "Loading..." , Some(0x0700), None);
+    }
+
+    //Display loading overscan while "loading"
+    if frame_counter >= FRAMES_PER_SEC * 4 && frame_counter <= FRAMES_PER_SEC * 6 {
+        draw_loading_border(virtual_frame_buffer);
+    }
+
+    //After 6 seconds clear everything to prepare for shell
+    if frame_counter > FRAMES_PER_SEC * 6 {
+        virtual_frame_buffer.get_text_layer().clear();
+        virtual_frame_buffer.clear_frame_buffer(0);
+        return false;
+    }        
+    else {
+        return true;
+    } 
+}
+
+fn genrate_random_garbage(virtual_frame_buffer: &mut VirtualFrameBuffer) {
+
+    let mut random = rand::thread_rng();
+        
+        let frame: u8 = random.gen_range(0..32);
+        virtual_frame_buffer.clear_frame_buffer(frame);
+
+        let color_map = virtual_frame_buffer.get_text_layer().get_color_map();
+        for index in 0..color_map.len() {
+            let bkg: u8 = random.gen_range(0..32);
+            let frt: u8 = random.gen_range(0..32);
+            let color: u16 = (frt as u16) << 8 | bkg as u16;
+            color_map[index] = Some(color);
+        }
+    
+        let char_map = virtual_frame_buffer.get_text_layer().get_char_map();
+        for index in 0..char_map.len() {
+            let toto:usize = random.gen_range(0..CHARS.len());
+            char_map[index] = Some(CHARS[toto]);
+        }
+
+        let effect_map = virtual_frame_buffer.get_text_layer().get_effect_map();
+        for index in 0..effect_map.len() {
+            let toto:u8 = random.gen_range(0..5);
+            effect_map[index] = Some(toto);
+        }
 }
