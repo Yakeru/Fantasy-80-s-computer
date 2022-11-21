@@ -6,8 +6,8 @@ pub trait AppMacro {
     fn get_name(&self) -> &str;
     fn set_state(&mut self, updating: bool, drawing: bool);
     fn get_state(&self) -> (bool, bool);
-    //fn update(&mut self, character_received: Option<char>, key_pressed_os: Option<VirtualKeyCode>, key_released: Option<VirtualKeyCode>) -> AppResponse;
-    //fn draw<T>(&mut self, virtual_frame_buffer: &mut T);
+    // fn update(&mut self, character_received: Option<char>, key_pressed_os: Option<VirtualKeyCode>, key_released: Option<VirtualKeyCode>) -> AppResponse;
+    // fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer);
 }
 
 #[derive(Clone)]

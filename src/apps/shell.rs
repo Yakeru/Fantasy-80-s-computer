@@ -74,38 +74,14 @@ impl Shell {
         }
     }
 
-    // fn get_text_layer_char_from_style(&self, style: StyledChar) -> TextLayerChar {
-    //     match style {
-    //         StyledChar::Default(c) => TextLayerChar {
-    //             unicode: c,
-    //             color: self.color,
-    //             background_color: self.bkg_color,
-    //             blink: false,
-    //             flipp: false,
-    //         },
-    //         StyledChar::Highlight(c) => TextLayerChar {
-    //             unicode: c,
-    //             color: self.color,
-    //             background_color: self.bkg_color,
-    //             blink: false,
-    //             flipp: true,
-    //         },
-    //         StyledChar::Warning(c) => TextLayerChar {
-    //             unicode: c,
-    //             color: 10,
-    //             background_color: 0,
-    //             blink: false,
-    //             flipp: false,
-    //         },
-    //         StyledChar::Error(c) => TextLayerChar {
-    //             unicode: c,
-    //             color: 8,
-    //             background_color: 0,
-    //             blink: true,
-    //             flipp: false,
-    //         },
-    //     }
-    // }
+    fn get_text_layer_char_from_style(&self, style: StyledChar) -> (char, u16, u8) {
+        match style {
+            StyledChar::Default(c) => (c, (self.color as u16) << 8 | self.bkg_color as u16, 0),
+            StyledChar::Highlight(c) => (c, (self.color as u16) << 8 | self.bkg_color as u16, 1),
+            StyledChar::Warning(c) => (c, 10_u16 << 8 | 0_u16, 0),
+            StyledChar::Error(c) => (c, 8_u16 << 8 | 0_u16, 2)
+        }
+    }
 
     fn push_string(&mut self, string: &str, style: Style) {
         for c in string.chars() {
@@ -210,64 +186,17 @@ impl Shell {
             None => (),
         }
 
-        // self.cos += 0.1;
-
-        // if self.cos >= 1.0 {
-        //     self.cos = -1.0;
-        // }
-
-        // match key_presses.key_released {
-        //     Some(k) => {
-        //         match k {
-        //             VirtualKeyCode::Left => {
-        //                 // if self.color == 7 {self.color = 0} else {self.color += 1}
-        //                 // text_layer.pop_char();
-        //                 // text_layer.push_char('_', self.color, self.bkg_color, false);
-        //             }
-
-        //             VirtualKeyCode::Right => {
-        //                 // if self.color == 0 {self.color = 7} else {self.color -= 1}
-        //                 // text_layer.pop_char();
-        //                 // text_layer.push_char('_', self.color, self.bkg_color, false);
-        //             }
-
-        //             VirtualKeyCode::Up => {
-        //                 // if self.bkg_color == 7 {self.bkg_color = 0} else {self.bkg_color += 1}
-        //                 // text_layer.pop_char();
-        //                 // text_layer.push_char('_', self.color, self.bkg_color, false);
-        //             }
-
-        //             VirtualKeyCode::Down => {
-        //                 // if self.bkg_color == 0 {self.bkg_color = 7} else {self.bkg_color -= 1}
-        //                 // text_layer.pop_char();
-        //                 // text_layer.push_char('_', self.color, self.bkg_color, false);
-        //             }
-
-        //             VirtualKeyCode::PageUp => {
-        //                 // text_layer.scroll_up();
-
-        //                 // if text_layer.get_characters().len() == 0 {
-        //                 //     text_layer.push_char('_', self.color, self.bkg_color, false);
-        //                 // }
-        //             }
-
-        //             _ => ()
-        //         }
-        //     }
-        //     None => ()
-        // }
-
         return response;
     }
 
     pub fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-        // if self.clear_text_layer {
-        //     virtual_frame_buffer.get_text_layer().clear();
-        //     self.clear_text_layer = false;
-        //     self.last_character_received = None;
-        // }
+        if self.clear_text_layer {
+            virtual_frame_buffer.get_text_layer().clear();
+            self.clear_text_layer = false;
+            self.last_character_received = None;
+        }
 
-        // virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
+        virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
 
         // match self.last_character_received {
         //     Some(c) => {
@@ -286,15 +215,5 @@ impl Shell {
         // }
 
         self.display_buffer.clear();
-
-        // let mut titi: f32 = 0.0f32;
-
-        // for index in 0..virtual_frame_buffer.get_line_scroll_list().len() {
-
-        //     let toto = (self.cos + titi).cos();
-        //     virtual_frame_buffer.set_line_scroll_list(index, (toto * 10.0) as i8);
-
-        //     titi += 0.1f32;
-        // }
     }
 }

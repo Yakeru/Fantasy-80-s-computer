@@ -18,17 +18,18 @@ const DEFAULT_BKG_COLOR: u8 = 0;
 //       ||__ blink flag
 //       |__ shadowed (draws a black checkered pattern on top)
 
-#[derive(Copy, Clone)]
-pub struct TextLayerChar {
-    pub unicode: char,
-    pub color: u8,
-    pub background_color: u8,
-    pub flipp: bool,
-    pub blink: bool,
-    pub shadowed: bool,
+
+struct Console {
+    default_color: u8,
+    default_bkg_color: u8,
+    size_x: usize,
+    size_y: usize,
+    pos_x: usize,
+    pos_y: usize,
+    buffer: Vec<(char, u16, u8)>,
+    cursor_pos: usize
 }
 
-/// The text layer buffer
 pub struct TextLayer {
     default_color: u8,
     default_bkg_color: u8,

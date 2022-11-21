@@ -45,9 +45,9 @@ impl Lines {
         match char_received {
             Some(unicode) => {
                 match unicode {
-                    unicode::ENTER => {
-                        self.draw_a_line = true;
-                    },
+                    // unicode::ENTER => {
+                    //     self.draw_a_line = true;
+                    // },
                     'c' => {
                         self.clear = true;
                     }
@@ -106,7 +106,7 @@ impl Lines {
                 color,
             };
             virtual_frame_buffer.draw_line(line);
-            self.draw_a_line = false;
+            // self.draw_a_line = false;
         }
 
         if self.clear {
