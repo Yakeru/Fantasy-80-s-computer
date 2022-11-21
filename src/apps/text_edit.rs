@@ -1,19 +1,24 @@
-use winit::{event::VirtualKeyCode,event_loop::ControlFlow};
-use crate::text_layer::TextLayerChar;
-use std::io::{self, Write};
-use crate::process::*;
+use app_macro::*;
+use app_macro_derive::AppMacro;
+use crate::unicode;
 use crate::virtual_frame_buffer::VirtualFrameBuffer;
+use std::io::{self, Write};
+use winit::{
+    event::{ElementState, KeyboardInput, VirtualKeyCode},
+    event_loop::ControlFlow,
+};
 
 const DEFAULT_BKG_COLOR: u8 = 7;
 const DEFAULT_COLOR: u8 = 0;
 
+#[derive(AppMacro)]
 pub struct TextEdit {
     name: String,
     selected_color: u8,
     selected_bkg_color: u8,
     columns: u8,
     rows: u8,
-    buffer: Vec<TextLayerChar>,
+    // buffer: Vec<TextLayerChar>,
     updating: bool,
     drawing: bool,
     started: bool,
@@ -21,10 +26,8 @@ pub struct TextEdit {
 }
 
 impl TextEdit {
-
     pub fn new() -> TextEdit {
-
-        let buffer = Vec::new();
+        // let buffer = Vec::new();
 
         TextEdit {
             name: String::from("textEdit"),
@@ -32,123 +35,129 @@ impl TextEdit {
             selected_bkg_color: DEFAULT_BKG_COLOR,
             columns: 0,
             rows: 0,
-            buffer,
+            // buffer,
             updating: false,
             drawing: false,
             started: false,
-            ended: false
+            ended: false,
         }
     }
-}
 
-impl Process for TextEdit {
-
-    fn start(&mut self){}
-
-    fn end(&mut self) {
-        // self.app.started = false;
-        // self.app.drawing = false;
-        // self.app.updating = false;
-        // self.app.ended = true;
-    }
-
-    fn update(&mut self, character_received: Option<char>, key_pressed_os: Option<VirtualKeyCode>, key_released: Option<VirtualKeyCode>) -> ProcessResponse {
-
-        let mut response = ProcessResponse::new();
+    pub fn update(
+        &mut self,
+        keybord_input: Option<KeyboardInput>,
+        char_received: Option<char>,
+    ) -> AppResponse {
+        let mut response = AppResponse::new();
 
         if !self.started {
             self.start();
             self.started = true;
         }
 
-        match character_received {
-            Some(c) => {
-                match c {
-                    '\u{0008}' => { //Backspace
-                        self.buffer.pop();
-                    } 
-                    
-                    '\u{000D}' => { //Enter
-                        
-                    }
-                    
-                    '\u{001B}'  => { //Escape
-                    }
-                    
-                    _ => {
-                        let plop: TextLayerChar = TextLayerChar {
-                            unicode: c,
-                            color: self.selected_color,
-                            background_color: self.selected_bkg_color,
-                            blink: false,
-                            flipp: false
-                        };
-                        
-                        self.buffer.push(plop);
-                    }
-                }
+        // match char_received {
+            // Some(c) => match c {
+                // unicode::BACKSPACE => {
+                //     self.buffer.pop();
+                // }
 
-            }
-            None => ()
-        }
+                // unicode::ENTER => {}
 
-        match key_released {
+                // unicode::ESCAPE => {}
+
+                // _ => {
+                //     let plop: TextLayerChar = TextLayerChar {
+                //         unicode: c,
+                //         color: self.selected_color,
+                //         background_color: self.selected_bkg_color,
+                //         blink: false,
+                //         flipp: false,
+                //     };
+
+                //     self.buffer.push(plop);
+                // }
+        //     },
+        //     None => (),
+        // }
+
+        match keybord_input {
             Some(k) => {
-                match k {
-                    VirtualKeyCode::Left => {
-                        if self.selected_color == 31 {self.selected_color = 0} else {self.selected_color += 1}
-                    }
-        
-                    VirtualKeyCode::Right => {
-                        if self.selected_color == 0 {self.selected_color = 31} else {self.selected_color -= 1}
-                    }
-        
-                    VirtualKeyCode::Up => {
-                        if self.selected_bkg_color == 31 {self.selected_bkg_color = 0} else {self.selected_bkg_color += 1}
-                    }
-        
-                    VirtualKeyCode::Down => {
-                        if self.selected_bkg_color == 0 {self.selected_bkg_color = 31} else {self.selected_bkg_color -= 1}
-                    }
-        
-                    VirtualKeyCode::PageUp => {
-                        //self.text_layer.scroll_up();
-                    }
+                if k.state == ElementState::Pressed {
+                    match k.virtual_keycode {
+                        Some(code) => {
+                            match code {
+                                VirtualKeyCode::Left => {
+                                    if self.selected_color == 31 {
+                                        self.selected_color = 0
+                                    } else {
+                                        self.selected_color += 1
+                                    }
+                                }
 
-                    _ => () 
+                                VirtualKeyCode::Right => {
+                                    if self.selected_color == 0 {
+                                        self.selected_color = 31
+                                    } else {
+                                        self.selected_color -= 1
+                                    }
+                                }
+
+                                VirtualKeyCode::Up => {
+                                    if self.selected_bkg_color == 31 {
+                                        self.selected_bkg_color = 0
+                                    } else {
+                                        self.selected_bkg_color += 1
+                                    }
+                                }
+
+                                VirtualKeyCode::Down => {
+                                    if self.selected_bkg_color == 0 {
+                                        self.selected_bkg_color = 31
+                                    } else {
+                                        self.selected_bkg_color -= 1
+                                    }
+                                }
+
+                                VirtualKeyCode::PageUp => {
+                                    //self.text_layer.scroll_up();
+                                }
+
+                                VirtualKeyCode::Escape => {
+                                    //Escape
+                                    response.set_message("Escape key pressed".to_string());
+                                    response.event = Some(ControlFlow::ExitWithCode(0));
+                                    self.end();
+                                }
+
+                                _ => (),
+                            }
+                        }
+                        None => (),
+                    }
                 }
             }
-            None => ()
+            None => (),
         }
 
         return response;
     }
 
-    fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    pub fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+        // virtual_frame_buffer.get_text_layer().clear();
+        // virtual_frame_buffer.get_text_layer().show_cursor = false;
+        // virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
 
-        virtual_frame_buffer.get_text_layer().clear();
-        virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
+        // for text_layer_char in self.buffer.chunks_exact_mut(1) {
+        //     virtual_frame_buffer
+        //         .get_text_layer()
+        //         .push_character(Some(text_layer_char[0]));
+        // }
 
-        for text_layer_char in self.buffer.chunks_exact_mut(1) {
-            virtual_frame_buffer.get_text_layer().push_character(Some(text_layer_char[0]));
-        }
-
-        virtual_frame_buffer.get_text_layer().push_char('_', Some(self.selected_color), Some(self.selected_bkg_color), false);
-    }
-
-    fn get_name(&self) -> &str {
-        &self.name
-    }
-
-    fn set_state(&mut self, updating: bool, drawing: bool) {
-        self.updating = updating;
-        self.drawing = drawing;
-
-        if drawing {self.updating = true}
-        if !updating {self.drawing = false}
-    }
-
-    fn get_state(&self) -> (bool, bool) {
-        return (self.updating, self.drawing)
+        // virtual_frame_buffer.get_text_layer().push_char(
+        //     '_',
+        //     Some(self.selected_color),
+        //     Some(self.selected_bkg_color),
+        //     false,
+        // );
     }
 }

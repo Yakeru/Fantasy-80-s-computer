@@ -1,10 +1,13 @@
-use crate::process::*;
-use crate::virtual_frame_buffer::*;
-use winit::{event::VirtualKeyCode,event_loop::ControlFlow};
-use winit::dpi::PhysicalSize;
-use crate::text_layer::TextLayerChar;
+use crate::{virtual_frame_buffer::*, unicode};
+use app_macro::*;
+use app_macro_derive::AppMacro;
 use rand::Rng;
+use winit::{
+    event::{KeyboardInput, VirtualKeyCode},
+    event_loop::ControlFlow,
+};
 
+#[derive(AppMacro)]
 pub struct Lines {
     name: String,
     updating: bool,
@@ -12,6 +15,7 @@ pub struct Lines {
     started: bool,
     ended: bool,
     draw_a_line: bool,
+    clear: bool
 }
 
 impl Lines {
@@ -22,58 +26,71 @@ impl Lines {
             drawing: false,
             started: false,
             ended: false,
-            draw_a_line: true
+            draw_a_line: false,
+            clear: false
         }
     }
-}
 
-impl Process for Lines {
-    fn start(&mut self){
-        self.started = true;
-    }
-
-    fn end(&mut self) {
-        self.ended = true;
-    }
-
-    fn update(&mut self, character_received: Option<char>, key_pressed_os: Option<VirtualKeyCode>, key_released: Option<VirtualKeyCode>) -> ProcessResponse {
-
-        let mut response = ProcessResponse::new();
+    pub fn update(
+        &mut self,
+        keybord_input: Option<KeyboardInput>,
+        char_received: Option<char>,
+    ) -> AppResponse {
+        let mut response = AppResponse::new();
 
         if !self.started {
             self.start();
         }
 
-        match character_received {
-            Some(c) => {
-                match c {
-                    '\u{001B}'  => { //Escape
-                        self.updating = false;
-                        self.drawing = false;
-                        self.end();
+        match char_received {
+            Some(unicode) => {
+                match unicode {
+                    // unicode::ENTER => {
+                    //     self.draw_a_line = true;
+                    // },
+                    'c' => {
+                        self.clear = true;
                     }
 
-                    '\u{000D}' => { //Enter
-                        self.draw_a_line = true;
-                    }
-                    
                     _ => ()
                 }
             }
-            None => ()
+            None => (),
+        }
+
+        match keybord_input {
+            Some(key) => {
+                match key.virtual_keycode {
+                    Some(code) => {
+                        match code {
+                            VirtualKeyCode::Escape => {
+                                //Escape
+                                response.set_message("Escape key pressed".to_string());
+                                response.event = Some(ControlFlow::ExitWithCode(0));
+                                self.end();
+                            }
+                            _ => (),
+                        }
+                    }
+                    None => (),
+                }
+            }
+            None => (),
         }
 
         return response;
     }
 
-    fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-
+    pub fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         let max_x = virtual_frame_buffer.get_width();
         let max_y = virtual_frame_buffer.get_height();
 
+        //virtual_frame_buffer.get_text_layer().clear();
+        //virtual_frame_buffer.get_text_layer().show_cursor = false;
+
         let mut random = rand::thread_rng();
 
-        for _i in 0..10 {
+        if self.draw_a_line {
             let start_x: usize = random.gen_range(0..max_x);
             let start_y: usize = random.gen_range(0..max_y);
             let end_x: usize = random.gen_range(0..max_x);
@@ -86,25 +103,15 @@ impl Process for Lines {
                 start_y,
                 end_x,
                 end_y,
-                color
+                color,
             };
             virtual_frame_buffer.draw_line(line);
+            // self.draw_a_line = false;
         }
-    }
 
-    fn get_name(&self) -> &str {
-        &self.name
-    }
-
-    fn set_state(&mut self, updating: bool, drawing: bool) {
-        self.updating = updating;
-        self.drawing = drawing;
-
-        if drawing {self.updating = true}
-        if !updating {self.drawing = false}
-    }
-
-    fn get_state(&self) -> (bool, bool) {
-        return (self.updating, self.drawing)
+        if self.clear {
+            virtual_frame_buffer.clear_frame_buffer(0);
+            self.clear = false;
+        }
     }
 }

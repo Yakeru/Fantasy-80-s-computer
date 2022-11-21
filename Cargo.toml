@@ -8,5 +8,8 @@ authors = ["Damien Torreilles <damien.torreilles@gmail.com>"]
 rand = "0.8.4"
 winit = "0.27.3"
 winit_input_helper = "0.13.0"
-pixels = "0.9.0"
+pixels = "0.10.0"
 openweathermap = "0.2.4"
+app_macro = { path = "./app_macro" }
+app_macro_derive = { path = "./app_macro/app_macro_derive" }
+chrono = "0.4.22"

@@ -1,6 +1,6 @@
-const palette = ["#000000","#FFFFFF"]
-const editor_width_px=8;
-const editor_height_px=8;
+const palette = ["#000000", "#FFFFFF"]
+const editor_width_px = 8;
+const editor_height_px = 8;
 const log = true;
 
 var drawingMatrix = new Array(editor_width_px);
@@ -27,24 +27,24 @@ var selectedPaletteIndex = 0;
 
 function init() {
   spriteCanvas = document.getElementById("sprite");
-  spriteCanvas.addEventListener("mousedown", function(e){
+  spriteCanvas.addEventListener("mousedown", function (e) {
     spriteMouseDown(e);
   });
-  spriteCanvas.addEventListener("mousemove", function(e){
+  spriteCanvas.addEventListener("mousemove", function (e) {
     spriteMouseMove(e);
   });
-  spriteCanvas.addEventListener("mouseup", function(e){
+  spriteCanvas.addEventListener("mouseup", function (e) {
     spriteMouseUp(e);
   });
 
-  spriteCanvas.addEventListener("mouseout", function(e){
+  spriteCanvas.addEventListener("mouseout", function (e) {
     spriteMouseOut(e);
   });
 
   spriteContext = spriteCanvas.getContext("2d");
 
   paletteCanvas = document.getElementById("palette");
-  paletteCanvas.addEventListener("mousedown", function(e){
+  paletteCanvas.addEventListener("mousedown", function (e) {
     paletteClick(e);
   });
   paletteContext = paletteCanvas.getContext("2d");
@@ -63,15 +63,15 @@ function init() {
 function drawSpriteGrid(color) {
   let spriteWidth = spriteContext.canvas.clientWidth;
   let spriteHeight = spriteContext.canvas.clientHeight;
-  let square_width = spriteWidth/editor_width_px;
-  let square_height = spriteHeight/editor_height_px;
+  let square_width = spriteWidth / editor_width_px;
+  let square_height = spriteHeight / editor_height_px;
 
-  for(row_count = 0 ; row_count < editor_height_px ; row_count++) {
-    for(column_count = 0 ; column_count < editor_width_px ; column_count++) {
-      let square_x = square_width*column_count;
-      let square_y = square_height*row_count;
+  for (row_count = 0; row_count < editor_height_px; row_count++) {
+    for (column_count = 0; column_count < editor_width_px; column_count++) {
+      let square_x = square_width * column_count;
+      let square_y = square_height * row_count;
       spriteContext.fillStyle = color;
-      if(color == "#000000")
+      if (color == "#000000")
         spriteContext.strokeStyle = "White";
       else
         spriteContext.strokeStyle = "Black";
@@ -84,21 +84,21 @@ function drawSpriteGrid(color) {
 function drawColorPalette() {
   let paletteWidth = paletteContext.canvas.clientWidth;
   let paletteHeight = paletteContext.canvas.clientHeight;
-  let square_width = paletteWidth/palette.length;
+  let square_width = paletteWidth / palette.length;
   let square_height = paletteHeight;
 
-  for(index=0 ; index < palette.length ; index++) {
-      let square_x = square_width*index;
-      let square_y = 0;
-      paletteContext.fillStyle = palette[index];
-      paletteContext.fillRect(square_x, square_y, square_width, square_height);
+  for (index = 0; index < palette.length; index++) {
+    let square_x = square_width * index;
+    let square_y = 0;
+    paletteContext.fillStyle = palette[index];
+    paletteContext.fillRect(square_x, square_y, square_width, square_height);
   }
 }
 
 var isDrawing = false;
 
 function spriteMouseDown(event) {
-  if(log) console.log("Sprite click !");
+  if (log) console.log("Sprite click !");
   isDrawing = true;
   draw();
 }
@@ -109,7 +109,7 @@ function spriteMouseMove(event) {
   let x = event.clientX - rect.left;
   let y = event.clientY - rect.top;
   spriteContext.fillStyle = selectedColor;
-  if(selectedColor == "#000000") {
+  if (selectedColor == "#000000") {
     spriteContext.strokeStyle = "White";
   } else {
     spriteContext.strokeStyle = "Black";
@@ -119,7 +119,7 @@ function spriteMouseMove(event) {
   paletteContext.fill();
   paletteContext.stroke();
 
-  if(isDrawing) draw();
+  if (isDrawing) draw();
 }
 
 function spriteMouseUp(event) {
@@ -130,66 +130,66 @@ function spriteMouseOut(event) {
   isDrawing = false;
 }
 
-function draw(){
+function draw() {
   let rect = spriteCanvas.getBoundingClientRect();
   let x = event.clientX - rect.left;
   let y = event.clientY - rect.top;
 
   let spriteWidth = spriteContext.canvas.clientWidth;
   let spriteHeight = spriteContext.canvas.clientHeight;
-  let square_width = spriteWidth/editor_width_px;
-  let square_height = spriteHeight/editor_height_px;
+  let square_width = spriteWidth / editor_width_px;
+  let square_height = spriteHeight / editor_height_px;
 
-  for(row_count = 0 ; row_count < editor_height_px ; row_count++) {
-    for(column_count = 0 ; column_count < editor_width_px ; column_count++) {
-      let square_x = square_width*column_count;
-      let square_y = square_height*row_count;
+  for (row_count = 0; row_count < editor_height_px; row_count++) {
+    for (column_count = 0; column_count < editor_width_px; column_count++) {
+      let square_x = square_width * column_count;
+      let square_y = square_height * row_count;
 
       spriteContext.fillStyle = selectedColor;
-      if(selectedColor == "#000000") {
+      if (selectedColor == "#000000") {
         spriteContext.strokeStyle = "White";
       } else {
         spriteContext.strokeStyle = "Black";
       }
 
-      if(x > square_x
+      if (x > square_x
         && x < square_x + square_width
         && y > square_y
         && y < square_y + square_height) {
-          if(log) console.log("    Column : " + column_count + " , Row : " + row_count);
-          drawingMatrix[column_count][row_count] = selectedPaletteIndex;
-          spriteContext.clearRect(square_x, square_y, square_width, square_height);
-          spriteContext.fillRect(square_x, square_y, square_width, square_height);
-          spriteContext.strokeRect(square_x, square_y, square_width, square_height);
+        if (log) console.log("    Column : " + column_count + " , Row : " + row_count);
+        drawingMatrix[column_count][row_count] = selectedPaletteIndex;
+        spriteContext.clearRect(square_x, square_y, square_width, square_height);
+        spriteContext.fillRect(square_x, square_y, square_width, square_height);
+        spriteContext.strokeRect(square_x, square_y, square_width, square_height);
       }
     }
   }
 }
 
 function paletteClick(event) {
-  if(log) console.log("Palette click !");
+  if (log) console.log("Palette click !");
   selectedColor = "#000000";
   selectedPaletteIndex = 0;
   let rect = paletteCanvas.getBoundingClientRect();
   let x = event.clientX - rect.left;
   let y = event.clientY - rect.top;
 
-  var imgData = paletteContext.getImageData(x,y,1,1).data;
+  var imgData = paletteContext.getImageData(x, y, 1, 1).data;
   var hexCode = "#" + ("000000" + rgbToHex(imgData[0], imgData[1], imgData[2])).slice(-6);
   hexCode = hexCode.toUpperCase();
-  if(log) console.log("    color: " + hexCode);
+  if (log) console.log("    color: " + hexCode);
 
-  for(index=0 ; index < palette.length ; index++) {
-    if(palette[index] == hexCode) {
+  for (index = 0; index < palette.length; index++) {
+    if (palette[index] == hexCode) {
       selectedColor = palette[index];
       selectedPaletteIndex = index;
-      if(log) console.log("    palette index: " + selectedPaletteIndex);
+      if (log) console.log("    palette index: " + selectedPaletteIndex);
     }
   }
 }
 
 function fill() {
-  if(log) console.log("Fill click !");
+  if (log) console.log("Fill click !");
   initDrawingMatrix(0);
   drawSpriteGrid(palette[0]);
 }
@@ -216,16 +216,16 @@ function printDrawingMatrixTuRustArray() {
 
   for (var y = 0; y < editor_height_px; y++) {
     var byte = "";
-      for (var x = 0; x < editor_width_px; x++) {
-        byte += drawingMatrix[x][y];
-      }
-      text += "0x" + binaryToHex(byte).result + ", "
+    for (var x = 0; x < editor_width_px; x++) {
+      byte += drawingMatrix[x][y];
+    }
+    text += "0x" + binaryToHex(byte).result + ", "
   }
 
   text = text.slice(0, text.length - 2);
   text += "],";
 
-  if(log) console.log(text);
+  if (log) console.log(text);
   return text;
 }
 
@@ -243,38 +243,38 @@ function copyToClipboard() {
 // the 'result' key of the returned object
 function binaryToHex(s) {
   var i, k, part, accum, ret = '';
-  for (i = s.length-1; i >= 3; i -= 4) {
-      // extract out in substrings of 4 and convert to hex
-      part = s.substr(i+1-4, 4);
-      accum = 0;
-      for (k = 0; k < 4; k += 1) {
-          if (part[k] !== '0' && part[k] !== '1') {
-              // invalid character
-              return { valid: false };
-          }
-          // compute the length 4 substring
-          accum = accum * 2 + parseInt(part[k], 10);
+  for (i = s.length - 1; i >= 3; i -= 4) {
+    // extract out in substrings of 4 and convert to hex
+    part = s.substr(i + 1 - 4, 4);
+    accum = 0;
+    for (k = 0; k < 4; k += 1) {
+      if (part[k] !== '0' && part[k] !== '1') {
+        // invalid character
+        return { valid: false };
       }
-      if (accum >= 10) {
-          // 'A' to 'F'
-          ret = String.fromCharCode(accum - 10 + 'A'.charCodeAt(0)) + ret;
-      } else {
-          // '0' to '9'
-          ret = String(accum) + ret;
-      }
+      // compute the length 4 substring
+      accum = accum * 2 + parseInt(part[k], 10);
+    }
+    if (accum >= 10) {
+      // 'A' to 'F'
+      ret = String.fromCharCode(accum - 10 + 'A'.charCodeAt(0)) + ret;
+    } else {
+      // '0' to '9'
+      ret = String(accum) + ret;
+    }
   }
   // remaining characters, i = 0, 1, or 2
   if (i >= 0) {
-      accum = 0;
-      // convert from front
-      for (k = 0; k <= i; k += 1) {
-          if (s[k] !== '0' && s[k] !== '1') {
-              return { valid: false };
-          }
-          accum = accum * 2 + parseInt(s[k], 10);
+    accum = 0;
+    // convert from front
+    for (k = 0; k <= i; k += 1) {
+      if (s[k] !== '0' && s[k] !== '1') {
+        return { valid: false };
       }
-      // 3 bits, value cannot exceed 2^3 - 1 = 7, just convert
-      ret = String(accum) + ret;
+      accum = accum * 2 + parseInt(s[k], 10);
+    }
+    // 3 bits, value cannot exceed 2^3 - 1 = 7, just convert
+    ret = String(accum) + ret;
   }
   return { valid: true, result: ret };
 }

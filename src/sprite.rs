@@ -9,7 +9,7 @@ pub struct Sprite {
     pub visible: bool,
     pub h_flipp: bool,
     pub v_flipp: bool,
-    pub image: Vec<u8>
+    pub image: Vec<u8>,
 }
 
 pub enum SpriteSize {
@@ -24,21 +24,19 @@ pub enum SpriteSize {
 
 pub fn value_from_physical_size(x: usize, y: usize) -> SpriteSize {
     match (x, y) {
-        (8, 8) => {SpriteSize::_8x8}
-        (8, 16) => {SpriteSize::_8x16}
-        (16, 8) => {SpriteSize::_16x8}
-        (16, 16) => {SpriteSize::_16x16}
-        (16,32) => {SpriteSize::_16x32}
-        (32, 16) => {SpriteSize::_32x16}
-        (32, 32) => {SpriteSize::_32x32}
-        _ => {SpriteSize::_16x16}
+        (8, 8) => SpriteSize::_8x8,
+        (8, 16) => SpriteSize::_8x16,
+        (16, 8) => SpriteSize::_16x8,
+        (16, 16) => SpriteSize::_16x16,
+        (16, 32) => SpriteSize::_16x32,
+        (32, 16) => SpriteSize::_32x16,
+        (32, 32) => SpriteSize::_32x32,
+        _ => SpriteSize::_16x16,
     }
 }
 
 impl Sprite {
-
-    pub fn new(id: String) -> Sprite { 
-
+    pub fn new(id: String) -> Sprite {
         let size: usize = 16 * 16;
         let mut image = Vec::new();
 
@@ -54,11 +52,11 @@ impl Sprite {
             h_flipp: false,
             v_flipp: false,
             image,
-            id
+            id,
         }
     }
 
-    pub fn value_in_physical_size(&self) -> PhysicalSize<usize>{
+    pub fn value_in_physical_size(&self) -> PhysicalSize<usize> {
         match self.size {
             SpriteSize::_8x8 => PhysicalSize::new(8 as usize, 8 as usize),
             SpriteSize::_8x16 => PhysicalSize::new(8 as usize, 16 as usize),
@@ -70,15 +68,15 @@ impl Sprite {
         }
     }
 
-    pub fn new_from_file(id: String, path_to_file: &String) -> Sprite { 
-
-        let contents = fs::read_to_string(path_to_file).expect("Something went wrong reading the file");
+    pub fn new_from_file(id: String, path_to_file: &String) -> Sprite {
+        let contents =
+            fs::read_to_string(path_to_file).expect("Something went wrong reading the file");
         let split_text: Vec<&str> = contents.split(',').collect();
         let size_x = split_text[0].parse::<usize>().unwrap();
         let size_y = split_text[1].parse::<usize>().unwrap();
 
         let mut data: Vec<u8> = Vec::new();
-        
+
         for i in 2..split_text.len() {
             data.push(split_text[i].parse::<u8>().unwrap());
         }
@@ -91,7 +89,7 @@ impl Sprite {
             h_flipp: false,
             v_flipp: false,
             image: data,
-            id
+            id,
         }
     }
 }
