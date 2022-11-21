@@ -2,8 +2,6 @@ use characters_rom::rom;
 use color_palettes::*;
 use sprite::Sprite;
 use text_layer::TextLayer;
-use rand::Rng;
-use std::time::{Duration, Instant};
 
 pub mod config;
 pub mod characters_rom;
@@ -82,15 +80,23 @@ impl VirtualFrameBuffer {
         }
     }
 
-    pub fn get_window_size(&mut self) -> (usize, usize) {
+    pub fn get_window_size(&self) -> (usize, usize) {
         (WIDTH, HEIGHT)
     }
 
-    pub fn get_frame(&mut self) -> &mut Box<[u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]> {
+    pub fn get_virtual_fb_size(&self) -> (usize, usize) {
+        (VIRTUAL_WIDTH, VIRTUAL_HEIGHT)
+    }
+
+    pub fn get_text_layer_size(&self) -> (usize, usize) {
+        self.text_layer.get_dimensions()
+    }
+
+    pub fn get_frame_mut(&mut self) -> &mut Box<[u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]> {
         &mut self.frame
     }
 
-    pub fn get_frame_static(&self) -> &Box<[u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]> {
+    pub fn get_frame(&self) -> &Box<[u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]> {
         &self.frame
     }
 
@@ -118,7 +124,7 @@ impl VirtualFrameBuffer {
         }
     }
 
-    pub fn draw_appline(&mut self, line: Line) {
+    pub fn draw_line(&mut self, line: Line) {
         //self.set_pixel(line.start_x, line.start_y, line.color);
         //self.set_pixel(line.end_x, line.end_y, line.color);
 
@@ -159,7 +165,7 @@ impl VirtualFrameBuffer {
         }
     }
 
-    pub fn draw_appsquare(&mut self, square: Square) {
+    pub fn draw_square(&mut self, square: Square) {
         let start_offset: usize =
             VirtualFrameBuffer::coord_to_vec_index(square.pos_x, square.pos_y);
 
@@ -193,9 +199,20 @@ impl VirtualFrameBuffer {
             .copy_from_slice(&[color; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]);
     }
 
-    pub fn get_text_layer(&mut self) -> &mut TextLayer {
+    //Removes all chars, colors and effects from the text_layer
+    pub fn clear_text_layer(&mut self) {
+        self.text_layer.clear();
+    }
+
+    pub fn get_text_layer_mut(&mut self) -> &mut TextLayer {
         &mut self.text_layer
     }
+
+    pub fn get_text_layer(&self) -> &TextLayer {
+        &self.text_layer
+    }
+
+    
 
     pub fn get_width(&self) -> usize {
         VIRTUAL_WIDTH
@@ -205,8 +222,12 @@ impl VirtualFrameBuffer {
         VIRTUAL_HEIGHT
     }
 
-    pub fn get_sprites(&mut self) -> &mut Vec<Sprite> {
+    pub fn get_sprites_mut(&mut self) -> &mut Vec<Sprite> {
         &mut self.sprites
+    }
+
+    pub fn get_sprites(&self) -> &Vec<Sprite> {
+        &self.sprites
     }
 
     pub fn render(&mut self) {
@@ -389,14 +410,12 @@ impl VirtualFrameBuffer {
 }
 
 pub struct CrtEffectRenderer {
-    scan_line_strength: u8,
     brightness: u8,
 }
 
 impl CrtEffectRenderer {
     pub fn new() -> CrtEffectRenderer {
         CrtEffectRenderer {
-            scan_line_strength: SCAN_LINE_STRENGTH,
             brightness: u8::MAX,
         }
     }
@@ -417,7 +436,7 @@ impl CrtEffectRenderer {
             let mut line_count: usize = 0;
 
             for virt_line in virtual_frame_buffer
-                .get_frame_static()
+                .get_frame()
                 .chunks_exact(VIRTUAL_WIDTH)
             {
                 let mut rgb_before: (u8, u8, u8) = (0, 0, 0);
@@ -586,7 +605,7 @@ impl CrtEffectRenderer {
             let mut line_count: usize = 0;
 
             for virt_line in virtual_frame_buffer
-                .get_frame_static()
+                .get_frame()
                 .chunks_exact(VIRTUAL_WIDTH)
             {
                 for pixel_index in 0..VIRTUAL_WIDTH {

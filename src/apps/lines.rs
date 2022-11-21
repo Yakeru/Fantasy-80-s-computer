@@ -85,7 +85,7 @@ impl Lines {
         let max_x = virtual_frame_buffer.get_width();
         let max_y = virtual_frame_buffer.get_height();
 
-        virtual_frame_buffer.get_text_layer().clear();
+        virtual_frame_buffer.get_text_layer_mut().clear();
         //virtual_frame_buffer.get_text_layer().show_cursor = false;
 
         let mut random = rand::thread_rng();
@@ -105,7 +105,7 @@ impl Lines {
                 end_y,
                 color,
             };
-            virtual_frame_buffer.draw_appline(line);
+            virtual_frame_buffer.draw_line(line);
             // self.draw_appa_line = false;
         }
 
