@@ -139,7 +139,7 @@ impl Shell {
         self.started = true;
     }
 
-    pub fn update(
+    pub fn update_app(
         &mut self,
         keybord_input: Option<KeyboardInput>,
         char_received: Option<char>,
@@ -189,7 +189,7 @@ impl Shell {
         return response;
     }
 
-    pub fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    pub fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         if self.clear_text_layer {
             virtual_frame_buffer.get_text_layer().clear();
             self.clear_text_layer = false;

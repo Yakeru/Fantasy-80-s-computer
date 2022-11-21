@@ -41,7 +41,7 @@ impl SpriteEditor {
         }
     }
 
-    pub fn update(
+    pub fn update_app(
         &mut self,
         keybord_input: Option<KeyboardInput>,
         char_received: Option<char>,
@@ -138,7 +138,7 @@ impl SpriteEditor {
         return response;
     }
 
-    pub fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    pub fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
         //virtual_frame_buffer.get_text_layer().clear();
         //virtual_frame_buffer.get_text_layer().show_cursor = false;
@@ -159,7 +159,7 @@ impl SpriteEditor {
             fill: true,
         };
 
-        virtual_frame_buffer.draw_square(bkg_square);
+        virtual_frame_buffer.draw_appsquare(bkg_square);
 
         //Pixels
         for row in 0..SPRITE_SIZE.height {
@@ -176,7 +176,7 @@ impl SpriteEditor {
                     fill: true,
                 };
 
-                virtual_frame_buffer.draw_square(pixel_square);
+                virtual_frame_buffer.draw_appsquare(pixel_square);
 
                 //Highlight pixel if selected
                 if self.selected_pixel_x == column && self.selected_pixel_y == row {
@@ -189,7 +189,7 @@ impl SpriteEditor {
                         fill: false,
                     };
 
-                    virtual_frame_buffer.draw_square(highlight_square);
+                    virtual_frame_buffer.draw_appsquare(highlight_square);
                 }
             }
         }

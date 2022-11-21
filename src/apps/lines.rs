@@ -14,7 +14,7 @@ pub struct Lines {
     drawing: bool,
     started: bool,
     ended: bool,
-    draw_a_line: bool,
+    draw_line: bool,
     clear: bool
 }
 
@@ -26,15 +26,15 @@ impl Lines {
             drawing: false,
             started: false,
             ended: false,
-            draw_a_line: false,
+            draw_line: true,
             clear: false
         }
     }
 
-    pub fn update(
+    pub fn update_app(
         &mut self,
         keybord_input: Option<KeyboardInput>,
-        char_received: Option<char>,
+        char_received: Option<char>
     ) -> AppResponse {
         let mut response = AppResponse::new();
 
@@ -46,7 +46,7 @@ impl Lines {
             Some(unicode) => {
                 match unicode {
                     // unicode::ENTER => {
-                    //     self.draw_a_line = true;
+                    //     self.draw_appa_line = true;
                     // },
                     'c' => {
                         self.clear = true;
@@ -81,16 +81,16 @@ impl Lines {
         return response;
     }
 
-    pub fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    pub fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         let max_x = virtual_frame_buffer.get_width();
         let max_y = virtual_frame_buffer.get_height();
 
-        //virtual_frame_buffer.get_text_layer().clear();
+        virtual_frame_buffer.get_text_layer().clear();
         //virtual_frame_buffer.get_text_layer().show_cursor = false;
 
         let mut random = rand::thread_rng();
 
-        if self.draw_a_line {
+        if self.draw_line {
             let start_x: usize = random.gen_range(0..max_x);
             let start_y: usize = random.gen_range(0..max_y);
             let end_x: usize = random.gen_range(0..max_x);
@@ -105,8 +105,8 @@ impl Lines {
                 end_y,
                 color,
             };
-            virtual_frame_buffer.draw_line(line);
-            // self.draw_a_line = false;
+            virtual_frame_buffer.draw_appline(line);
+            // self.draw_appa_line = false;
         }
 
         if self.clear {

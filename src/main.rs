@@ -92,13 +92,13 @@ fn main() -> Result<(), Error> {
     //It is launched at startup after the boot animation the winit event loop will update and render the shell by default if
     //no other process is running or has the focus.
     let mut shell = Box::new(Shell::new());
-    shell.set_state(true, true);
+    shell.set_state(false, false);
     let mut text_edit = Box::new(TextEdit::new());
     text_edit.set_state(false, false);
     let mut sprite_edit = Box::new(SpriteEditor::new());
     sprite_edit.set_state(false, false);
     let mut lines = Box::new(Lines::new());
-    lines.set_state(false, false);
+    lines.set_state(true, true);
     let mut squares = Box::new(Squares::new());
     squares.set_state(false, false);
     let mut weather_app = Box::new(WeatherApp::new());
@@ -181,44 +181,42 @@ fn main() -> Result<(), Error> {
                     booting = boot_animation(&mut virtual_frame_buffer, &mut crt_renderer, frame_counter);
                 } else {
                     //Updating apps
-                    // for app in app_list {
-                    //     if app.get_state().0 == true {
-                    //         app.update(keybord_input, char_received);
-                    //     }
-                    // }
-                    //let process_response = console.update(keyboard_input, char_received);
-                    // let process_response = shell.update(keyboard_input, char_received);
-                    //let process_response = lines.update(keyboard_input, char_received);
-                    // let process_response = squares.update(keyboard_input, char_received);
-                    // let process_response = text_edit.update(keyboard_input, char_received);
-                    // let process_response = sprite_edit.update(keyboard_input, char_received);  
+
+                    let mut app_response: AppResponse = AppResponse::new();
+
+                    for i in 0..app_list.len() {
+                        let app = app_list.get_mut(i).unwrap();
+                        if app.get_state().0 == true {
+                            app_response = app.update(keyboard_input, char_received);
+                        }
+                    } 
 
                     //Process app response
-                    // match process_response.event {
-                    //     Some(event) => *control_flow = event,
-                    //     None => (),
-                    // }
+                    match app_response.event {
+                        Some(event) => *control_flow = event,
+                        None => (),
+                    }
 
-                    // match process_response.message {
-                    //     Some(message) => {
-                    //         // virtual_frame_buffer
-                    //         //     .get_text_layer()
-                    //         //     .push_char('\u{000D}', None, None, false);
-                    //         // virtual_frame_buffer
-                    //         //     .get_text_layer()
-                    //         //     .push_string(&message, None, None, false);
-                    //     }
-                    //     None => (),
-                    // }
+                    match app_response.message {
+                        Some(message) => {
+                            // virtual_frame_buffer
+                            //     .get_text_layer()
+                            //     .push_char('\u{000D}', None, None, false);
+                            // virtual_frame_buffer
+                            //     .get_text_layer()
+                            //     .push_string(&message, None, None, false);
+                            println!("App message: {}", message);
+                        }
+                        None => (),
+                    }
 
                     //Draw app
-                    //console.draw(&mut virtual_frame_buffer);
-                    // shell.draw(&mut virtual_frame_buffer);
-                    //lines.draw(&mut virtual_frame_buffer);
-                    // squares.draw(&mut virtual_frame_buffer);
-                    // text_edit.draw(&mut virtual_frame_buffer);
-                    // sprite_edit.draw(&mut virtual_frame_buffer);
-                    // draw_loading_border(&mut virtual_frame_buffer, 40, 40); 
+                    for i in 0..app_list.len() {
+                        let app = app_list.get_mut(i).unwrap();
+                        if app.get_state().1 == true {
+                            app.draw(&mut virtual_frame_buffer);
+                        }
+                    }
                 }
 
                 //Render virtual frame buffer to pixels frame buffer with upscaling and CRT effect
@@ -239,11 +237,6 @@ fn main() -> Result<(), Error> {
                 keyboard_input = None;
                 mouse_move_delta.0 = 0.0;
                 mouse_move_delta.1 = 0.0;
-
-                if !booting { 
-                    booting = true;
-                    frame_counter = 0;
-                }
             }
             _ => (),
         }
@@ -251,7 +244,7 @@ fn main() -> Result<(), Error> {
 }
 
 ///Just for fun, random colored lines in overscan zone, Amstrad style
-fn draw_loading_border(virtual_frame_buffer: &mut VirtualFrameBuffer) {
+fn draw_apploading_border(virtual_frame_buffer: &mut VirtualFrameBuffer) {
     let mut random = rand::thread_rng();
     let mut rgb_color: u8 = random.gen_range(0..32);
 
@@ -332,25 +325,10 @@ fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &
 
     //Display loading overscan while "loading"
     if frame_counter >= FRAMES_PER_SEC * 2 && frame_counter <= FRAMES_PER_SEC * 6 {
-        draw_loading_border(virtual_frame_buffer);
-    }
-
-    //After 6 seconds clear everything to prepare for shell
-    if frame_counter > FRAMES_PER_SEC * 6 && frame_counter < 10 * FRAMES_PER_SEC {
-        virtual_frame_buffer.get_text_layer().clear();
-        virtual_frame_buffer.clear_frame_buffer(28);
-
-        //" Fantasy CPC Microcomputer V(0.1)\u{000D}\u{000D} 2022 Damien Torreilles\u{000D}\u{000D}";
-        //" SHELL 0.1\u{000D}\u{000D}Ready\u{000D}"
-
-        virtual_frame_buffer.get_text_layer().insert_string_coord(0, 0, "Fantasy CPC Microcomputer V(0.1)", Some(0x0A1C), None);
-        virtual_frame_buffer.get_text_layer().insert_string_coord(0, 2, "2022 Damien Torreilles", Some(0x0A1C), None);
-        virtual_frame_buffer.get_text_layer().insert_string_coord(0, 4, "SHELL 0.1", Some(0x0A1C), None);
-        virtual_frame_buffer.get_text_layer().insert_string_coord(0, 6, "Ready", Some(0x0A1C), None);
-        virtual_frame_buffer.get_text_layer().insert_char_coord(0, 7, '\u{25AE}', Some(0x0A1C), Some(0x02));
+        draw_apploading_border(virtual_frame_buffer);
     }
     
-    if frame_counter >= 10 * FRAMES_PER_SEC {
+    if frame_counter >= 6 * FRAMES_PER_SEC {
         return false;
     }
     else {

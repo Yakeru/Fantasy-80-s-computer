@@ -43,10 +43,10 @@ impl TextEdit {
         }
     }
 
-    pub fn update(
+    pub fn update_app(
         &mut self,
         keybord_input: Option<KeyboardInput>,
-        char_received: Option<char>,
+        char_received: Option<char>
     ) -> AppResponse {
         let mut response = AppResponse::new();
 
@@ -142,7 +142,7 @@ impl TextEdit {
         return response;
     }
 
-    pub fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    pub fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         // virtual_frame_buffer.get_text_layer().clear();
         // virtual_frame_buffer.get_text_layer().show_cursor = false;
         // virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);

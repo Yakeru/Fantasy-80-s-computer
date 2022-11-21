@@ -14,7 +14,7 @@ pub struct Squares {
     drawing: bool,
     started: bool,
     ended: bool,
-    draw_a_line: bool,
+    draw_appa_line: bool,
 }
 
 impl Squares {
@@ -25,11 +25,11 @@ impl Squares {
             drawing: false,
             started: false,
             ended: false,
-            draw_a_line: true,
+            draw_appa_line: true,
         }
     }
 
-    pub fn update(
+    pub fn update_app(
         &mut self,
         keybord_input: Option<KeyboardInput>,
         char_received: Option<char>,
@@ -54,7 +54,7 @@ impl Squares {
 
                             VirtualKeyCode::Return => {
                                 //Enter
-                                self.draw_a_line = true;
+                                self.draw_appa_line = true;
                             }
                             _ => (),
                         }
@@ -68,7 +68,7 @@ impl Squares {
         return response;
     }
 
-    pub fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    pub fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         //virtual_frame_buffer.get_text_layer().clear();
         //virtual_frame_buffer.get_text_layer().show_cursor = false;
 
@@ -98,7 +98,7 @@ impl Squares {
                 fill,
                 color,
             };
-            virtual_frame_buffer.draw_square(square);
+            virtual_frame_buffer.draw_appsquare(square);
         }
     }
 }

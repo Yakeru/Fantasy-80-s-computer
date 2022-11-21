@@ -118,7 +118,7 @@ impl VirtualFrameBuffer {
         }
     }
 
-    pub fn draw_line(&mut self, line: Line) {
+    pub fn draw_appline(&mut self, line: Line) {
         //self.set_pixel(line.start_x, line.start_y, line.color);
         //self.set_pixel(line.end_x, line.end_y, line.color);
 
@@ -159,7 +159,7 @@ impl VirtualFrameBuffer {
         }
     }
 
-    pub fn draw_square(&mut self, square: Square) {
+    pub fn draw_appsquare(&mut self, square: Square) {
         let start_offset: usize =
             VirtualFrameBuffer::coord_to_vec_index(square.pos_x, square.pos_y);
 
