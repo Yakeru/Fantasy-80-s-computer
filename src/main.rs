@@ -33,14 +33,15 @@ fn main() -> Result<(), Error> {
     //Boolean used to play boot animation once.
     let mut booting = true;
 
-    //Time of boot
+    //The variables passed to the app.update(...)
+    let mut keyboard_input: Option<KeyboardInput> = None;
+    let mut char_received: Option<char> = None;
+    let mut mouse_move_delta: (f64, f64) = (0.0, 0.0);
     let boot_time = Instant::now();
-
-    //Fraae counter
     let mut frame_counter:  u128 = 0;
 
     //Instant used to time frame refresh
-    let mut now = Instant::now();
+    let mut frame_interval = Instant::now();
 
     //Custom intermediate frame buffer
     //Has 1/3 the horizontal resolution and 1/3 the vertical resoluton of pixels surface texture and winit window size.
@@ -87,12 +88,18 @@ fn main() -> Result<(), Error> {
     //The upscaled and "crt'ed" image is then pushed into pixel's frame for final render.
     let mut crt_renderer: CrtEffectRenderer = CrtEffectRenderer::new();
 
-    //Init Shell
     //The Shell is the command line interpreter.
-    //It is launched at startup after the boot animation the winit event loop will update and render the shell by default if
+    //It is launched at startup after the boot animation. 
+    //The winit event loop will update and render the shell by default if
     //no other process is running or has the focus.
+
+    //When pressing "escape" in any other app, it will quit the app and
+    //get back to the shell.
+    //Pressing "escape" again in the shell will quit the program (close winit with a WindowEvent::CloseRequested)
     let mut shell = Box::new(Shell::new());
     shell.set_state(false, false);
+
+    //Other apps
     let mut text_edit = Box::new(TextEdit::new());
     text_edit.set_state(false, false);
     let mut sprite_edit = Box::new(SpriteEditor::new());
@@ -104,6 +111,8 @@ fn main() -> Result<(), Error> {
     let mut weather_app = Box::new(WeatherApp::new());
     weather_app.set_state(false, false);
 
+    //The app_list is used to put them all at the same place and 
+    //easily parse them and update/draw/focus them according to their status.
     let mut app_list: Vec<Box<dyn AppMacro>> = Vec::new();
     app_list.push(shell);
     app_list.push(text_edit);
@@ -111,33 +120,16 @@ fn main() -> Result<(), Error> {
     app_list.push(lines);
     app_list.push(squares);
     app_list.push(weather_app);
-
-    // let mut mouse_sprite: Sprite = Sprite::new_from_file(String::from("mouse"), &String::from("./resources/sprites/sprite1.txt"));
-    // mouse_sprite.pos_x = VIRTUAL_WIDTH / 2;
-    // mouse_sprite.pos_y = VIRTUAL_HEIGHT / 2;
-    // virtual_frame_buffer.get_sprites().push(mouse_sprite);
-    let mut mouse_move_delta: (f64, f64) = (0.0, 0.0);
-
-    //Push the splash screen to the text layer
-    virtual_frame_buffer.clear_frame_buffer(0);
-    // virtual_frame_buffer
-    //     .get_text_layer()
-    //     .push_string(SPLASH, None, None, false);
-
-    let mut keyboard_input: Option<KeyboardInput> = None;
-    let mut char_received: Option<char> = None;
-
     
+    //Fill the screen with black
+    virtual_frame_buffer.clear_frame_buffer(0);
 
     //The event loop here can be considered as a bios rom + terminal
     //it gathers all the keyborad inputs and sends them to the shell, the shell interprets them.
     //it always runs the shell and gives it the focus if no other app is running.
     event_loop.run(move |event, _, control_flow| {
-        //Control_flow::Poll used 100% of one CPU core (In Windows 10 at least)
-        //WaitUntil polls every "const FPS" ms instead: droped global CPU usage from 20% to 4%.
-        //The whole program loops (updates and draws) at "const FPS" fps.
-        //let refresh_timer: Instant = Instant::now().checked_add(Duration::from_millis(FRAME_TIME_MS)).unwrap();
-        *control_flow = ControlFlow::Poll; //WaitUntil(refresh_timer);
+
+        *control_flow = ControlFlow::Poll;
 
         match event {
             Event::WindowEvent { event, .. } => match event {
@@ -180,8 +172,8 @@ fn main() -> Result<(), Error> {
                 if booting {
                     booting = boot_animation(&mut virtual_frame_buffer, &mut crt_renderer, frame_counter);
                 } else {
-                    //Updating apps
 
+                    //Updating apps
                     let mut app_response: AppResponse = AppResponse::new();
 
                     for i in 0..app_list.len() {
@@ -220,13 +212,11 @@ fn main() -> Result<(), Error> {
                 }
 
                 //Render virtual frame buffer to pixels frame buffer with upscaling and CRT effect
-                if now.elapsed().as_micros() >= FRAME_TIME_MS * 1000 {
-                    now = Instant::now();
-                    //let render_time = Instant::now();
+                if frame_interval.elapsed().as_micros() >= FRAME_TIME_MS * 1000 {
+                    frame_interval = Instant::now();
                     virtual_frame_buffer.render();
                     crt_renderer.render(&mut virtual_frame_buffer, pixels.get_frame_mut());
                     pixels.render().expect("Pixels render oups");
-                    //println!("drawing: {} micros", render_time.elapsed().as_secs());
                     frame_counter = frame_counter + 1;
                 }
 
