@@ -1,11 +1,15 @@
-use crate::characters_rom::rom;
-use crate::color_palettes::*;
-use crate::config;
-use crate::sprite::Sprite;
-use crate::text_layer::TextLayer;
+use characters_rom::rom;
+use color_palettes::*;
+use sprite::Sprite;
+use text_layer::TextLayer;
 use rand::Rng;
 use std::time::{Duration, Instant};
-use winit::dpi::PhysicalSize;
+
+pub mod config;
+pub mod characters_rom;
+pub mod color_palettes;
+pub mod sprite;
+pub mod text_layer;
 
 const WIDTH: usize = config::WIDTH;
 const HEIGHT: usize = config::HEIGHT;
@@ -40,7 +44,8 @@ pub struct VirtualFrameBuffer {
 pub struct Square {
     pub pos_x: usize,
     pub pos_y: usize,
-    pub size: PhysicalSize<usize>,
+    pub width: usize,
+    pub height: usize,
     pub color: u8,
     pub fill: bool,
 }
@@ -113,7 +118,7 @@ impl VirtualFrameBuffer {
         }
     }
 
-    pub fn draw_line(&mut self, line: Line) {
+    pub fn draw_appline(&mut self, line: Line) {
         //self.set_pixel(line.start_x, line.start_y, line.color);
         //self.set_pixel(line.end_x, line.end_y, line.color);
 
@@ -154,21 +159,21 @@ impl VirtualFrameBuffer {
         }
     }
 
-    pub fn draw_square(&mut self, square: Square) {
+    pub fn draw_appsquare(&mut self, square: Square) {
         let start_offset: usize =
             VirtualFrameBuffer::coord_to_vec_index(square.pos_x, square.pos_y);
 
-        for row in 0..square.size.width {
-            for column in 0..square.size.height {
+        for row in 0..square.width {
+            for column in 0..square.height {
                 if square.fill {
                     let offset = (start_offset + column + VIRTUAL_WIDTH * row)
                         % (VIRTUAL_WIDTH * VIRTUAL_HEIGHT);
                     self.frame[offset] = square.color;
                 } else {
                     if row == 0
-                        || row == square.size.width - 1
+                        || row == square.width - 1
                         || column == 0
-                        || column == square.size.height - 1
+                        || column == square.height - 1
                     {
                         let offset = (start_offset + column + VIRTUAL_WIDTH * row)
                             % (VIRTUAL_WIDTH * VIRTUAL_HEIGHT);
@@ -247,7 +252,7 @@ impl VirtualFrameBuffer {
                 }
 
                 pixel_count += 1;
-                if pixel_count == sprite[0].value_in_physical_size().width {
+                if pixel_count == sprite[0].value_in_physical_size().0 {
                     pixel_count = 0;
                     sprite_line_count += 1;
                 }

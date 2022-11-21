@@ -3,7 +3,7 @@ use app_macro_derive::AppMacro;
 use winit::event::{ElementState, KeyboardInput};
 
 //use crate::text_layer::TextLayerChar;
-use crate::virtual_frame_buffer::*;
+use virtual_frame_buffer::*;
 use winit::dpi::PhysicalSize;
 use winit::{event::VirtualKeyCode, event_loop::ControlFlow};
 
@@ -41,7 +41,7 @@ impl SpriteEditor {
         }
     }
 
-    pub fn update(
+    pub fn update_app(
         &mut self,
         keybord_input: Option<KeyboardInput>,
         char_received: Option<char>,
@@ -138,7 +138,7 @@ impl SpriteEditor {
         return response;
     }
 
-    pub fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    pub fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
         //virtual_frame_buffer.get_text_layer().clear();
         //virtual_frame_buffer.get_text_layer().show_cursor = false;
@@ -153,12 +153,13 @@ impl SpriteEditor {
         let bkg_square: Square = Square {
             pos_x: 20,
             pos_y: 20,
-            size: square_size,
+            width: bkg_square_width,
+            height: bkg_square_height,
             color: 5,
             fill: true,
         };
 
-        virtual_frame_buffer.draw_square(bkg_square);
+        virtual_frame_buffer.draw_appsquare(bkg_square);
 
         //Pixels
         for row in 0..SPRITE_SIZE.height {
@@ -169,24 +170,26 @@ impl SpriteEditor {
                 let pixel_square: Square = Square {
                     pos_x,
                     pos_y,
-                    size: EDITOR_PIXEL_SIZE,
+                    width: EDITOR_PIXEL_SIZE.width,
+                    height: EDITOR_PIXEL_SIZE.height,
                     color: self.pixel_grid[row * SPRITE_SIZE.width + column],
                     fill: true,
                 };
 
-                virtual_frame_buffer.draw_square(pixel_square);
+                virtual_frame_buffer.draw_appsquare(pixel_square);
 
                 //Highlight pixel if selected
                 if self.selected_pixel_x == column && self.selected_pixel_y == row {
                     let highlight_square: Square = Square {
                         pos_x: pos_x - 1,
                         pos_y: pos_y - 1,
-                        size: EDITOR_PIXEL_HIGHLIGHT_SIZE,
+                        width: EDITOR_PIXEL_HIGHLIGHT_SIZE.width,
+                        height: EDITOR_PIXEL_HIGHLIGHT_SIZE.height,
                         color: 7,
                         fill: false,
                     };
 
-                    virtual_frame_buffer.draw_square(highlight_square);
+                    virtual_frame_buffer.draw_appsquare(highlight_square);
                 }
             }
         }

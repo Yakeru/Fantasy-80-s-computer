@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 winit = "0.27.3"
+virtual_frame_buffer = { path = "../virtual_frame_buffer" }

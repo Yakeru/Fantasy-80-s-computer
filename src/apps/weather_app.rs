@@ -1,10 +1,11 @@
+use crate::unicode;
 use app_macro::*;
 use app_macro_derive::AppMacro;
 
 // use crate::text_layer::TextLayerChar;
-use winit::event::VirtualKeyCode;
+use winit::event::{VirtualKeyCode, KeyboardInput};
 
-use crate::{virtual_frame_buffer::VirtualFrameBuffer, unicode};
+use virtual_frame_buffer::*;
 use openweathermap::Receiver;
 use std::time::{Duration, Instant};
 
@@ -24,7 +25,7 @@ pub struct WeatherApp {
     started: bool,
     ended: bool,
     receiver: Receiver,
-    update_interval: Duration,
+    update_appinterval: Duration,
     last_update: Instant,
     message: String,
 }
@@ -56,21 +57,20 @@ impl WeatherApp {
             started: false,
             ended: false,
             receiver: openweathermap::init("45.4874487,-73.5745913", "metric", "fr", key, 1),
-            update_interval: Duration::from_secs(60),
+            update_appinterval: Duration::from_secs(60),
             last_update: Instant::now().checked_add(Duration::from_secs(55)).unwrap(),
             message: String::from("Loading..."),
         }
     }
 
-    fn update(
+    fn update_app(
         &mut self,
-        character_received: Option<char>,
-        key_pressed_os: Option<VirtualKeyCode>,
-        key_released: Option<VirtualKeyCode>,
+        keybord_input: Option<KeyboardInput>,
+        char_received: Option<char>
     ) -> AppResponse {
         let mut response = AppResponse::new();
 
-        //if Instant::now().duration_since(self.last_update) >= self.update_interval {
+        //if Instant::now().duration_since(self.last_update) >= self.update_appinterval {
         let weather = openweathermap::update(&self.receiver);
 
         match weather {
@@ -92,7 +92,7 @@ impl WeatherApp {
             self.started = true;
         }
 
-        match character_received {
+        match char_received {
             Some(c) => {
                 match c {
                     unicode::BACKSPACE => {
@@ -123,55 +123,10 @@ impl WeatherApp {
             None => (),
         }
 
-        match key_released {
-            Some(k) => {
-                match k {
-                    VirtualKeyCode::Left => {
-                        if self.selected_color == 31 {
-                            self.selected_color = 0
-                        } else {
-                            self.selected_color += 1
-                        }
-                    }
-
-                    VirtualKeyCode::Right => {
-                        if self.selected_color == 0 {
-                            self.selected_color = 31
-                        } else {
-                            self.selected_color -= 1
-                        }
-                    }
-
-                    VirtualKeyCode::Up => {
-                        if self.selected_bkg_color == 31 {
-                            self.selected_bkg_color = 0
-                        } else {
-                            self.selected_bkg_color += 1
-                        }
-                    }
-
-                    VirtualKeyCode::Down => {
-                        if self.selected_bkg_color == 0 {
-                            self.selected_bkg_color = 31
-                        } else {
-                            self.selected_bkg_color -= 1
-                        }
-                    }
-
-                    VirtualKeyCode::PageUp => {
-                        //self.text_layer.scroll_up();
-                    }
-
-                    _ => (),
-                }
-            }
-            None => (),
-        }
-
         return response;
     }
 
-    fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         // virtual_frame_buffer.get_text_layer().clear();
         // virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
         // virtual_frame_buffer

@@ -1,5 +1,4 @@
 use std::fs;
-use winit::dpi::PhysicalSize;
 
 pub struct Sprite {
     pub id: String,
@@ -56,15 +55,15 @@ impl Sprite {
         }
     }
 
-    pub fn value_in_physical_size(&self) -> PhysicalSize<usize> {
+    pub fn value_in_physical_size(&self) -> (usize, usize) {
         match self.size {
-            SpriteSize::_8x8 => PhysicalSize::new(8 as usize, 8 as usize),
-            SpriteSize::_8x16 => PhysicalSize::new(8 as usize, 16 as usize),
-            SpriteSize::_16x8 => PhysicalSize::new(16 as usize, 8 as usize),
-            SpriteSize::_16x16 => PhysicalSize::new(16 as usize, 16 as usize),
-            SpriteSize::_16x32 => PhysicalSize::new(16 as usize, 32 as usize),
-            SpriteSize::_32x16 => PhysicalSize::new(32 as usize, 16 as usize),
-            SpriteSize::_32x32 => PhysicalSize::new(32 as usize, 23 as usize),
+            SpriteSize::_8x8 => (8 as usize, 8 as usize),
+            SpriteSize::_8x16 => (8 as usize, 16 as usize),
+            SpriteSize::_16x8 => (16 as usize, 8 as usize),
+            SpriteSize::_16x16 => (16 as usize, 16 as usize),
+            SpriteSize::_16x32 => (16 as usize, 32 as usize),
+            SpriteSize::_32x16 => (32 as usize, 16 as usize),
+            SpriteSize::_32x32 => (32 as usize, 23 as usize),
         }
     }
 

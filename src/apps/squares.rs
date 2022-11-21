@@ -2,7 +2,7 @@ use app_macro::*;
 use app_macro_derive::AppMacro;
 use winit::event_loop::ControlFlow;
 
-use crate::virtual_frame_buffer::*;
+use virtual_frame_buffer::*;
 use rand::Rng;
 use winit::dpi::PhysicalSize;
 use winit::event::{KeyboardInput, VirtualKeyCode};
@@ -14,7 +14,7 @@ pub struct Squares {
     drawing: bool,
     started: bool,
     ended: bool,
-    draw_a_line: bool,
+    draw_appa_line: bool,
 }
 
 impl Squares {
@@ -25,11 +25,11 @@ impl Squares {
             drawing: false,
             started: false,
             ended: false,
-            draw_a_line: true,
+            draw_appa_line: true,
         }
     }
 
-    pub fn update(
+    pub fn update_app(
         &mut self,
         keybord_input: Option<KeyboardInput>,
         char_received: Option<char>,
@@ -54,7 +54,7 @@ impl Squares {
 
                             VirtualKeyCode::Return => {
                                 //Enter
-                                self.draw_a_line = true;
+                                self.draw_appa_line = true;
                             }
                             _ => (),
                         }
@@ -68,7 +68,7 @@ impl Squares {
         return response;
     }
 
-    pub fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    pub fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         //virtual_frame_buffer.get_text_layer().clear();
         //virtual_frame_buffer.get_text_layer().show_cursor = false;
 
@@ -80,7 +80,8 @@ impl Squares {
         for _i in 0..5 {
             let pos_x: usize = random.gen_range(0..max_x);
             let pos_y: usize = random.gen_range(0..max_y);
-            let size = PhysicalSize::new(random.gen_range(0..max_x), random.gen_range(0..max_y));
+            let width: usize = random.gen_range(0..max_x);
+            let height: usize = random.gen_range(0..max_y);
             let color: u8 = random.gen_range(0..32);
             let fill = if random.gen_range(0..4) > 2 {
                 true
@@ -92,11 +93,12 @@ impl Squares {
             let square: Square = Square {
                 pos_x,
                 pos_y,
-                size,
+                width,
+                height,
                 fill,
                 color,
             };
-            virtual_frame_buffer.draw_square(square);
+            virtual_frame_buffer.draw_appsquare(square);
         }
     }
 }

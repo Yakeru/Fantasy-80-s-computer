@@ -41,6 +41,7 @@ dependencies = [
 name = "app_macro"
 version = "0.1.0"
 dependencies = [
+ "virtual_frame_buffer",
  "winit",
 ]
 
@@ -1932,6 +1933,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
+name = "virtual_frame_buffer"
+version = "0.1.0"
+dependencies = [
+ "rand",
+]
+
+[[package]]
 name = "want"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2278,6 +2286,7 @@ dependencies = [
  "openweathermap",
  "pixels",
  "rand",
+ "virtual_frame_buffer",
  "winit",
  "winit_input_helper",
 ]
