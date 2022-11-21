@@ -24,8 +24,8 @@ use crate::apps::weather_app::*;
 //Settings
 const FRAME_TIME_MS: u128 = 16; //ms per frame : 16 = 60fps, 32 = 30fps, 1000 = 1fps
 const FRAMES_PER_SEC: u128 = 60;
-const SPLASH: &str =
-    " Fantasy CPC Microcomputer V(0.1)\u{000D}\u{000D} 2022 Damien Torreilles\u{000D}\u{000D}";
+// const SPLASH: &str =
+//     " Fantasy CPC Microcomputer V(0.1)\u{000D}\u{000D} 2022 Damien Torreilles\u{000D}\u{000D}";
 
 ///*********************************************************THE MAIN
 fn main() -> Result<(), Error> {
@@ -37,7 +37,7 @@ fn main() -> Result<(), Error> {
     let mut keyboard_input: Option<KeyboardInput> = None;
     let mut char_received: Option<char> = None;
     let mut mouse_move_delta: (f64, f64) = (0.0, 0.0);
-    let boot_time = Instant::now();
+    //let boot_time = Instant::now();
     let mut frame_counter:  u128 = 0;
 
     //Instant used to time frame refresh
@@ -150,9 +150,17 @@ fn main() -> Result<(), Error> {
                 DeviceEvent::MouseMotion { delta } => {
                     mouse_move_delta = delta;
                 }
-                DeviceEvent::Button { button, state } => match state {
-                    ElementState::Pressed => (),
-                    ElementState::Released => (),
+                DeviceEvent::Button { button, state } => {
+                    match state {
+                        ElementState::Pressed => (),
+                        ElementState::Released => (),
+                    };
+
+                    match button {
+                        0 => (),
+                        1 => (),
+                        _ => ()
+                    }
                 },
                 DeviceEvent::Key(k) => {
                     keyboard_input = Some(k);
@@ -254,7 +262,7 @@ fn main() -> Result<(), Error> {
 }
 
 ///Just for fun, random colored lines in overscan zone, Amstrad style
-fn draw_apploading_border(virtual_frame_buffer: &mut VirtualFrameBuffer) {
+fn draw_loading_border(virtual_frame_buffer: &mut VirtualFrameBuffer) {
     let mut random = rand::thread_rng();
     let mut rgb_color: u8 = random.gen_range(0..32);
 
@@ -268,7 +276,7 @@ fn draw_apploading_border(virtual_frame_buffer: &mut VirtualFrameBuffer) {
     let horiz_size = (virtual_frame_buffer.get_width() - virtual_frame_buffer.get_text_layer().get_dimensions().0 * 8)/2;
     let vert_size = (virtual_frame_buffer.get_height() - virtual_frame_buffer.get_text_layer().get_dimensions().1 * 8)/2;
 
-    for pixel in virtual_frame_buffer.get_frame().chunks_exact_mut(1) {
+    for pixel in virtual_frame_buffer.get_frame_mut().chunks_exact_mut(1) {
         if line_pixel_count < horiz_size
             || line_pixel_count > width - horiz_size
             || line_count < vert_size
@@ -309,23 +317,23 @@ fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &
     if frame_counter == FRAMES_PER_SEC * 2 {
 
         //Clear text layer
-        virtual_frame_buffer.get_text_layer().clear();
+        virtual_frame_buffer.get_text_layer_mut().clear();
 
         //Clear frame buffer
         virtual_frame_buffer.clear_frame_buffer(0);
 
         //Display all possible colors on first row
         for i in 0..32_u16 {
-            virtual_frame_buffer.get_text_layer().insert_char(i as usize, ' ', Some(i), None);
+            virtual_frame_buffer.get_text_layer_mut().insert_char(i as usize, ' ', Some(i), None);
         }
 
         //Display all chars starting on second row
         let width = virtual_frame_buffer.get_text_layer().get_dimensions().0;
         for i in 0..characters_rom::ROM.len() {
-            virtual_frame_buffer.get_text_layer().insert_char(width + i as usize, characters_rom::CHARS[i], Some(0x0700), None);
+            virtual_frame_buffer.get_text_layer_mut().insert_char(width + i as usize, characters_rom::CHARS[i], Some(0x0700), None);
         }
 
-        virtual_frame_buffer.get_text_layer().insert_string_coord(0, 4, "Loading..." , Some(0x0700), None);
+        virtual_frame_buffer.get_text_layer_mut().insert_string_coord(0, 4, "Loading..." , Some(0x0700), None);
     }
 
     //After 4 seconds, show loading message
@@ -335,7 +343,7 @@ fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &
 
     //Display loading overscan while "loading"
     if frame_counter >= FRAMES_PER_SEC * 2 && frame_counter <= FRAMES_PER_SEC * 6 {
-        draw_apploading_border(virtual_frame_buffer);
+        draw_loading_border(virtual_frame_buffer);
     }
     
     if frame_counter >= 6 * FRAMES_PER_SEC {
@@ -353,7 +361,7 @@ fn genrate_random_garbage(virtual_frame_buffer: &mut VirtualFrameBuffer) {
         let frame: u8 = random.gen_range(0..32);
         virtual_frame_buffer.clear_frame_buffer(frame);
 
-        let color_map = virtual_frame_buffer.get_text_layer().get_color_map();
+        let color_map = virtual_frame_buffer.get_text_layer_mut().get_color_map();
         for index in 0..color_map.len() {
             let bkg: u8 = random.gen_range(0..32);
             let frt: u8 = random.gen_range(0..32);
@@ -361,13 +369,13 @@ fn genrate_random_garbage(virtual_frame_buffer: &mut VirtualFrameBuffer) {
             color_map[index] = Some(color);
         }
     
-        let char_map = virtual_frame_buffer.get_text_layer().get_char_map();
+        let char_map = virtual_frame_buffer.get_text_layer_mut().get_char_map();
         for index in 0..char_map.len() {
             let toto:usize = random.gen_range(0..characters_rom::CHARS.len());
             char_map[index] = Some(characters_rom::CHARS[toto]);
         }
 
-        let effect_map = virtual_frame_buffer.get_text_layer().get_effect_map();
+        let effect_map = virtual_frame_buffer.get_text_layer_mut().get_effect_map();
         for index in 0..effect_map.len() {
             let toto:u8 = random.gen_range(0..5);
             effect_map[index] = Some(toto);

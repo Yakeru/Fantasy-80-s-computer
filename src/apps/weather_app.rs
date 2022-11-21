@@ -3,23 +3,17 @@ use app_macro::*;
 use app_macro_derive::AppMacro;
 
 // use crate::text_layer::TextLayerChar;
-use winit::event::{VirtualKeyCode, KeyboardInput};
+use winit::event::{KeyboardInput};
 
 use virtual_frame_buffer::*;
 use openweathermap::Receiver;
 use std::time::{Duration, Instant};
 
 const DEFAULT_BKG_COLOR: u8 = 7;
-const DEFAULT_COLOR: u8 = 0;
 
 #[derive(AppMacro)]
 pub struct WeatherApp {
     name: String,
-    selected_color: u8,
-    selected_bkg_color: u8,
-    columns: u8,
-    rows: u8,
-    // buffer: Vec<TextLayerChar>,
     updating: bool,
     drawing: bool,
     started: bool,
@@ -47,11 +41,6 @@ impl WeatherApp {
 
         WeatherApp {
             name: String::from("Weather"),
-            selected_color: DEFAULT_COLOR,
-            selected_bkg_color: DEFAULT_BKG_COLOR,
-            columns: 0,
-            rows: 0,
-            // buffer,
             updating: false,
             drawing: false,
             started: false,
@@ -68,28 +57,33 @@ impl WeatherApp {
         keybord_input: Option<KeyboardInput>,
         char_received: Option<char>
     ) -> AppResponse {
-        let mut response = AppResponse::new();
+        let response = AppResponse::new();
 
-        //if Instant::now().duration_since(self.last_update) >= self.update_appinterval {
-        let weather = openweathermap::update(&self.receiver);
+        if Instant::now().duration_since(self.last_update) >= self.update_appinterval {
+            let weather = openweathermap::update(&self.receiver);
 
-        match weather {
-            Some(result) => match result {
-                Ok(current_weather) => {
-                    self.message = format!("Temp: {}c\u{000D}feels like: {}c\u{000D}Humidity: {}%\u{000D}Pressure: {}Kpa\u{000D}Description: {}", current_weather.main.temp, 
-                            current_weather.main.feels_like, current_weather.main.humidity, current_weather.main.pressure, &current_weather.weather[0].description);
-                }
-                Err(message) => println!("OpenWeather API message {}", message),
-            },
-            None => (),
+            match weather {
+                Some(result) => match result {
+                    Ok(current_weather) => {
+                        self.message = format!("Temp: {}c\u{000D}feels like: {}c\u{000D}Humidity: {}%\u{000D}Pressure: {}Kpa\u{000D}Description: {}", current_weather.main.temp, 
+                                current_weather.main.feels_like, current_weather.main.humidity, current_weather.main.pressure, &current_weather.weather[0].description);
+                    }
+                    Err(message) => println!("OpenWeather API message {}", message),
+                },
+                None => (),
+            }
+
+            self.last_update = Instant::now();
         }
-
-        self.last_update = Instant::now();
-        //}
 
         if !self.started {
             self.start();
             self.started = true;
+        }
+
+        match keybord_input {
+            Some(_c) => (),
+            None => ()
         }
 
         match char_received {
@@ -127,10 +121,9 @@ impl WeatherApp {
     }
 
     fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-        // virtual_frame_buffer.get_text_layer().clear();
-        // virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
-        // virtual_frame_buffer
-        //     .get_text_layer()
-        //     .push_string(&self.message, None, None, false);
+        virtual_frame_buffer.get_text_layer_mut().clear();
+        virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
+        virtual_frame_buffer
+            .get_text_layer_mut().insert_string_coord(0, 0, &self.message, None, None);
     }
 }

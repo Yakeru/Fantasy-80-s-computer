@@ -19,16 +19,16 @@ const DEFAULT_BKG_COLOR: u8 = 0;
 //       |__ shadowed (draws a black checkered pattern on top)
 
 
-struct Console {
-    default_color: u8,
-    default_bkg_color: u8,
-    size_x: usize,
-    size_y: usize,
-    pos_x: usize,
-    pos_y: usize,
-    buffer: Vec<(char, u16, u8)>,
-    cursor_pos: usize
-}
+// struct Console {
+//     default_color: u8,
+//     default_bkg_color: u8,
+//     size_x: usize,
+//     size_y: usize,
+//     pos_x: usize,
+//     pos_y: usize,
+//     buffer: Vec<(char, u16, u8)>,
+//     cursor_pos: usize
+// }
 
 pub struct TextLayer {
     default_color: u8,

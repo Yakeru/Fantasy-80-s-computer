@@ -4,7 +4,6 @@ use winit::event_loop::ControlFlow;
 
 use virtual_frame_buffer::*;
 use rand::Rng;
-use winit::dpi::PhysicalSize;
 use winit::event::{KeyboardInput, VirtualKeyCode};
 
 #[derive(AppMacro)]
@@ -65,6 +64,11 @@ impl Squares {
             None => (),
         }
 
+        match char_received {
+            Some(_c) => (),
+            None => ()
+        }
+
         return response;
     }
 
@@ -98,7 +102,7 @@ impl Squares {
                 fill,
                 color,
             };
-            virtual_frame_buffer.draw_appsquare(square);
+            virtual_frame_buffer.draw_square(square);
         }
     }
 }

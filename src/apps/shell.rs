@@ -4,7 +4,7 @@ use virtual_frame_buffer::*;
 use app_macro::*;
 use app_macro_derive::AppMacro;
 use winit::event::KeyboardInput;
-use winit::{event::VirtualKeyCode, event_loop::ControlFlow};
+use winit::event_loop::ControlFlow;
 
 const SHELL_START_MESSAGE: &str = " SHELL 0.1\u{000D}\u{000D}Ready\u{000D}";
 
@@ -121,6 +121,9 @@ impl Shell {
             } else if command == "error" {
                 self.push_string("[ERROR]", Style::Error);
                 self.push_string("this is an error.\u{000D}", Style::Default);
+            } else if command == "highlight" {
+                self.push_string("[ERROR]", Style::Highlight);
+                self.push_string("this is a highlight.\u{000D}", Style::Default);
             } else if command == "quit" || command == "exit" {
                 response.event = Some(ControlFlow::Exit);
                 response.set_message(String::from("Command 'quit' or 'exit' received; stopping."));
@@ -167,6 +170,7 @@ impl Shell {
                         let cleaned_string_command = string_command.trim().to_lowercase();
                         response = self.interpret_command(cleaned_string_command);
                         self.command.clear();
+                        self.command_history.push(string_command);
                     }
 
                     unicode::ESCAPE => {
@@ -186,33 +190,36 @@ impl Shell {
             None => (),
         }
 
+        match keybord_input {
+            Some(_k) => (),
+            None => (),
+        }
+
         return response;
     }
 
     pub fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         if self.clear_text_layer {
-            virtual_frame_buffer.get_text_layer().clear();
+            virtual_frame_buffer.get_text_layer_mut().clear();
             self.clear_text_layer = false;
             self.last_character_received = None;
         }
 
         virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
 
-        // match self.last_character_received {
-        //     Some(c) => {
-        //         virtual_frame_buffer.get_text_layer().push_character(Some(
-        //             self.get_text_layer_char_from_style(StyledChar::Default(c)),
-        //         ));
-        //     }
+        match self.last_character_received {
+            Some(c) => {
+                virtual_frame_buffer.get_text_layer_mut().insert_char(0, c, Some(0x0A00), Some(0));
+            }
 
-        //     None => (),
-        // }
+            None => (),
+        }
 
-        // for c in &self.display_buffer {
-        //     virtual_frame_buffer
-        //         .get_text_layer()
-        //         .push_character(Some(self.get_text_layer_char_from_style(*c)));
-        // }
+        for c in &self.display_buffer {
+            let text_layer_char: (char, u16, u8) = self.get_text_layer_char_from_style(*c);
+            virtual_frame_buffer
+                .get_text_layer_mut().insert_char(0, text_layer_char.0, Some(text_layer_char.1), Some(text_layer_char.2));
+        }
 
         self.display_buffer.clear();
     }
