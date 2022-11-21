@@ -1,7 +1,6 @@
-use crate::virtual_frame_buffer::{CrtEffectRenderer, VirtualFrameBuffer};
+use virtual_frame_buffer::*;
 use app_macro::*;
-use characters_rom::CHARS;
-use pixels::{Error, PixelsBuilder, SurfaceTexture, wgpu::FragmentState};
+use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
 use std::time::Instant;
 use winit::{
@@ -10,15 +9,8 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
-use chrono;
 
-mod config;
 mod unicode;
-mod characters_rom;
-mod color_palettes;
-mod sprite;
-mod text_layer;
-mod virtual_frame_buffer;
 
 //Apps
 mod apps;
@@ -270,8 +262,8 @@ fn draw_loading_border(virtual_frame_buffer: &mut VirtualFrameBuffer) {
 
     let width = virtual_frame_buffer.get_width();
     let height = virtual_frame_buffer.get_height();
-    let horiz_size = (config::VIRTUAL_WIDTH - config::TEXT_COLUMNS * 8)/2;
-    let vert_size = (config::VIRTUAL_HEIGHT - config::TEXT_ROWS * 8)/2;
+    let horiz_size = (virtual_frame_buffer.get_width() - virtual_frame_buffer.get_text_layer().get_dimensions().0 * 8)/2;
+    let vert_size = (virtual_frame_buffer.get_height() - virtual_frame_buffer.get_text_layer().get_dimensions().1 * 8)/2;
 
     for pixel in virtual_frame_buffer.get_frame().chunks_exact_mut(1) {
         if line_pixel_count < horiz_size
@@ -383,8 +375,8 @@ fn genrate_random_garbage(virtual_frame_buffer: &mut VirtualFrameBuffer) {
     
         let char_map = virtual_frame_buffer.get_text_layer().get_char_map();
         for index in 0..char_map.len() {
-            let toto:usize = random.gen_range(0..CHARS.len());
-            char_map[index] = Some(CHARS[toto]);
+            let toto:usize = random.gen_range(0..characters_rom::CHARS.len());
+            char_map[index] = Some(characters_rom::CHARS[toto]);
         }
 
         let effect_map = virtual_frame_buffer.get_text_layer().get_effect_map();

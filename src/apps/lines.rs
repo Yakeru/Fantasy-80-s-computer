@@ -1,4 +1,4 @@
-use crate::{virtual_frame_buffer::*, unicode};
+use virtual_frame_buffer::*;
 use app_macro::*;
 use app_macro_derive::AppMacro;
 use rand::Rng;

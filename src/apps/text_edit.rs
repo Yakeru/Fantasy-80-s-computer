@@ -1,7 +1,7 @@
 use app_macro::*;
 use app_macro_derive::AppMacro;
 use crate::unicode;
-use crate::virtual_frame_buffer::VirtualFrameBuffer;
+use virtual_frame_buffer::*;
 use std::io::{self, Write};
 use winit::{
     event::{ElementState, KeyboardInput, VirtualKeyCode},

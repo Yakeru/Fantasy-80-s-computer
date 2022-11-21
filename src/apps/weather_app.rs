@@ -1,10 +1,11 @@
+use crate::unicode;
 use app_macro::*;
 use app_macro_derive::AppMacro;
 
 // use crate::text_layer::TextLayerChar;
 use winit::event::VirtualKeyCode;
 
-use crate::{virtual_frame_buffer::VirtualFrameBuffer, unicode};
+use virtual_frame_buffer::*;
 use openweathermap::Receiver;
 use std::time::{Duration, Instant};
 

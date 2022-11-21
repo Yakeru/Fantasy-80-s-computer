@@ -3,7 +3,7 @@ use app_macro_derive::AppMacro;
 use winit::event::{ElementState, KeyboardInput};
 
 //use crate::text_layer::TextLayerChar;
-use crate::virtual_frame_buffer::*;
+use virtual_frame_buffer::*;
 use winit::dpi::PhysicalSize;
 use winit::{event::VirtualKeyCode, event_loop::ControlFlow};
 
@@ -153,7 +153,8 @@ impl SpriteEditor {
         let bkg_square: Square = Square {
             pos_x: 20,
             pos_y: 20,
-            size: square_size,
+            width: bkg_square_width,
+            height: bkg_square_height,
             color: 5,
             fill: true,
         };
@@ -169,7 +170,8 @@ impl SpriteEditor {
                 let pixel_square: Square = Square {
                     pos_x,
                     pos_y,
-                    size: EDITOR_PIXEL_SIZE,
+                    width: EDITOR_PIXEL_SIZE.width,
+                    height: EDITOR_PIXEL_SIZE.height,
                     color: self.pixel_grid[row * SPRITE_SIZE.width + column],
                     fill: true,
                 };
@@ -181,7 +183,8 @@ impl SpriteEditor {
                     let highlight_square: Square = Square {
                         pos_x: pos_x - 1,
                         pos_y: pos_y - 1,
-                        size: EDITOR_PIXEL_HIGHLIGHT_SIZE,
+                        width: EDITOR_PIXEL_HIGHLIGHT_SIZE.width,
+                        height: EDITOR_PIXEL_HIGHLIGHT_SIZE.height,
                         color: 7,
                         fill: false,
                     };

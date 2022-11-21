@@ -1,6 +1,6 @@
 // use crate::text_layer::TextLayerChar;
 use crate::unicode;
-use crate::virtual_frame_buffer::VirtualFrameBuffer;
+use virtual_frame_buffer::*;
 use app_macro::*;
 use app_macro_derive::AppMacro;
 use winit::event::KeyboardInput;
