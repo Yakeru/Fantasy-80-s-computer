@@ -234,7 +234,7 @@ fn main() -> Result<(), Error> {
                     now = Instant::now();
                     //let render_time = Instant::now();
                     virtual_frame_buffer.render();
-                    crt_renderer.render(&mut virtual_frame_buffer, pixels.get_frame());
+                    crt_renderer.render(&mut virtual_frame_buffer, pixels.get_frame_mut());
                     pixels.render().expect("Pixels render oups");
                     //println!("drawing: {} micros", render_time.elapsed().as_secs());
                     frame_counter = frame_counter + 1;
