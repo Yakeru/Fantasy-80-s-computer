@@ -173,6 +173,26 @@ fn main() -> Result<(), Error> {
                     booting = boot_animation(&mut virtual_frame_buffer, &mut crt_renderer, frame_counter);
                 } else {
 
+                    if char_received.is_some() && char_received.unwrap() == 's' {
+                        for i in 0..app_list.len() {
+                            let app = app_list.get_mut(i).unwrap();
+                            if app.get_name() == String::from("Squares") {
+                                app.set_state(true, true);
+                            } else {
+                                app.set_state(false, false)
+                            }
+                        }
+                    } else if char_received.is_some() && char_received.unwrap() == 'l' {
+                        for i in 0..app_list.len() {
+                            let app = app_list.get_mut(i).unwrap();
+                            if app.get_name() == String::from("Lines") {
+                                app.set_state(true, true);
+                            } else {
+                                app.set_state(false, false)
+                            }
+                        }
+                    }
+
                     //Updating apps
                     let mut app_response: AppResponse = AppResponse::new();
 
