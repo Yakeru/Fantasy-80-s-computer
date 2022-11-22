@@ -93,7 +93,6 @@ fn main() -> Result<(), Error> {
     //The winit event loop will update and render the shell by default if
     //no other process is running or has the focus.
     //The Shell uses the always running console 0 as default output.
-
     //When pressing "escape" in any other app, it will quit the app and
     //get back to the shell.
     //Pressing "escape" again in the shell will quit the program (close winit with a WindowEvent::CloseRequested)
@@ -117,12 +116,12 @@ fn main() -> Result<(), Error> {
     //To be managed properly, apps must be added to that list.
     //The main goes through the list and updates/renders the apps according to their statuses.
     let mut app_list: Vec<Box<dyn AppMacro>> = Vec::new();
-    // app_list.push(shell);
+    app_list.push(shell);
     app_list.push(lines);
-    // app_list.push(text_edit);
-    // app_list.push(sprite_edit);
-    // app_list.push(squares);
-    // app_list.push(weather_app);
+    app_list.push(text_edit);
+    app_list.push(sprite_edit);
+    app_list.push(squares);
+    app_list.push(weather_app);
     
     //Fill the screen with black
     virtual_frame_buffer.clear_frame_buffer(0);
@@ -187,25 +186,25 @@ fn main() -> Result<(), Error> {
                     booting = boot_animation(&mut virtual_frame_buffer, &mut crt_renderer, frame_counter);
                 } else {
 
-                    // if char_received.is_some() && char_received.unwrap() == 's' {
-                    //     for i in 0..app_list.len() {
-                    //         let app = app_list.get_mut(i).unwrap();
-                    //         if app.get_name() == String::from("Squares") {
-                    //             app.set_state(true, true);
-                    //         } else {
-                    //             app.set_state(false, false)
-                    //         }
-                    //     }
-                    // } else if char_received.is_some() && char_received.unwrap() == 'l' {
-                    //     for i in 0..app_list.len() {
-                    //         let app = app_list.get_mut(i).unwrap();
-                    //         if app.get_name() == String::from("Lines") {
-                    //             app.set_state(true, true);
-                    //         } else {
-                    //             app.set_state(false, false)
-                    //         }
-                    //     }
-                    // }
+                    if char_received.is_some() && char_received.unwrap() == 's' {
+                        for i in 0..app_list.len() {
+                            let app = app_list.get_mut(i).unwrap();
+                            if app.get_name() == String::from("Squares") {
+                                app.set_state(true, true);
+                            } else {
+                                app.set_state(false, false)
+                            }
+                        }
+                    } else if char_received.is_some() && char_received.unwrap() == 'l' {
+                        for i in 0..app_list.len() {
+                            let app = app_list.get_mut(i).unwrap();
+                            if app.get_name() == String::from("Lines") {
+                                app.set_state(true, true);
+                            } else {
+                                app.set_state(false, false)
+                            }
+                        }
+                    }
 
                     //Updating apps
                     let mut app_response: AppResponse = AppResponse::new();
