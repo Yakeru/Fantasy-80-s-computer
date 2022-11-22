@@ -1,4 +1,4 @@
-use virtual_frame_buffer::*;
+use virtual_frame_buffer::{*, text_layer::TextLayer};
 use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
@@ -83,8 +83,8 @@ fn main() -> Result<(), Error> {
         .expect("Pixels : Failed to setup rendering")
     };
 
-    //The crt renderer takes the virtual frame buffers's frame, upscales it 3 times in X and Y to matche the pixcel's frame and winow size,
-    //then applyes an effect to evoke CRT sub-pixels and scanlines.
+    //The crt renderer takes the virtual frame buffers's frame, upscales it to match pixel's frame and winit window size,
+    //then applies a filter evoking CRT sub-pixels and scanlines ... or crappy LCD.
     //The upscaled and "crt'ed" image is then pushed into pixel's frame for final render.
     let mut crt_renderer: CrtEffectRenderer = CrtEffectRenderer::new();
 
@@ -92,6 +92,7 @@ fn main() -> Result<(), Error> {
     //It is launched at startup after the boot animation. 
     //The winit event loop will update and render the shell by default if
     //no other process is running or has the focus.
+    //The Shell uses the always running console 0 as default output.
 
     //When pressing "escape" in any other app, it will quit the app and
     //get back to the shell.
@@ -100,33 +101,38 @@ fn main() -> Result<(), Error> {
     shell.set_state(false, false);
 
     //Other apps
+    let mut lines = Box::new(Lines::new());
+    lines.set_state(true, true);
+    let mut squares = Box::new(Squares::new());
+    squares.set_state(false, false);
     let mut text_edit = Box::new(TextEdit::new());
     text_edit.set_state(false, false);
     let mut sprite_edit = Box::new(SpriteEditor::new());
     sprite_edit.set_state(false, false);
-    let mut lines = Box::new(Lines::new());
-    lines.set_state(true, true);
     let mut squares = Box::new(Squares::new());
     squares.set_state(false, false);
     let mut weather_app = Box::new(WeatherApp::new());
     weather_app.set_state(false, false);
 
-    //The app_list is used to put them all at the same place and 
-    //easily parse them and update/draw/focus them according to their status.
+    //To be managed properly, apps must be added to that list.
+    //The main goes through the list and updates/renders the apps according to their statuses.
     let mut app_list: Vec<Box<dyn AppMacro>> = Vec::new();
-    app_list.push(shell);
-    app_list.push(text_edit);
-    app_list.push(sprite_edit);
+    // app_list.push(shell);
     app_list.push(lines);
-    app_list.push(squares);
-    app_list.push(weather_app);
+    // app_list.push(text_edit);
+    // app_list.push(sprite_edit);
+    // app_list.push(squares);
+    // app_list.push(weather_app);
     
     //Fill the screen with black
     virtual_frame_buffer.clear_frame_buffer(0);
 
-    //The event loop here can be considered as a bios rom + terminal
-    //it gathers all the keyborad inputs and sends them to the shell, the shell interprets them.
-    //it always runs the shell and gives it the focus if no other app is running.
+    //The event loop here can be seen as the "bios + boot rom + console" part of the Fantasy computer.
+    //It initialises the virtual_frame_buffer, Console 0 and Shell.
+    //If no app is running/rendering, it defaults back to running/rendering the Console 0 and Shell.
+    //It goes through app_list and updates all apps that have their update flag to true.
+    //It goes through app_list and renders the appa that have their render flag and focus flag to true. Should be just one, so it stops at the first one it finds.
+    //It reads the messages returned by the apps and displays them to Console 0.
     event_loop.run(move |event, _, control_flow| {
 
         *control_flow = ControlFlow::Poll;
@@ -181,25 +187,25 @@ fn main() -> Result<(), Error> {
                     booting = boot_animation(&mut virtual_frame_buffer, &mut crt_renderer, frame_counter);
                 } else {
 
-                    if char_received.is_some() && char_received.unwrap() == 's' {
-                        for i in 0..app_list.len() {
-                            let app = app_list.get_mut(i).unwrap();
-                            if app.get_name() == String::from("Squares") {
-                                app.set_state(true, true);
-                            } else {
-                                app.set_state(false, false)
-                            }
-                        }
-                    } else if char_received.is_some() && char_received.unwrap() == 'l' {
-                        for i in 0..app_list.len() {
-                            let app = app_list.get_mut(i).unwrap();
-                            if app.get_name() == String::from("Lines") {
-                                app.set_state(true, true);
-                            } else {
-                                app.set_state(false, false)
-                            }
-                        }
-                    }
+                    // if char_received.is_some() && char_received.unwrap() == 's' {
+                    //     for i in 0..app_list.len() {
+                    //         let app = app_list.get_mut(i).unwrap();
+                    //         if app.get_name() == String::from("Squares") {
+                    //             app.set_state(true, true);
+                    //         } else {
+                    //             app.set_state(false, false)
+                    //         }
+                    //     }
+                    // } else if char_received.is_some() && char_received.unwrap() == 'l' {
+                    //     for i in 0..app_list.len() {
+                    //         let app = app_list.get_mut(i).unwrap();
+                    //         if app.get_name() == String::from("Lines") {
+                    //             app.set_state(true, true);
+                    //         } else {
+                    //             app.set_state(false, false)
+                    //         }
+                    //     }
+                    // }
 
                     //Updating apps
                     let mut app_response: AppResponse = AppResponse::new();
@@ -380,4 +386,77 @@ fn genrate_random_garbage(virtual_frame_buffer: &mut VirtualFrameBuffer) {
             let toto:u8 = random.gen_range(0..5);
             effect_map[index] = Some(toto);
         }
+}
+
+//The console is an abstraction layer above the text_layer
+//It makes printing out simple text lines easier than directly adressing the text_layer
+//It shows a blinking cursor used for navigation and can scrolls text from its 
+//buffer that is bigger than the screen.
+//Apps (like the shell) can use the console to print and receive text when no graphical mode is required.
+struct Console<'a> {
+    id: u8,
+    display: bool,
+    text_layer: &'a mut TextLayer,
+    default_color: u8,
+    default_bkg_color: u8,
+    size_x: usize,
+    size_y: usize,
+    pos_x: usize,
+    pos_y: usize,
+    buffer: Vec<(char, u8, u8, u8)>,
+    cursor_pos: usize,
+}
+
+impl<'a> Console<'a> {
+    pub fn new(text_layer: &'a mut TextLayer, default_color: u8, default_bkg_color: u8, 
+        size_x: usize, size_y: usize, pos_x: usize, pos_y: usize) -> Console {
+        Console {
+            id: 0,
+            text_layer,
+            display: true,
+            default_color,
+            default_bkg_color,
+            size_x,
+            size_y,
+            pos_x,
+            pos_y,
+            buffer: Vec::new(),
+            cursor_pos: 0
+        }
+    }
+
+    pub fn push_char(&mut self, char: char, color: Option<u8>, bkg_color: Option<u8>, effects: Option<u8>) {
+        self.buffer.push((char, color.unwrap_or(self.default_color), bkg_color.unwrap_or(self.default_bkg_color), effects.unwrap_or(0)))
+    }
+
+    pub fn push_string(&mut self, string: String, color: Option<u8>, bkg_color: Option<u8>, effects: Option<u8>) {
+        for char in string.chars() {
+            self.push_char(char, color, bkg_color, effects)
+        }
+    }
+
+    pub fn insert_char(&mut self, char: char, color: Option<u8>, bkg_color: Option<u8>, effects: Option<u8>) {
+        if self.cursor_pos < self.buffer.len() {
+            self.buffer.insert(self.cursor_pos, (char, color.unwrap_or(self.default_color), bkg_color.unwrap_or(self.default_bkg_color), effects.unwrap_or(0)))
+        } else {
+            self.push_char(char, color, bkg_color, effects)
+        }
+    }
+
+    pub fn replace_char(&mut self, char: char, color: Option<u8>, bkg_color: Option<u8>, effects: Option<u8>) {
+        if self.cursor_pos < self.buffer.len() - 1 {
+            self.buffer.insert(self.cursor_pos, (char, color.unwrap_or(self.default_color), bkg_color.unwrap_or(self.default_bkg_color), effects.unwrap_or(0)));
+            self.buffer.remove(self.cursor_pos + 1);
+        } else {
+            self.push_char(char, color, bkg_color, effects)
+        }
+    }
+
+    pub fn insert_string() {
+
+    }
+
+    pub fn render(text_layer: &mut TextLayer) {
+
+    }
 }

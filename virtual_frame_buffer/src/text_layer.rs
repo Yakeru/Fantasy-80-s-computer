@@ -18,18 +18,6 @@ const DEFAULT_BKG_COLOR: u8 = 0;
 //       ||__ blink flag
 //       |__ shadowed (draws a black checkered pattern on top)
 
-
-// struct Console {
-//     default_color: u8,
-//     default_bkg_color: u8,
-//     size_x: usize,
-//     size_y: usize,
-//     pos_x: usize,
-//     pos_y: usize,
-//     buffer: Vec<(char, u16, u8)>,
-//     cursor_pos: usize
-// }
-
 pub struct TextLayer {
     default_color: u8,
     default_bkg_color: u8,
@@ -39,14 +27,22 @@ pub struct TextLayer {
 }
 
 impl TextLayer {
-    pub fn new() -> TextLayer {
+    pub const fn new() -> TextLayer {
         TextLayer {
             default_color: DEFAULT_COLOR,
             default_bkg_color: DEFAULT_BKG_COLOR,
             color_map: [None; TEXT_COLUMNS * TEXT_ROWS],
             effect_map: [None; TEXT_COLUMNS * TEXT_ROWS],
-            char_map: [None; TEXT_COLUMNS * TEXT_ROWS]
+            char_map: [None; TEXT_COLUMNS * TEXT_ROWS],
         }
+    }
+
+    pub fn convert_colors(color: u8, bkg_color: u8) -> u16 {
+        (color as u16) << 8 | bkg_color as u16
+    }
+
+    pub fn convert_effects(swap: bool, blink: bool, shadowed: bool) -> u8 {
+        0 + if  swap {1} else {0} + if blink {2} else {0} + if shadowed {4} else {0}
     }
 
     pub fn clear_colors(&mut self) {
@@ -70,6 +66,7 @@ impl TextLayer {
     pub fn get_dimensions(&self) -> (usize, usize) {
         return (TEXT_COLUMNS, TEXT_ROWS);
     }
+
 
     pub fn get_size(&self) -> usize {
         return TEXT_COLUMNS * TEXT_ROWS;
