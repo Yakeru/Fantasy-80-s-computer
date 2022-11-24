@@ -1,4 +1,4 @@
-use virtual_frame_buffer::{*, text_layer::TextLayer};
+use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}};
 use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
@@ -97,11 +97,11 @@ fn main() -> Result<(), Error> {
     //get back to the shell.
     //Pressing "escape" again in the shell will quit the program (close winit with a WindowEvent::CloseRequested)
     let mut shell = Box::new(Shell::new());
-    shell.set_state(false, false);
+    shell.set_state(true, true);
 
     //Other apps
     let mut lines = Box::new(Lines::new());
-    lines.set_state(true, true);
+    lines.set_state(false, false);
     let mut squares = Box::new(Squares::new());
     squares.set_state(false, false);
     let mut text_edit = Box::new(TextEdit::new());
@@ -185,27 +185,6 @@ fn main() -> Result<(), Error> {
                 if booting {
                     booting = boot_animation(&mut virtual_frame_buffer, &mut crt_renderer, frame_counter);
                 } else {
-
-                    if char_received.is_some() && char_received.unwrap() == 's' {
-                        for i in 0..app_list.len() {
-                            let app = app_list.get_mut(i).unwrap();
-                            if app.get_name() == String::from("Squares") {
-                                app.set_state(true, true);
-                            } else {
-                                app.set_state(false, false)
-                            }
-                        }
-                    } else if char_received.is_some() && char_received.unwrap() == 'l' {
-                        for i in 0..app_list.len() {
-                            let app = app_list.get_mut(i).unwrap();
-                            if app.get_name() == String::from("Lines") {
-                                app.set_state(true, true);
-                            } else {
-                                app.set_state(false, false)
-                            }
-                        }
-                    }
-
                     //Updating apps
                     let mut app_response: AppResponse = AppResponse::new();
 
@@ -328,17 +307,17 @@ fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &
         virtual_frame_buffer.clear_frame_buffer(0);
 
         //Display all possible colors on first row
-        for i in 0..32_u16 {
-            virtual_frame_buffer.get_text_layer_mut().insert_char(i as usize, ' ', Some(i), None);
+        for i in 0..32_u8 {
+            virtual_frame_buffer.get_text_layer_mut().insert_char(i as usize, ' ', (None, Some(i)), None);
         }
 
         //Display all chars starting on second row
         let width = virtual_frame_buffer.get_text_layer().get_dimensions().0;
         for i in 0..characters_rom::ROM.len() {
-            virtual_frame_buffer.get_text_layer_mut().insert_char(width + i as usize, characters_rom::CHARS[i], Some(0x0700), None);
+            virtual_frame_buffer.get_text_layer_mut().insert_char(width + i as usize, characters_rom::CHARS[i], (Some(WHITE.0), Some(BLACK.0)), None);
         }
 
-        virtual_frame_buffer.get_text_layer_mut().insert_string_coord(0, 4, "Loading..." , Some(0x0700), None);
+        virtual_frame_buffer.get_text_layer_mut().insert_string_coord(0, 4, "Loading..." , (Some(WHITE.0), Some(BLACK.0)), None);
     }
 
     //After 4 seconds, show loading message
@@ -352,6 +331,8 @@ fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &
     }
     
     if frame_counter >= 6 * FRAMES_PER_SEC {
+        virtual_frame_buffer.get_text_layer_mut().clear();
+        virtual_frame_buffer.clear_frame_buffer(0);
         return false;
     }
     else {
@@ -385,77 +366,4 @@ fn genrate_random_garbage(virtual_frame_buffer: &mut VirtualFrameBuffer) {
             let toto:u8 = random.gen_range(0..5);
             effect_map[index] = Some(toto);
         }
-}
-
-//The console is an abstraction layer above the text_layer
-//It makes printing out simple text lines easier than directly adressing the text_layer
-//It shows a blinking cursor used for navigation and can scrolls text from its 
-//buffer that is bigger than the screen.
-//Apps (like the shell) can use the console to print and receive text when no graphical mode is required.
-struct Console<'a> {
-    id: u8,
-    display: bool,
-    text_layer: &'a mut TextLayer,
-    default_color: u8,
-    default_bkg_color: u8,
-    size_x: usize,
-    size_y: usize,
-    pos_x: usize,
-    pos_y: usize,
-    buffer: Vec<(char, u8, u8, u8)>,
-    cursor_pos: usize,
-}
-
-impl<'a> Console<'a> {
-    pub fn new(text_layer: &'a mut TextLayer, default_color: u8, default_bkg_color: u8, 
-        size_x: usize, size_y: usize, pos_x: usize, pos_y: usize) -> Console {
-        Console {
-            id: 0,
-            text_layer,
-            display: true,
-            default_color,
-            default_bkg_color,
-            size_x,
-            size_y,
-            pos_x,
-            pos_y,
-            buffer: Vec::new(),
-            cursor_pos: 0
-        }
-    }
-
-    pub fn push_char(&mut self, char: char, color: Option<u8>, bkg_color: Option<u8>, effects: Option<u8>) {
-        self.buffer.push((char, color.unwrap_or(self.default_color), bkg_color.unwrap_or(self.default_bkg_color), effects.unwrap_or(0)))
-    }
-
-    pub fn push_string(&mut self, string: String, color: Option<u8>, bkg_color: Option<u8>, effects: Option<u8>) {
-        for char in string.chars() {
-            self.push_char(char, color, bkg_color, effects)
-        }
-    }
-
-    pub fn insert_char(&mut self, char: char, color: Option<u8>, bkg_color: Option<u8>, effects: Option<u8>) {
-        if self.cursor_pos < self.buffer.len() {
-            self.buffer.insert(self.cursor_pos, (char, color.unwrap_or(self.default_color), bkg_color.unwrap_or(self.default_bkg_color), effects.unwrap_or(0)))
-        } else {
-            self.push_char(char, color, bkg_color, effects)
-        }
-    }
-
-    pub fn replace_char(&mut self, char: char, color: Option<u8>, bkg_color: Option<u8>, effects: Option<u8>) {
-        if self.cursor_pos < self.buffer.len() - 1 {
-            self.buffer.insert(self.cursor_pos, (char, color.unwrap_or(self.default_color), bkg_color.unwrap_or(self.default_bkg_color), effects.unwrap_or(0)));
-            self.buffer.remove(self.cursor_pos + 1);
-        } else {
-            self.push_char(char, color, bkg_color, effects)
-        }
-    }
-
-    pub fn insert_string() {
-
-    }
-
-    pub fn render(text_layer: &mut TextLayer) {
-
-    }
 }

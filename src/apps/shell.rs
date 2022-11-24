@@ -3,17 +3,19 @@ use crate::unicode;
 use virtual_frame_buffer::*;
 use app_macro::*;
 use app_macro_derive::AppMacro;
+use virtual_frame_buffer::color_palettes::{TRUEBLUE, YELLOW};
 use winit::event::KeyboardInput;
 use winit::event_loop::ControlFlow;
 
 const SHELL_START_MESSAGE: &str = " SHELL 0.1\u{000D}\u{000D}Ready\u{000D}";
 
-const DEFAULT_BKG_COLOR: u8 = 28;
-const DEFAULT_COLOR: u8 = 10;
+const DEFAULT_BKG_COLOR: u8 = TRUEBLUE.0;
+const DEFAULT_COLOR: u8 = YELLOW.0;
 
 #[derive(AppMacro)]
 pub struct Shell {
     name: String,
+    // console: Console,
     color: u8,
     bkg_color: u8,
     last_character_received: Option<char>,
@@ -47,7 +49,6 @@ impl Shell {
     pub fn new() -> Shell {
         let display_buffer: Vec<StyledChar> = Vec::new();
         let command_history: Vec<String> = Vec::new();
-        //let mut apps: Vec<Box<dyn Process>> = Vec::new();
 
         Shell {
             name: String::from("shell"),
@@ -174,11 +175,10 @@ impl Shell {
                     }
 
                     unicode::ESCAPE => {
-                        response.event = Some(ControlFlow::Exit);
+                        //response.event = Some(ControlFlow::Exit);
                         response.set_message(String::from(
-                            "Command 'quit' or 'exit' received; stopping",
+                            "Type 'quit' or 'exit' to quit Fantasy CPC",
                         ));
-                        println!("Command 'quit' or 'exit' received; stopping");
                         return response;
                     }
 
@@ -207,20 +207,24 @@ impl Shell {
 
         virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
 
+        let cursor_position: usize = self.display_buffer.len();
+
+        for c in &self.display_buffer {
+            let text_layer_char: (char, u16, u8) = self.get_text_layer_char_from_style(*c);
+            virtual_frame_buffer
+                .get_text_layer_mut().insert_char(i, text_layer_char.0, Some(text_layer_char.1), Some(text_layer_char.2));
+
+                i = i+1;
+        }
+
         match self.last_character_received {
             Some(c) => {
-                virtual_frame_buffer.get_text_layer_mut().insert_char(0, c, Some(0x0A00), Some(0));
+                virtual_frame_buffer.get_text_layer_mut().insert_char(self.display_buffer.len() + self.command.len(), c, Some(0x0A00), Some(0));
             }
 
             None => (),
         }
 
-        for c in &self.display_buffer {
-            let text_layer_char: (char, u16, u8) = self.get_text_layer_char_from_style(*c);
-            virtual_frame_buffer
-                .get_text_layer_mut().insert_char(0, text_layer_char.0, Some(text_layer_char.1), Some(text_layer_char.2));
-        }
-
-        self.display_buffer.clear();
+        //self.display_buffer.clear();
     }
 }
