@@ -295,20 +295,21 @@ impl VirtualFrameBuffer {
             let text_layer_effect = self.text_layer.get_effect_map()[char_counter];
 
             //Render text layer cell is there is at least a char or a color
-            if text_layer_char.is_some() || text_layer_color.is_some() {
+            if text_layer_char.is_some() {
 
-                let mut char_color = self.text_layer.get_default_color();
-                let mut bck_color = self.text_layer.get_default_bkg_color();
+                let mut char_color = text_layer_color.0.unwrap_or(self.text_layer.get_default_color());
+                let mut bck_color = text_layer_color.1.unwrap_or(self.text_layer.get_default_bkg_color());
                 let mut blink = false;
                 let mut swap = false;
                 let mut shadowed = false;
 
                 let char = text_layer_char.unwrap_or(' ');
 
-                match text_layer_color {
+
+
+                match text_layer_color.1 {
                     Some(color) => {
-                        char_color = ((color & 0xFF00) >> 8) as u8;
-                        bck_color = (color & 0x00FF) as u8;
+                        bck_color = color;
                     }
     
                     None => (),
@@ -454,7 +455,7 @@ impl CrtEffectRenderer {
                     } else {
                         virtual_frame_buffer
                             .color_palette
-                            .get_rgb_from_index(virt_line[pixel_index])
+                            .get_rgb(virt_line[pixel_index])
                     };
 
                     let rgb_after = if inside_corner {
@@ -462,7 +463,7 @@ impl CrtEffectRenderer {
                     } else if pixel_index < VIRTUAL_WIDTH - 1 {
                         virtual_frame_buffer
                             .color_palette
-                            .get_rgb_from_index(virt_line[pixel_index + 1])
+                            .get_rgb(virt_line[pixel_index + 1])
                     } else {
                         (0, 0, 0)
                     };
@@ -622,7 +623,7 @@ impl CrtEffectRenderer {
                     } else {
                         virtual_frame_buffer
                             .color_palette
-                            .get_rgb_from_index(virt_line[pixel_index])
+                            .get_rgb(virt_line[pixel_index])
                     };
 
                     let scanline_alpha =
