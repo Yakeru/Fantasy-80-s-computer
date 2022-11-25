@@ -289,86 +289,66 @@ impl VirtualFrameBuffer {
         let mut text_row_count = 0;
         let mut text_col_count = 0;
 
-        for char_counter in 0..self.text_layer.get_size() {
+        for char_counter in 0..self.text_layer.get_len() {
+
             let text_layer_char = self.text_layer.get_char_map()[char_counter];
-            let text_layer_color = self.text_layer.get_color_map()[char_counter];
-            let text_layer_effect = self.text_layer.get_effect_map()[char_counter];
 
-            //Render text layer cell is there is at least a char or a color
-            if text_layer_char.is_some() {
+            match text_layer_char {
 
-                let mut char_color = text_layer_color.0.unwrap_or(self.text_layer.get_default_color());
-                let mut bck_color = text_layer_color.1.unwrap_or(self.text_layer.get_default_bkg_color());
-                let mut blink = false;
-                let mut swap = false;
-                let mut shadowed = false;
+                Some(char_struct) => {
+                    let char = char_struct.c;
+                    let char_color = char_struct.color;
+                    let bck_color = char_struct.bkg_color;
+                    let blink = char_struct.blink;
+                    let mut swap = char_struct.swap;
+                    let shadowed = char_struct.shadowed;
 
-                let char = text_layer_char.unwrap_or(' ');
-
-
-
-                match text_layer_color.1 {
-                    Some(color) => {
-                        bck_color = color;
+                    //Blink
+                    if blink && self.half_second_latch {
+                        swap = !swap;
                     }
-    
-                    None => (),
-                }
 
-                match text_layer_effect {
-                    Some(effect) => {
-                        swap = effect & 0x01 != 0;
-                        blink = effect & 0x02 != 0;
-                        shadowed = effect & 0x04 != 0;
-                    }
-    
-                    None => (),
-                }
+                    //set color, swap or not
+                    let text_color = if swap { bck_color } else { char_color };
+                    let text_bkg_color = if swap { char_color } else { bck_color };
 
-                //Blink
-                if blink && self.half_second_latch {
-                    swap = !swap;
-                }
+                    //Get char picture from  "character rom"
+                    let pic = rom(&char);
 
-                //set color, swap or not
-                let text_color = if swap { bck_color } else { char_color };
-                let text_bkg_color = if swap { char_color } else { bck_color };
+                    //Draw picture pixel by pixel in frame buffer
+                    for row_count in 0..8 {
+                        let row = pic[row_count];
+                        let mut mask: u8 = 128;
 
-                //Get char picture from  "character rom"
-                let pic = rom(&char);
+                        for col_count in 0..8 {
+                            let virtual_frame_buffer_pos =
+                                x_pos + col_count + (y_pos + row_count) * VIRTUAL_WIDTH;
 
-                //Draw picture pixel by pixel in frame buffer
-                for row_count in 0..8 {
-                    let row = pic[row_count];
-                    let mut mask: u8 = 128;
-
-                    for col_count in 0..8 {
-                        let virtual_frame_buffer_pos =
-                            x_pos + col_count + (y_pos + row_count) * VIRTUAL_WIDTH;
-
-                        if shadowed {
-                            let shadow_mask: u8 = if row_count % 2 == 0 {
-                                0b10101010
+                            if shadowed {
+                                let shadow_mask: u8 = if row_count % 2 == 0 {
+                                    0b10101010
+                                } else {
+                                    0b01010101
+                                };
+                                match shadow_mask & mask {
+                                    0 => self.frame[virtual_frame_buffer_pos] = 0,
+                                    _ => match row & mask {
+                                        0 => self.frame[virtual_frame_buffer_pos] = text_bkg_color,
+                                        _ => self.frame[virtual_frame_buffer_pos] = text_color,
+                                    },
+                                }
                             } else {
-                                0b01010101
-                            };
-                            match shadow_mask & mask {
-                                0 => self.frame[virtual_frame_buffer_pos] = 0,
-                                _ => match row & mask {
+                                match row & mask {
                                     0 => self.frame[virtual_frame_buffer_pos] = text_bkg_color,
                                     _ => self.frame[virtual_frame_buffer_pos] = text_color,
-                                },
+                                }
                             }
-                        } else {
-                            match row & mask {
-                                0 => self.frame[virtual_frame_buffer_pos] = text_bkg_color,
-                                _ => self.frame[virtual_frame_buffer_pos] = text_color,
-                            }
-                        }
 
-                        mask = mask >> 1;
+                            mask = mask >> 1;
+                        }
                     }
-                }
+                },
+                None => ()
             }
 
             //Move to next character coordinates
