@@ -1,4 +1,4 @@
-use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}};
+use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}, text_layer::TextLayerChar};
 use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
@@ -24,8 +24,6 @@ use crate::apps::weather_app::*;
 //Settings
 const FRAME_TIME_MS: u128 = 16; //ms per frame : 16 = 60fps, 32 = 30fps, 1000 = 1fps
 const FRAMES_PER_SEC: u128 = 60;
-// const SPLASH: &str =
-//     " Fantasy CPC Microcomputer V(0.1)\u{000D}\u{000D} 2022 Damien Torreilles\u{000D}\u{000D}";
 
 ///*********************************************************THE MAIN
 fn main() -> Result<(), Error> {
@@ -104,24 +102,24 @@ fn main() -> Result<(), Error> {
     lines.set_state(false, false);
     let mut squares = Box::new(Squares::new());
     squares.set_state(false, false);
-    let mut text_edit = Box::new(TextEdit::new());
-    text_edit.set_state(false, false);
+    // let mut text_edit = Box::new(TextEdit::new());
+    // text_edit.set_state(false, false);
     let mut sprite_edit = Box::new(SpriteEditor::new());
     sprite_edit.set_state(false, false);
     let mut squares = Box::new(Squares::new());
     squares.set_state(false, false);
-    let mut weather_app = Box::new(WeatherApp::new());
-    weather_app.set_state(false, false);
+    // let mut weather_app = Box::new(WeatherApp::new());
+    // weather_app.set_state(false, false);
 
     //To be managed properly, apps must be added to that list.
     //The main goes through the list and updates/renders the apps according to their statuses.
     let mut app_list: Vec<Box<dyn AppMacro>> = Vec::new();
     app_list.push(shell);
     app_list.push(lines);
-    app_list.push(text_edit);
+    // app_list.push(text_edit);
     app_list.push(sprite_edit);
     app_list.push(squares);
-    app_list.push(weather_app);
+    // app_list.push(weather_app);
     
     //Fill the screen with black
     virtual_frame_buffer.clear_frame_buffer(0);
@@ -308,22 +306,17 @@ fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &
 
         //Display all possible colors on first row
         for i in 0..32_u8 {
-            virtual_frame_buffer.get_text_layer_mut().insert_char(i as usize, ' ', (None, Some(i)), None);
+            virtual_frame_buffer.get_text_layer_mut().push_char(' ', None, Some(i), false, false, false);
         }
 
         //Display all chars starting on second row
         let width = virtual_frame_buffer.get_text_layer().get_dimensions().0;
         for i in 0..characters_rom::ROM.len() {
-            virtual_frame_buffer.get_text_layer_mut().insert_char(width + i as usize, characters_rom::CHARS[i], (Some(WHITE.0), Some(BLACK.0)), None);
+            virtual_frame_buffer.get_text_layer_mut().insert_char(width + i as usize, characters_rom::CHARS[i], Some(WHITE.0), Some(BLACK.0), false, false, false);
         }
 
-        virtual_frame_buffer.get_text_layer_mut().insert_string_coord(0, 4, "Loading..." , (Some(WHITE.0), Some(BLACK.0)), None);
+        virtual_frame_buffer.get_text_layer_mut().insert_string_coord(0, 4, "Loading..." , Some(WHITE.0), Some(BLACK.0), false, false, false);
     }
-
-    //After 4 seconds, show loading message
-    // if frame_counter == FRAMES_PER_SEC * 4 {
-    //     virtual_frame_buffer.get_text_layer().insert_string_coord(0, 4, "Loading..." , Some(0x0700), None);
-    // }
 
     //Display loading overscan while "loading"
     if frame_counter >= FRAMES_PER_SEC * 2 && frame_counter <= FRAMES_PER_SEC * 6 {
@@ -344,26 +337,22 @@ fn genrate_random_garbage(virtual_frame_buffer: &mut VirtualFrameBuffer) {
 
     let mut random = rand::thread_rng();
         
-        let frame: u8 = random.gen_range(0..32);
-        virtual_frame_buffer.clear_frame_buffer(frame);
+    let frame: u8 = random.gen_range(0..32);
+    virtual_frame_buffer.clear_frame_buffer(frame);
+    virtual_frame_buffer.get_text_layer_mut().clear();
 
-        let color_map = virtual_frame_buffer.get_text_layer_mut().get_color_map();
-        for index in 0..color_map.len() {
-            let bkg: u8 = random.gen_range(0..32);
-            let frt: u8 = random.gen_range(0..32);
-            let color: u16 = (frt as u16) << 8 | bkg as u16;
-            color_map[index] = Some(color);
-        }
-    
-        let char_map = virtual_frame_buffer.get_text_layer_mut().get_char_map();
-        for index in 0..char_map.len() {
-            let toto:usize = random.gen_range(0..characters_rom::CHARS.len());
-            char_map[index] = Some(characters_rom::CHARS[toto]);
-        }
+    let char_map = virtual_frame_buffer.get_text_layer_mut().get_char_map_mut();
+    for index in 0..char_map.len() {
+        
+        let color: u8 = random.gen_range(0..32);
+        let bkg_color: u8 = random.gen_range(0..32);
+        let c:char = characters_rom::CHARS[random.gen_range(0..characters_rom::CHARS.len())];
+        let effect:u8 = random.gen_range(0..5);
+        let swap: bool = if effect & 0b00000001 > 0 {true} else {false};
+        let blink: bool = if effect & 0b00000010 > 0 {true} else {false};
+        let shadowed: bool = if effect & 0b00000100 > 0 {true} else {false};
 
-        let effect_map = virtual_frame_buffer.get_text_layer_mut().get_effect_map();
-        for index in 0..effect_map.len() {
-            let toto:u8 = random.gen_range(0..5);
-            effect_map[index] = Some(toto);
-        }
+        let text_layer_char: TextLayerChar = TextLayerChar{c, color, bkg_color, swap, blink, shadowed};
+        char_map[index] = Some(text_layer_char);
+    }
 }

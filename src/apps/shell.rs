@@ -3,11 +3,12 @@ use crate::unicode;
 use virtual_frame_buffer::*;
 use app_macro::*;
 use app_macro_derive::AppMacro;
-use virtual_frame_buffer::color_palettes::{TRUEBLUE, YELLOW};
+use virtual_frame_buffer::color_palettes::*;
 use winit::event::KeyboardInput;
 use winit::event_loop::ControlFlow;
 
-const SHELL_START_MESSAGE: &str = " SHELL 0.1\u{000D}\u{000D}Ready\u{000D}";
+const SPLASH: &str = "Fantasy CPC Microcomputer V(0.1)\u{000D}\u{000D} 2022 Damien Torreilles\u{000D}\u{000D}";
+const SHELL_START_MESSAGE: &str = "SHELL 0.1\u{000D}\u{000D}Ready\u{000D}";
 
 const DEFAULT_BKG_COLOR: u8 = TRUEBLUE.0;
 const DEFAULT_COLOR: u8 = YELLOW.0;
@@ -75,12 +76,12 @@ impl Shell {
         }
     }
 
-    fn get_text_layer_char_from_style(&self, style: StyledChar) -> (char, u16, u8) {
+    fn get_text_layer_char_from_style(&self, style: StyledChar) -> (char, u8, u8, bool, bool, bool) {
         match style {
-            StyledChar::Default(c) => (c, (self.color as u16) << 8 | self.bkg_color as u16, 0),
-            StyledChar::Highlight(c) => (c, (self.color as u16) << 8 | self.bkg_color as u16, 1),
-            StyledChar::Warning(c) => (c, 10_u16 << 8 | 0_u16, 0),
-            StyledChar::Error(c) => (c, 8_u16 << 8 | 0_u16, 2)
+            StyledChar::Default(c) => (c, self.color, self.bkg_color, false, false, false),
+            StyledChar::Highlight(c) => (c, self.color, self.bkg_color, true, false, false),
+            StyledChar::Warning(c) => (c, YELLOW.0, BLACK.0, false, false, false),
+            StyledChar::Error(c) => (c, RED.0, BLACK.0, false, true, false),
         }
     }
 
@@ -138,6 +139,7 @@ impl Shell {
     }
 
     pub fn start(&mut self) {
+        self.push_string(SPLASH, Style::Default);
         self.push_string(SHELL_START_MESSAGE, Style::Default);
         self.push_char(StyledChar::Default('>'));
         self.started = true;
@@ -176,6 +178,7 @@ impl Shell {
 
                     unicode::ESCAPE => {
                         //response.event = Some(ControlFlow::Exit);
+                        self.push_string("\u{000D}Type 'quit' or 'exit' to quit Fantasy CPC\u{000D}", Style::Default);
                         response.set_message(String::from(
                             "Type 'quit' or 'exit' to quit Fantasy CPC",
                         ));
@@ -199,6 +202,7 @@ impl Shell {
     }
 
     pub fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+
         if self.clear_text_layer {
             virtual_frame_buffer.get_text_layer_mut().clear();
             self.clear_text_layer = false;
@@ -207,24 +211,23 @@ impl Shell {
 
         virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
 
-        let cursor_position: usize = self.display_buffer.len();
-
-        for c in &self.display_buffer {
-            let text_layer_char: (char, u16, u8) = self.get_text_layer_char_from_style(*c);
-            virtual_frame_buffer
-                .get_text_layer_mut().insert_char(i, text_layer_char.0, Some(text_layer_char.1), Some(text_layer_char.2));
-
-                i = i+1;
-        }
-
         match self.last_character_received {
             Some(c) => {
-                virtual_frame_buffer.get_text_layer_mut().insert_char(self.display_buffer.len() + self.command.len(), c, Some(0x0A00), Some(0));
+                let text_layer_char = self.get_text_layer_char_from_style(self.style_a_char(c, Style::Default));
+                virtual_frame_buffer.get_text_layer_mut().push_char(text_layer_char.0, Some(text_layer_char.1), Some(text_layer_char.2), 
+                text_layer_char.3, text_layer_char.4, text_layer_char.5);
             }
 
-            None => (),
+            None => ()
         }
 
-        //self.display_buffer.clear();
+        for c in &self.display_buffer {
+            let text_layer_char = self.get_text_layer_char_from_style(*c);
+            virtual_frame_buffer
+                .get_text_layer_mut().push_char(text_layer_char.0, Some(text_layer_char.1), Some(text_layer_char.2), 
+                    text_layer_char.3, text_layer_char.4, text_layer_char.5);
+        }
+
+        self.display_buffer.clear();
     }
 }
