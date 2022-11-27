@@ -190,7 +190,7 @@ pub const CHARS: [char; 92] = [
     '\u{25AE}'
 ];
 
-pub fn rom(character: &char) -> [u8; 8] {
+pub const fn rom(character: &char) -> [u8; 8] {
 
     match character {
         ' ' => ROM[0],
