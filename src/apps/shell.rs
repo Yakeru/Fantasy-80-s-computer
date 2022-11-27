@@ -210,6 +210,5 @@ impl Shell {
         virtual_frame_buffer.clear_frame_buffer(WHITE.0);
         virtual_frame_buffer.get_text_layer_mut().clear();
         virtual_frame_buffer.get_text_layer_mut().render_console(&self.console);
-        virtual_frame_buffer.render();
     }
 }
