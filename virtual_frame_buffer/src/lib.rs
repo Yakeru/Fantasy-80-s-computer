@@ -1,5 +1,6 @@
 use characters_rom::rom;
 use color_palettes::*;
+use config::*;
 use sprite::Sprite;
 use text_layer::TextLayer;
 
@@ -10,13 +11,6 @@ pub mod color_palettes;
 pub mod sprite;
 pub mod text_layer;
 pub mod console;
-
-const WIDTH: usize = config::WIDTH;
-const HEIGHT: usize = config::HEIGHT;
-const VIRTUAL_WIDTH: usize = config::VIRTUAL_WIDTH;
-const VIRTUAL_HEIGHT: usize = config::VIRTUAL_HEIGHT;
-const UPSCALE: usize = config::UPSCALE;
-const SCAN_LINE_STRENGTH: u8 = config::SCAN_LINE_STRENGTH;
 
 const SUB_PIXEL_COUNT: usize = 4;
 const RENDERED_LINE_LENGTH: usize = WIDTH * SUB_PIXEL_COUNT;
