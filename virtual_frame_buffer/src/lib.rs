@@ -5,9 +5,11 @@ use text_layer::TextLayer;
 
 pub mod config;
 pub mod characters_rom;
+pub mod text_layer_char;
 pub mod color_palettes;
 pub mod sprite;
 pub mod text_layer;
+pub mod console;
 
 const WIDTH: usize = config::WIDTH;
 const HEIGHT: usize = config::HEIGHT;
@@ -88,8 +90,8 @@ impl VirtualFrameBuffer {
         (VIRTUAL_WIDTH, VIRTUAL_HEIGHT)
     }
 
-    pub fn get_text_layer_size(&self) -> (usize, usize) {
-        self.text_layer.get_dimensions()
+    pub fn get_text_layer_size_xy(&self) -> (usize, usize) {
+        self.text_layer.get_dimensions_xy()
     }
 
     pub fn get_frame_mut(&mut self) -> &mut Box<[u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]> {
@@ -212,8 +214,6 @@ impl VirtualFrameBuffer {
         &self.text_layer
     }
 
-    
-
     pub fn get_width(&self) -> usize {
         VIRTUAL_WIDTH
     }
@@ -282,8 +282,8 @@ impl VirtualFrameBuffer {
     }
 
     fn text_layer_renderer(&mut self) {
-        let horizontal_border: usize = (VIRTUAL_WIDTH - self.text_layer.get_dimensions().0 * 8) / 2;
-        let vertical_border: usize = (VIRTUAL_HEIGHT - self.text_layer.get_dimensions().1 * 8) / 2;
+        let horizontal_border: usize = (VIRTUAL_WIDTH - self.get_text_layer_size_xy().0 * 8) / 2;
+        let vertical_border: usize = (VIRTUAL_HEIGHT - self.get_text_layer_size_xy().1 * 8) / 2;
         let mut x_pos = horizontal_border;
         let mut y_pos = vertical_border;
         let mut text_row_count = 0;
@@ -300,17 +300,12 @@ impl VirtualFrameBuffer {
                     let char_color = char_struct.color;
                     let bck_color = char_struct.bkg_color;
                     let blink = char_struct.blink;
-                    let mut swap = char_struct.swap;
+                    let swap = char_struct.swap;
                     let shadowed = char_struct.shadowed;
 
-                    //Blink
-                    if blink && self.half_second_latch {
-                        swap = !swap;
-                    }
-
                     //set color, swap or not
-                    let text_color = if swap { bck_color } else { char_color };
-                    let text_bkg_color = if swap { char_color } else { bck_color };
+                    let text_color = if swap || (blink && self.half_second_latch) { bck_color } else { char_color };
+                    let text_bkg_color = if swap || (blink && self.half_second_latch) { char_color } else { bck_color };
 
                     //Get char picture from  "character rom"
                     let pic = rom(&char);
@@ -355,14 +350,14 @@ impl VirtualFrameBuffer {
             text_col_count += 1;
             x_pos += 8;
 
-            if text_col_count == self.text_layer.get_dimensions().0 {
+            if text_col_count == self.get_text_layer_size_xy().0 {
                 text_col_count = 0;
                 text_row_count += 1;
                 x_pos = horizontal_border;
                 y_pos += 8;
             }
 
-            if text_row_count == self.text_layer.get_dimensions().1 {
+            if text_row_count == self.get_text_layer_size_xy().1 {
                 text_col_count = 0;
                 text_row_count = 0;
                 x_pos = horizontal_border;
