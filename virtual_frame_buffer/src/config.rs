@@ -26,5 +26,5 @@ pub const UPSCALE: usize = 3;
 pub const SCAN_LINE_STRENGTH: u8 = 100;
 pub const VIRTUAL_WIDTH: usize = 426;
 pub const VIRTUAL_HEIGHT: usize = 320;
-pub const TEXT_COLUMNS: usize = 46;
-pub const TEXT_ROWS: usize = 34;
+pub const TEXT_COLUMNS: usize = 44;
+pub const TEXT_ROWS: usize = 32;

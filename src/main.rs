@@ -1,4 +1,4 @@
-use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}, text_layer::TextLayerChar};
+use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}, text_layer_char::TextLayerChar};
 use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
@@ -10,7 +10,7 @@ use winit::{
     window::WindowBuilder,
 };
 
-mod unicode;
+use unicode;
 
 //Apps
 mod apps;
@@ -255,8 +255,8 @@ fn draw_loading_border(virtual_frame_buffer: &mut VirtualFrameBuffer) {
 
     let width = virtual_frame_buffer.get_width();
     let height = virtual_frame_buffer.get_height();
-    let horiz_size = (virtual_frame_buffer.get_width() - virtual_frame_buffer.get_text_layer().get_dimensions().0 * 8)/2;
-    let vert_size = (virtual_frame_buffer.get_height() - virtual_frame_buffer.get_text_layer().get_dimensions().1 * 8)/2;
+    let horiz_size = (virtual_frame_buffer.get_width() - virtual_frame_buffer.get_text_layer_size_xy().0 * 8)/2;
+    let vert_size = (virtual_frame_buffer.get_height() - virtual_frame_buffer.get_text_layer_size_xy().1 * 8)/2;
 
     for pixel in virtual_frame_buffer.get_frame_mut().chunks_exact_mut(1) {
         if line_pixel_count < horiz_size
@@ -306,16 +306,16 @@ fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &
 
         //Display all possible colors on first row
         for i in 0..32_u8 {
-            virtual_frame_buffer.get_text_layer_mut().push_char(' ', None, Some(i), false, false, false);
+            virtual_frame_buffer.get_text_layer_mut().insert_char(i as usize, ' ', Some(BLACK.0), Some(i), false, false, false);
         }
 
         //Display all chars starting on second row
-        let width = virtual_frame_buffer.get_text_layer().get_dimensions().0;
+        let width = virtual_frame_buffer.get_text_layer_size_xy().0;
         for i in 0..characters_rom::ROM.len() {
             virtual_frame_buffer.get_text_layer_mut().insert_char(width + i as usize, characters_rom::CHARS[i], Some(WHITE.0), Some(BLACK.0), false, false, false);
         }
 
-        virtual_frame_buffer.get_text_layer_mut().insert_string_coord(0, 4, "Loading..." , Some(WHITE.0), Some(BLACK.0), false, false, false);
+        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(0, 4, "Loading..." , Some(WHITE.0), Some(BLACK.0), false, false, false);
     }
 
     //Display loading overscan while "loading"
