@@ -209,6 +209,6 @@ impl Shell {
     pub fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         virtual_frame_buffer.clear_frame_buffer(WHITE.0);
         virtual_frame_buffer.get_text_layer_mut().clear();
-        virtual_frame_buffer.get_text_layer_mut().render_console(&self.console);
+        virtual_frame_buffer.console_renderer(&self.console);
     }
 }

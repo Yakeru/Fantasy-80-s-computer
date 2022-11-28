@@ -1,5 +1,9 @@
 /// The character "ROM", returns the 8x8 pixels drawing corresponding to each character.
 /// Inspired by the AMSTRAD character set.
+
+pub const CHARACTER_WIDTH: usize = 8;
+pub const CHARACTER_HEIGHT: usize = 8;
+
 pub const ROM: [[u8; 8]; 92] = [
     [0, 0, 0, 0, 0, 0, 0, 0],
     [0x18, 0x18, 0x18, 0x18, 0x18, 0x00, 0x18, 0x00], 

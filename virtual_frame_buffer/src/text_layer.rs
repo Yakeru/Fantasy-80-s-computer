@@ -1,18 +1,12 @@
-use crate::{config::{self}, color_palettes::*, text_layer_char::{TextLayerChar}, console::Console};
+use crate::{config::*, color_palettes::*, text_layer_char::{TextLayerChar}};
 
-const TEXT_LAYER_COLUMNS: usize = config::TEXT_COLUMNS;
-const TEXT_LAYER_ROWS: usize = config::TEXT_ROWS;
 const DEFAULT_COLOR: u8 = WHITE.0;
 const DEFAULT_BKG_COLOR: u8 = BLACK.0;
-
-pub const fn coord_to_vec_index(x: usize, y: usize) -> usize {
-    (y * TEXT_LAYER_COLUMNS + x) % (TEXT_LAYER_COLUMNS * TEXT_LAYER_ROWS)
-}
 
 pub struct TextLayer {
     pub default_color: u8,
     pub default_bkg_color: u8,
-    char_map: [Option<TextLayerChar>; TEXT_LAYER_COLUMNS * TEXT_LAYER_ROWS],
+    char_map: [Option<TextLayerChar>; TEXT_COLUMNS * TEXT_ROWS],
 }
 
 impl TextLayer {
@@ -20,17 +14,17 @@ impl TextLayer {
         TextLayer {
             default_color: DEFAULT_COLOR,
             default_bkg_color: DEFAULT_BKG_COLOR,
-            char_map: [None; TEXT_LAYER_COLUMNS * TEXT_LAYER_ROWS]
+            char_map: [None; TEXT_COLUMNS * TEXT_ROWS]
         }
     }
 
     pub fn clear(&mut self) {
-        self.char_map = [None; TEXT_LAYER_COLUMNS * TEXT_LAYER_ROWS];
+        self.char_map = [None; TEXT_COLUMNS * TEXT_ROWS];
     }
 
     /// Returns the dimensions in columns and rowns of the text layer map.
     pub fn get_dimensions_xy(&self) -> (usize, usize) {
-        return (TEXT_LAYER_COLUMNS, TEXT_LAYER_ROWS);
+        return (TEXT_COLUMNS, TEXT_ROWS);
     }
 
     /// Returns the lenght of the char_map array.
@@ -61,13 +55,13 @@ impl TextLayer {
 
     /// Inserts a character in the char_map at the specified x and y position.
     pub fn insert_char_xy(&mut self, x: usize, y: usize, c: char, color: Option<u8>, bkg_color: Option<u8>, swap: bool, blink: bool, shadowed: bool) {
-        let index = coord_to_vec_index(x, y);
+        let index = text_coord_to_index(x, y);
         self.insert_char(index, c, color, bkg_color, swap, blink, shadowed);
     }
 
     /// Inserts a TextLayerChar in the char_map at the specified x and y position.
     pub fn insert_text_layer_char_xy(&mut self, x: usize, y: usize, char: TextLayerChar) {
-        let index = coord_to_vec_index(x, y);
+        let index = text_coord_to_index(x, y);
         self.insert_text_layer_char(index, char);
     }
 
@@ -84,37 +78,11 @@ impl TextLayer {
 
     /// Inserts a string in the char_map at the specified x and y position.
     pub fn insert_string_xy(&mut self, x: usize, y: usize, string: &str, color: Option<u8>, bkg_color: Option<u8>, swap: bool, blink: bool, shadowed: bool) {
-        let index = coord_to_vec_index(x, y);
+        let index = text_coord_to_index(x, y);
         self.insert_string(index, string, color, bkg_color, swap, blink, shadowed);
     }
+}
 
-    /// Renders the content of the console in the char_map
-    pub fn render_console(&mut self, console: &Console) {
-
-        let top_left_corner_index = coord_to_vec_index(console.pos_x, console.pos_y);
-
-        let mut char_index = 0;
-
-        for i in 0..console.rows {
-            for j in 0..console.columns {
-                let index = top_left_corner_index + j + i * TEXT_LAYER_COLUMNS;
-                
-                match console.content.get(char_index) {
-                    Some(char) => {
-                        self.insert_text_layer_char(index, *char);
-                    },
-                    None => {
-                        self.insert_char(index, ' ', Some(console.default_color), Some(console.default_bkg_color), false, false, false);
-                    }
-                }
-                
-                if char_index == console.content.len() {
-                    self.insert_text_layer_char(index, console.cursor);
-                }
-                
-                char_index = char_index + 1;
-            }
-        }
-    }
-
+pub const fn text_coord_to_index(x: usize, y: usize) -> usize {
+    (y * TEXT_COLUMNS + x) % (TEXT_COLUMNS * TEXT_ROWS)
 }
