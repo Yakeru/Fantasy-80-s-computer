@@ -1,4 +1,4 @@
-use virtual_frame_buffer::*;
+use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}, text_layer_char::TextLayerChar, crt_renderer::CrtEffectRenderer};
 use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
@@ -10,7 +10,7 @@ use winit::{
     window::WindowBuilder,
 };
 
-mod unicode;
+use unicode;
 
 //Apps
 mod apps;
@@ -24,8 +24,6 @@ use crate::apps::weather_app::*;
 //Settings
 const FRAME_TIME_MS: u128 = 16; //ms per frame : 16 = 60fps, 32 = 30fps, 1000 = 1fps
 const FRAMES_PER_SEC: u128 = 60;
-const SPLASH: &str =
-    " Fantasy CPC Microcomputer V(0.1)\u{000D}\u{000D} 2022 Damien Torreilles\u{000D}\u{000D}";
 
 ///*********************************************************THE MAIN
 fn main() -> Result<(), Error> {
@@ -37,7 +35,7 @@ fn main() -> Result<(), Error> {
     let mut keyboard_input: Option<KeyboardInput> = None;
     let mut char_received: Option<char> = None;
     let mut mouse_move_delta: (f64, f64) = (0.0, 0.0);
-    let boot_time = Instant::now();
+    //let boot_time = Instant::now();
     let mut frame_counter:  u128 = 0;
 
     //Instant used to time frame refresh
@@ -83,8 +81,8 @@ fn main() -> Result<(), Error> {
         .expect("Pixels : Failed to setup rendering")
     };
 
-    //The crt renderer takes the virtual frame buffers's frame, upscales it 3 times in X and Y to matche the pixcel's frame and winow size,
-    //then applyes an effect to evoke CRT sub-pixels and scanlines.
+    //The crt renderer takes the virtual frame buffers's frame, upscales it to match pixel's frame and winit window size,
+    //then applies a filter evoking CRT sub-pixels and scanlines ... or crappy LCD.
     //The upscaled and "crt'ed" image is then pushed into pixel's frame for final render.
     let mut crt_renderer: CrtEffectRenderer = CrtEffectRenderer::new();
 
@@ -92,41 +90,46 @@ fn main() -> Result<(), Error> {
     //It is launched at startup after the boot animation. 
     //The winit event loop will update and render the shell by default if
     //no other process is running or has the focus.
-
+    //The Shell uses the always running console 0 as default output.
     //When pressing "escape" in any other app, it will quit the app and
     //get back to the shell.
     //Pressing "escape" again in the shell will quit the program (close winit with a WindowEvent::CloseRequested)
     let mut shell = Box::new(Shell::new());
-    shell.set_state(false, false);
+    shell.set_state(true, true);
 
     //Other apps
-    let mut text_edit = Box::new(TextEdit::new());
-    text_edit.set_state(false, false);
-    let mut sprite_edit = Box::new(SpriteEditor::new());
-    sprite_edit.set_state(false, false);
     let mut lines = Box::new(Lines::new());
-    lines.set_state(true, true);
+    lines.set_state(false, false);
     let mut squares = Box::new(Squares::new());
     squares.set_state(false, false);
-    let mut weather_app = Box::new(WeatherApp::new());
-    weather_app.set_state(false, false);
+    // let mut text_edit = Box::new(TextEdit::new());
+    // text_edit.set_state(false, false);
+    let mut sprite_edit = Box::new(SpriteEditor::new());
+    sprite_edit.set_state(false, false);
+    let mut squares = Box::new(Squares::new());
+    squares.set_state(false, false);
+    // let mut weather_app = Box::new(WeatherApp::new());
+    // weather_app.set_state(false, false);
 
-    //The app_list is used to put them all at the same place and 
-    //easily parse them and update/draw/focus them according to their status.
+    //To be managed properly, apps must be added to that list.
+    //The main goes through the list and updates/renders the apps according to their statuses.
     let mut app_list: Vec<Box<dyn AppMacro>> = Vec::new();
     app_list.push(shell);
-    app_list.push(text_edit);
-    app_list.push(sprite_edit);
     app_list.push(lines);
+    // app_list.push(text_edit);
+    app_list.push(sprite_edit);
     app_list.push(squares);
-    app_list.push(weather_app);
+    // app_list.push(weather_app);
     
     //Fill the screen with black
     virtual_frame_buffer.clear_frame_buffer(0);
 
-    //The event loop here can be considered as a bios rom + terminal
-    //it gathers all the keyborad inputs and sends them to the shell, the shell interprets them.
-    //it always runs the shell and gives it the focus if no other app is running.
+    //The event loop here can be seen as the "bios + boot rom + console" part of the Fantasy computer.
+    //It initialises the virtual_frame_buffer, Console 0 and Shell.
+    //If no app is running/rendering, it defaults back to running/rendering the Console 0 and Shell.
+    //It goes through app_list and updates all apps that have their update flag to true.
+    //It goes through app_list and renders the appa that have their render flag and focus flag to true. Should be just one, so it stops at the first one it finds.
+    //It reads the messages returned by the apps and displays them to Console 0.
     event_loop.run(move |event, _, control_flow| {
 
         *control_flow = ControlFlow::Poll;
@@ -150,9 +153,17 @@ fn main() -> Result<(), Error> {
                 DeviceEvent::MouseMotion { delta } => {
                     mouse_move_delta = delta;
                 }
-                DeviceEvent::Button { button, state } => match state {
-                    ElementState::Pressed => (),
-                    ElementState::Released => (),
+                DeviceEvent::Button { button, state } => {
+                    match state {
+                        ElementState::Pressed => (),
+                        ElementState::Released => (),
+                    };
+
+                    match button {
+                        0 => (),
+                        1 => (),
+                        _ => ()
+                    }
                 },
                 DeviceEvent::Key(k) => {
                     keyboard_input = Some(k);
@@ -172,7 +183,6 @@ fn main() -> Result<(), Error> {
                 if booting {
                     booting = boot_animation(&mut virtual_frame_buffer, &mut crt_renderer, frame_counter);
                 } else {
-
                     //Updating apps
                     let mut app_response: AppResponse = AppResponse::new();
 
@@ -234,7 +244,7 @@ fn main() -> Result<(), Error> {
 }
 
 ///Just for fun, random colored lines in overscan zone, Amstrad style
-fn draw_apploading_border(virtual_frame_buffer: &mut VirtualFrameBuffer) {
+fn draw_loading_border(virtual_frame_buffer: &mut VirtualFrameBuffer) {
     let mut random = rand::thread_rng();
     let mut rgb_color: u8 = random.gen_range(0..32);
 
@@ -245,10 +255,10 @@ fn draw_apploading_border(virtual_frame_buffer: &mut VirtualFrameBuffer) {
 
     let width = virtual_frame_buffer.get_width();
     let height = virtual_frame_buffer.get_height();
-    let horiz_size = (virtual_frame_buffer.get_width() - virtual_frame_buffer.get_text_layer().get_dimensions().0 * 8)/2;
-    let vert_size = (virtual_frame_buffer.get_height() - virtual_frame_buffer.get_text_layer().get_dimensions().1 * 8)/2;
+    let horiz_size = (virtual_frame_buffer.get_width() - virtual_frame_buffer.get_text_layer_size_xy().0 * 8)/2;
+    let vert_size = (virtual_frame_buffer.get_height() - virtual_frame_buffer.get_text_layer_size_xy().1 * 8)/2;
 
-    for pixel in virtual_frame_buffer.get_frame().chunks_exact_mut(1) {
+    for pixel in virtual_frame_buffer.get_frame_mut().chunks_exact_mut(1) {
         if line_pixel_count < horiz_size
             || line_pixel_count > width - horiz_size
             || line_count < vert_size
@@ -289,36 +299,33 @@ fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &
     if frame_counter == FRAMES_PER_SEC * 2 {
 
         //Clear text layer
-        virtual_frame_buffer.get_text_layer().clear();
+        virtual_frame_buffer.get_text_layer_mut().clear();
 
         //Clear frame buffer
         virtual_frame_buffer.clear_frame_buffer(0);
 
         //Display all possible colors on first row
-        for i in 0..32_u16 {
-            virtual_frame_buffer.get_text_layer().insert_char(i as usize, ' ', Some(i), None);
+        for i in 0..32_u8 {
+            virtual_frame_buffer.get_text_layer_mut().insert_char(i as usize, ' ', Some(BLACK.0), Some(i), false, false, false);
         }
 
         //Display all chars starting on second row
-        let width = virtual_frame_buffer.get_text_layer().get_dimensions().0;
+        let width = virtual_frame_buffer.get_text_layer_size_xy().0;
         for i in 0..characters_rom::ROM.len() {
-            virtual_frame_buffer.get_text_layer().insert_char(width + i as usize, characters_rom::CHARS[i], Some(0x0700), None);
+            virtual_frame_buffer.get_text_layer_mut().insert_char(width + i as usize, characters_rom::CHARS[i], Some(WHITE.0), Some(BLACK.0), false, false, false);
         }
 
-        virtual_frame_buffer.get_text_layer().insert_string_coord(0, 4, "Loading..." , Some(0x0700), None);
+        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(0, 4, "Loading..." , Some(WHITE.0), Some(BLACK.0), false, false, false);
     }
-
-    //After 4 seconds, show loading message
-    // if frame_counter == FRAMES_PER_SEC * 4 {
-    //     virtual_frame_buffer.get_text_layer().insert_string_coord(0, 4, "Loading..." , Some(0x0700), None);
-    // }
 
     //Display loading overscan while "loading"
     if frame_counter >= FRAMES_PER_SEC * 2 && frame_counter <= FRAMES_PER_SEC * 6 {
-        draw_apploading_border(virtual_frame_buffer);
+        draw_loading_border(virtual_frame_buffer);
     }
     
     if frame_counter >= 6 * FRAMES_PER_SEC {
+        virtual_frame_buffer.get_text_layer_mut().clear();
+        virtual_frame_buffer.clear_frame_buffer(0);
         return false;
     }
     else {
@@ -330,26 +337,22 @@ fn genrate_random_garbage(virtual_frame_buffer: &mut VirtualFrameBuffer) {
 
     let mut random = rand::thread_rng();
         
-        let frame: u8 = random.gen_range(0..32);
-        virtual_frame_buffer.clear_frame_buffer(frame);
+    let frame: u8 = random.gen_range(0..32);
+    virtual_frame_buffer.clear_frame_buffer(frame);
+    virtual_frame_buffer.get_text_layer_mut().clear();
 
-        let color_map = virtual_frame_buffer.get_text_layer().get_color_map();
-        for index in 0..color_map.len() {
-            let bkg: u8 = random.gen_range(0..32);
-            let frt: u8 = random.gen_range(0..32);
-            let color: u16 = (frt as u16) << 8 | bkg as u16;
-            color_map[index] = Some(color);
-        }
-    
-        let char_map = virtual_frame_buffer.get_text_layer().get_char_map();
-        for index in 0..char_map.len() {
-            let toto:usize = random.gen_range(0..characters_rom::CHARS.len());
-            char_map[index] = Some(characters_rom::CHARS[toto]);
-        }
+    let char_map = virtual_frame_buffer.get_text_layer_mut().get_char_map_mut();
+    for index in 0..char_map.len() {
+        
+        let color: u8 = random.gen_range(0..32);
+        let bkg_color: u8 = random.gen_range(0..32);
+        let c:char = characters_rom::CHARS[random.gen_range(0..characters_rom::CHARS.len())];
+        let effect:u8 = random.gen_range(0..5);
+        let swap: bool = if effect & 0b00000001 > 0 {true} else {false};
+        let blink: bool = if effect & 0b00000010 > 0 {true} else {false};
+        let shadowed: bool = if effect & 0b00000100 > 0 {true} else {false};
 
-        let effect_map = virtual_frame_buffer.get_text_layer().get_effect_map();
-        for index in 0..effect_map.len() {
-            let toto:u8 = random.gen_range(0..5);
-            effect_map[index] = Some(toto);
-        }
+        let text_layer_char: TextLayerChar = TextLayerChar{c, color, bkg_color, swap, blink, shadowed};
+        char_map[index] = Some(text_layer_char);
+    }
 }

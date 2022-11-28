@@ -39,7 +39,7 @@ impl Sprite {
         let size: usize = 16 * 16;
         let mut image = Vec::new();
 
-        for i in 0..size {
+        for _i in 0..size {
             image.push(0);
         }
 

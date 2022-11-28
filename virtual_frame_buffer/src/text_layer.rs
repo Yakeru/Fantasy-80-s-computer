@@ -1,140 +1,88 @@
-use crate::config;
+use crate::{config::*, color_palettes::*, text_layer_char::{TextLayerChar}};
 
-const TEXT_COLUMNS: usize = config::TEXT_COLUMNS;
-const TEXT_ROWS: usize = config::TEXT_ROWS;
-
-const DEFAULT_COLOR: u8 = 7;
-const DEFAULT_BKG_COLOR: u8 = 0;
-
-// u16 color_map structure :
-// 0000 0000 0000 0000
-//     |         |___ 8 ls bit background color index
-//     |__ 8 ms bit char color index
-
-
-// u8 effect_map structure
-// 0000 0000
-//       |||__ swap colors flag
-//       ||__ blink flag
-//       |__ shadowed (draws a black checkered pattern on top)
-
-
-struct Console {
-    default_color: u8,
-    default_bkg_color: u8,
-    size_x: usize,
-    size_y: usize,
-    pos_x: usize,
-    pos_y: usize,
-    buffer: Vec<(char, u16, u8)>,
-    cursor_pos: usize
-}
+const DEFAULT_COLOR: u8 = WHITE.0;
+const DEFAULT_BKG_COLOR: u8 = BLACK.0;
 
 pub struct TextLayer {
-    default_color: u8,
-    default_bkg_color: u8,
-    color_map: [Option<u16>; TEXT_COLUMNS * TEXT_ROWS],
-    effect_map: [Option<u8>; TEXT_COLUMNS * TEXT_ROWS],
-    char_map: [Option<char>; TEXT_COLUMNS * TEXT_ROWS]
+    pub default_color: u8,
+    pub default_bkg_color: u8,
+    char_map: [Option<TextLayerChar>; TEXT_COLUMNS * TEXT_ROWS],
 }
 
 impl TextLayer {
-    pub fn new() -> TextLayer {
+    pub const fn new() -> TextLayer {
         TextLayer {
             default_color: DEFAULT_COLOR,
             default_bkg_color: DEFAULT_BKG_COLOR,
-            color_map: [None; TEXT_COLUMNS * TEXT_ROWS],
-            effect_map: [None; TEXT_COLUMNS * TEXT_ROWS],
             char_map: [None; TEXT_COLUMNS * TEXT_ROWS]
         }
     }
 
-    pub fn clear_colors(&mut self) {
-        self.color_map = [None; TEXT_COLUMNS * TEXT_ROWS];
-    }
-
-    pub fn clear_effects(&mut self) {
-        self.effect_map = [None; TEXT_COLUMNS * TEXT_ROWS];
-    }
-
-    pub fn clear_chars(&mut self) {
+    pub fn clear(&mut self) {
         self.char_map = [None; TEXT_COLUMNS * TEXT_ROWS];
     }
 
-    pub fn clear(&mut self) {
-        self.clear_chars();
-        self.clear_colors();
-        self.clear_effects();
-    }
-
-    pub fn get_dimensions(&self) -> (usize, usize) {
+    /// Returns the dimensions in columns and rowns of the text layer map.
+    pub fn get_dimensions_xy(&self) -> (usize, usize) {
         return (TEXT_COLUMNS, TEXT_ROWS);
     }
 
-    pub fn get_size(&self) -> usize {
-        return TEXT_COLUMNS * TEXT_ROWS;
+    /// Returns the lenght of the char_map array.
+    pub fn get_len(&self) -> usize {
+        return self.char_map.len();
     }
 
-    pub fn get_char_map(&mut self) -> &mut [Option<char>] {
+    pub fn get_char_map(&self) -> &[Option<TextLayerChar>] {
+        return &self.char_map;
+    }
+
+    pub fn get_char_map_mut(&mut self) -> &mut [Option<TextLayerChar>] {
         return &mut self.char_map;
     }
 
-    pub fn get_color_map(&mut self) -> &mut [Option<u16>] {
-        return &mut self.color_map;
+    /// Inserts a TextLayerChar in the char_map at the specified index.
+    /// This is the mother of all text inserting functions, all 
+    /// the insert or push functions end up calling this one. 
+    pub fn insert_text_layer_char(&mut self, index: usize, text_layer_char: TextLayerChar) {
+        let safe_index = index % self.get_len();
+        self.char_map[safe_index] = Some(text_layer_char);
     }
 
-    pub fn get_effect_map(&mut self) -> &mut [Option<u8>] {
-        return &mut self.effect_map;
+    /// Inserts a character in the char_map at the specified index.
+    pub fn insert_char(&mut self, index: usize, c: char, color: Option<u8>, bkg_color: Option<u8>, swap: bool, blink: bool, shadowed: bool) {
+        self.insert_text_layer_char(index, TextLayerChar {c, color: color.unwrap_or(DEFAULT_COLOR), bkg_color: bkg_color.unwrap_or(DEFAULT_BKG_COLOR), swap, blink, shadowed});
     }
 
-    pub fn set_default_color(&mut self, color: u8) {
-        self.default_color = color;
+    /// Inserts a character in the char_map at the specified x and y position.
+    pub fn insert_char_xy(&mut self, x: usize, y: usize, c: char, color: Option<u8>, bkg_color: Option<u8>, swap: bool, blink: bool, shadowed: bool) {
+        let index = text_coord_to_index(x, y);
+        self.insert_char(index, c, color, bkg_color, swap, blink, shadowed);
     }
 
-    pub fn set_default_bkg_color(&mut self, bkg_color: u8) {
-        self.default_bkg_color = bkg_color;
+    /// Inserts a TextLayerChar in the char_map at the specified x and y position.
+    pub fn insert_text_layer_char_xy(&mut self, x: usize, y: usize, char: TextLayerChar) {
+        let index = text_coord_to_index(x, y);
+        self.insert_text_layer_char(index, char);
     }
 
-    pub fn get_default_color(&self) -> u8 {
-        self.default_color
-    }
-
-    pub fn get_default_bkg_color(&self) -> u8 {
-        self.default_bkg_color
-    }
-
-    fn coord_to_vec_index(&self, x: usize, y: usize) -> usize {
-        (y * TEXT_COLUMNS + x) % (TEXT_COLUMNS * TEXT_ROWS)
-    }
-
-    pub fn insert_char(&mut self, index: usize, char: char, color: Option<u16>, effect: Option<u8>) {
-        
-        self.char_map[index] = Some(char);
-
-        match color {
-            Some(_c) => self.color_map[index] = color,
-            None => ()
-        }
-
-        match effect {
-            Some(_e) => self.effect_map[index] = effect,
-            None => ()
+    /// Inserts a string in the char_map at the specified index.
+    pub fn insert_string(&mut self, index: usize, string: &str, color: Option<u8>, bkg_color: Option<u8>, swap: bool, blink: bool, shadowed: bool) {
+        if !string.is_empty() {
+            let mut char_count = 0;
+            for c in string.chars() {
+                self.insert_char(index + char_count, c, color, bkg_color, swap, blink, shadowed);
+                char_count = char_count + 1;
+            }
         }
     }
 
-    pub fn insert_char_coord(&mut self, x: usize, y: usize, char: char, color: Option<u16>, effect: Option<u8>) {
-        let index = self.coord_to_vec_index(x, y);
-        self.insert_char(index, char, color, effect);
+    /// Inserts a string in the char_map at the specified x and y position.
+    pub fn insert_string_xy(&mut self, x: usize, y: usize, string: &str, color: Option<u8>, bkg_color: Option<u8>, swap: bool, blink: bool, shadowed: bool) {
+        let index = text_coord_to_index(x, y);
+        self.insert_string(index, string, color, bkg_color, swap, blink, shadowed);
     }
+}
 
-    pub fn insert_string_coord(&mut self, x: usize, y: usize, string: &str, color: Option<u16>, effect: Option<u8>) {
-
-        let index = self.coord_to_vec_index(x, y);
-        let mut offset = 0;
-
-        for c in string.chars() {
-            self.insert_char(index + offset, c, color, effect);
-            offset = offset + 1;
-        } 
-    }
+pub const fn text_coord_to_index(x: usize, y: usize) -> usize {
+    (y * TEXT_COLUMNS + x) % (TEXT_COLUMNS * TEXT_ROWS)
 }

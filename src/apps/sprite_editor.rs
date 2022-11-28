@@ -1,8 +1,6 @@
 use app_macro::*;
 use app_macro_derive::AppMacro;
 use winit::event::{ElementState, KeyboardInput};
-
-//use crate::text_layer::TextLayerChar;
 use virtual_frame_buffer::*;
 use winit::dpi::PhysicalSize;
 use winit::{event::VirtualKeyCode, event_loop::ControlFlow};
@@ -147,9 +145,7 @@ impl SpriteEditor {
         let bkg_square_width = SPRITE_SIZE.width * EDITOR_PIXEL_SIZE.width + SPRITE_SIZE.width + 3;
         let bkg_square_height =
             SPRITE_SIZE.height * EDITOR_PIXEL_SIZE.height + SPRITE_SIZE.height + 3;
-        let square_size: PhysicalSize<usize> =
-            PhysicalSize::new(bkg_square_width, bkg_square_height);
-
+        
         let bkg_square: Square = Square {
             pos_x: 20,
             pos_y: 20,
@@ -159,7 +155,7 @@ impl SpriteEditor {
             fill: true,
         };
 
-        virtual_frame_buffer.draw_appsquare(bkg_square);
+        virtual_frame_buffer.draw_square(bkg_square);
 
         //Pixels
         for row in 0..SPRITE_SIZE.height {
@@ -176,7 +172,7 @@ impl SpriteEditor {
                     fill: true,
                 };
 
-                virtual_frame_buffer.draw_appsquare(pixel_square);
+                virtual_frame_buffer.draw_square(pixel_square);
 
                 //Highlight pixel if selected
                 if self.selected_pixel_x == column && self.selected_pixel_y == row {
@@ -189,7 +185,7 @@ impl SpriteEditor {
                         fill: false,
                     };
 
-                    virtual_frame_buffer.draw_appsquare(highlight_square);
+                    virtual_frame_buffer.draw_square(highlight_square);
                 }
             }
         }

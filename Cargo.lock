@@ -1883,6 +1883,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "unicode"
+version = "0.1.0"
+
+[[package]]
 name = "unicode-bidi"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1937,6 +1941,7 @@ name = "virtual_frame_buffer"
 version = "0.1.0"
 dependencies = [
  "rand",
+ "unicode",
 ]
 
 [[package]]
@@ -2286,6 +2291,7 @@ dependencies = [
  "openweathermap",
  "pixels",
  "rand",
+ "unicode",
  "virtual_frame_buffer",
  "winit",
  "winit_input_helper",
