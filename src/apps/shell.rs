@@ -1,5 +1,5 @@
 // use crate::text_layer::TextLayerChar;
-use crate::unicode;
+use crate::{unicode, genrate_random_garbage};
 use virtual_frame_buffer::*;
 use app_macro::*;
 use app_macro_derive::AppMacro;
@@ -29,6 +29,7 @@ pub struct Shell {
     drawing: bool,
     started: bool,
     ended: bool,
+    garbage: bool
 }
 
 #[derive(Copy, Clone)]
@@ -68,6 +69,7 @@ impl Shell {
             drawing: false,
             started: false,
             ended: false,
+            garbage: true
         }
     }
 
@@ -208,7 +210,10 @@ impl Shell {
 
     pub fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         virtual_frame_buffer.clear_frame_buffer(WHITE.0);
-        virtual_frame_buffer.get_text_layer_mut().clear();
-        virtual_frame_buffer.get_text_layer_mut().render_console(&self.console);
+        if self.garbage {
+            genrate_random_garbage(virtual_frame_buffer);
+            self.garbage = false;
+        }
+        virtual_frame_buffer.console_renderer(&self.console);
     }
 }

@@ -1,4 +1,4 @@
-use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}, text_layer_char::TextLayerChar};
+use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}, text_layer_char::TextLayerChar, crt_renderer::CrtEffectRenderer};
 use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
@@ -333,7 +333,7 @@ fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &
     } 
 }
 
-fn genrate_random_garbage(virtual_frame_buffer: &mut VirtualFrameBuffer) {
+pub fn genrate_random_garbage(virtual_frame_buffer: &mut VirtualFrameBuffer) {
 
     let mut random = rand::thread_rng();
         
