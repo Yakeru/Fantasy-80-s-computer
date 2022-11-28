@@ -333,7 +333,7 @@ fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &
     } 
 }
 
-fn genrate_random_garbage(virtual_frame_buffer: &mut VirtualFrameBuffer) {
+pub fn genrate_random_garbage(virtual_frame_buffer: &mut VirtualFrameBuffer) {
 
     let mut random = rand::thread_rng();
         
