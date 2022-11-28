@@ -7,7 +7,7 @@ pub trait AppMacro {
     fn get_name(&self) -> &str;
     fn set_state(&mut self, updating: bool, drawing: bool);
     fn get_state(&self) -> (bool, bool);
-    fn update(&mut self, keybord_input: Option<KeyboardInput>, char_received: Option<char>) -> AppResponse;
+    fn update(&mut self, keybord_input: Option<KeyboardInput>, char_received: Option<char>, virtual_frame_buffer: &mut VirtualFrameBuffer) -> AppResponse;
     fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer);
 }
 

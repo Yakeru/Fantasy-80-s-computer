@@ -32,6 +32,7 @@ impl Squares {
         &mut self,
         keybord_input: Option<KeyboardInput>,
         char_received: Option<char>,
+        virtual_frame_buffer: &mut VirtualFrameBuffer
     ) -> AppResponse {
         let mut response = AppResponse::new();
 
@@ -102,7 +103,7 @@ impl Squares {
                 fill,
                 color,
             };
-            virtual_frame_buffer.draw_square(square);
+            draw_square(square, virtual_frame_buffer.get_frame_mut());
         }
     }
 }

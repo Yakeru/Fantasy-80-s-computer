@@ -24,7 +24,6 @@ pub struct Shell {
     clear_text_layer: bool,
     command: Vec<char>,
     command_history: Vec<String>,
-    console: Console,
     updating: bool,
     drawing: bool,
     started: bool,
@@ -60,10 +59,6 @@ impl Shell {
             last_character_received: None,
             clear_text_layer: false,
             command: Vec::new(),
-            console: {
-                let cursor = TextLayerChar {c: '\u{25AE}', color: YELLOW, bkg_color: TRUEBLUE, swap: false, blink: true, shadowed: false};
-                Console::new(0, 0, 30, 10, YELLOW, TRUEBLUE, cursor, false, true)
-            },
             command_history,
             updating: false,
             drawing: false,
@@ -154,9 +149,12 @@ impl Shell {
         &mut self,
         keybord_input: Option<KeyboardInput>,
         char_received: Option<char>,
+        virtual_frame_buffer: &mut VirtualFrameBuffer
     ) -> AppResponse {
         let mut response = AppResponse::new();
         self.last_character_received = char_received;
+
+        virtual_frame_buffer.get_console_mut().display = true;
 
         if !self.started {
             self.start();
@@ -166,7 +164,7 @@ impl Shell {
             Some(unicode) => {
                 match unicode {
                     unicode::BACKSPACE => {
-                        self.console.content.pop();
+                        virtual_frame_buffer.get_console_mut().content.pop();
                     }
 
                     unicode::ESCAPE => {
@@ -180,7 +178,7 @@ impl Shell {
                     }
 
                     _ => {
-                        self.console.content.push(self.get_text_layer_char_from_style(self.style_a_char(unicode, Style::Default)))
+                        virtual_frame_buffer.get_console_mut().content.push(self.get_text_layer_char_from_style(self.style_a_char(unicode, Style::Default)))
                     }
                 }
             }
@@ -192,10 +190,10 @@ impl Shell {
                 match k.virtual_keycode {
                     Some(code) => {
                         match code {
-                            winit::event::VirtualKeyCode::Left => self.console.pos_x = self.console.pos_x - 1,
-                            winit::event::VirtualKeyCode::Right => self.console.pos_x = self.console.pos_x + 1,
-                            winit::event::VirtualKeyCode::Up => self.console.pos_y = self.console.pos_y - 1,
-                            winit::event::VirtualKeyCode::Down => self.console.pos_y = self.console.pos_y + 1,
+                            winit::event::VirtualKeyCode::Left => virtual_frame_buffer.get_console_mut().pos_x = virtual_frame_buffer.get_console_mut().pos_x - 1,
+                            winit::event::VirtualKeyCode::Right => virtual_frame_buffer.get_console_mut().pos_x = virtual_frame_buffer.get_console_mut().pos_x + 1,
+                            winit::event::VirtualKeyCode::Up => virtual_frame_buffer.get_console_mut().pos_y = virtual_frame_buffer.get_console_mut().pos_y - 1,
+                            winit::event::VirtualKeyCode::Down => virtual_frame_buffer.get_console_mut().pos_y = virtual_frame_buffer.get_console_mut().pos_y + 1,
                             _ => ()
                         }
                     },
@@ -214,6 +212,5 @@ impl Shell {
             genrate_random_garbage(virtual_frame_buffer);
             self.garbage = false;
         }
-        virtual_frame_buffer.console_renderer(&self.console);
     }
 }

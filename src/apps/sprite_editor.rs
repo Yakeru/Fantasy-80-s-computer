@@ -43,6 +43,7 @@ impl SpriteEditor {
         &mut self,
         keybord_input: Option<KeyboardInput>,
         char_received: Option<char>,
+        virtual_frame_buffer: &mut VirtualFrameBuffer
     ) -> AppResponse {
         let mut response = AppResponse::new();
 
@@ -155,7 +156,7 @@ impl SpriteEditor {
             fill: true,
         };
 
-        virtual_frame_buffer.draw_square(bkg_square);
+        draw_square(bkg_square, virtual_frame_buffer.get_frame_mut());
 
         //Pixels
         for row in 0..SPRITE_SIZE.height {
@@ -172,7 +173,7 @@ impl SpriteEditor {
                     fill: true,
                 };
 
-                virtual_frame_buffer.draw_square(pixel_square);
+                draw_square(pixel_square, virtual_frame_buffer.get_frame_mut());
 
                 //Highlight pixel if selected
                 if self.selected_pixel_x == column && self.selected_pixel_y == row {
@@ -185,7 +186,7 @@ impl SpriteEditor {
                         fill: false,
                     };
 
-                    virtual_frame_buffer.draw_square(highlight_square);
+                    draw_square(highlight_square, virtual_frame_buffer.get_frame_mut());
                 }
             }
         }

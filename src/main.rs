@@ -189,7 +189,7 @@ fn main() -> Result<(), Error> {
                     for i in 0..app_list.len() {
                         let app = app_list.get_mut(i).unwrap();
                         if app.get_state().0 == true {
-                            app_response = app.update(keyboard_input, char_received);
+                            app_response = app.update(keyboard_input, char_received, &mut virtual_frame_buffer);
                         }
                     } 
 
@@ -286,6 +286,7 @@ fn draw_loading_border(virtual_frame_buffer: &mut VirtualFrameBuffer) {
 ///Boot animation
 fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &mut CrtEffectRenderer, frame_counter: u128) -> bool {
     
+    virtual_frame_buffer.get_console_mut().display = false;
     //CRT warm up
     let br = if frame_counter > 255 {255} else {frame_counter as u8};
     crt_renderer.set_brightness(br);

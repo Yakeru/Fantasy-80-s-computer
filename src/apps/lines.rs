@@ -34,7 +34,8 @@ impl Lines {
     pub fn update_app(
         &mut self,
         keybord_input: Option<KeyboardInput>,
-        char_received: Option<char>
+        char_received: Option<char>,
+        virtual_frame_buffer: &mut VirtualFrameBuffer
     ) -> AppResponse {
         let mut response = AppResponse::new();
 
@@ -105,7 +106,7 @@ impl Lines {
                 end_y,
                 color,
             };
-            virtual_frame_buffer.draw_line(line);
+            draw_line(line, virtual_frame_buffer.get_frame_mut());
             // self.draw_appa_line = false;
         }
 
