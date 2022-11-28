@@ -3,7 +3,7 @@ use color_palettes::*;
 use config::*;
 use console::Console;
 use sprite::Sprite;
-use text_layer::TextLayer;
+use text_layer::{TextLayer, text_index_to_frame_coord, text_coord_to_frame_coord};
 use text_layer_char::TextLayerChar;
 
 pub mod config;
@@ -71,7 +71,7 @@ impl VirtualFrameBuffer {
             text_layer,
             console: Console::new(10, 10, 30, 10, 
                 YELLOW, TRUEBLUE, TextLayerChar { c: '\u{25AE}', color: YELLOW, bkg_color: TRUEBLUE, 
-                swap: false, blink: false, shadowed: false }, false, false),
+                swap: false, blink: true, shadowed: false }, false, false),
             sprites,
             frame_counter: 0,
             second_tick: false,
@@ -105,12 +105,12 @@ impl VirtualFrameBuffer {
     }
 
     pub fn get_pixel(&mut self, x: usize, y: usize) -> u8 {
-        let index = coord_to_vec_index(x, y);
+        let index = frame_coord_to_index(x, y);
         self.frame[index]
     }
 
     pub fn set_pixel(&mut self, x: usize, y: usize, color: u8) {
-        let index = coord_to_vec_index(x, y);
+        let index = frame_coord_to_index(x, y);
         self.frame[index] = color
     }
 
@@ -180,140 +180,116 @@ impl VirtualFrameBuffer {
             self.frame_counter += 1;
         }
 
-        self.sprite_layer_renderer();
+        sprite_layer_renderer(&self.sprites, &mut self.frame);
         text_layer_renderer(&self.text_layer, &mut self.frame, self.half_second_latch);
         if self.console.display {
             console_renderer(&self.console, &mut self.frame, self.half_second_latch);
         }
-        self.apply_line_scroll_effect();
+        apply_line_scroll_effect(&self.line_scroll_list, &mut self.frame);
     }
+}
 
-    /// Gets all the sprites listed in the sprite vector and renders them at the right place in the
-    /// the virtual frame buffer
-    fn sprite_layer_renderer(&mut self) {
-        for sprite in self.sprites.chunks_exact_mut(1) {
-            let mut pixel_count = 0;
-            let mut sprite_line_count = 0;
+pub const fn frame_coord_to_index(x: usize, y: usize) -> usize {
+    let safe_x = x % VIRTUAL_WIDTH;
+    let safe_y = y % VIRTUAL_HEIGHT;
+    safe_y * VIRTUAL_WIDTH + safe_x
+}
 
-            let global_offset = coord_to_vec_index(sprite[0].pos_x, sprite[0].pos_y);
+fn apply_line_scroll_effect(line_scroll_list: &[i8], frame: &mut [u8]) {
+    let mut line_index: usize = 0;
 
-            for pixel in &sprite[0].image {
-                let virtual_fb_offset =
-                    (global_offset + VIRTUAL_WIDTH * sprite_line_count + pixel_count)
-                        % (VIRTUAL_WIDTH * VIRTUAL_HEIGHT);
+    for line_scroll_value in line_scroll_list {
+        if *line_scroll_value > 0 {
+            frame[VIRTUAL_WIDTH * line_index..VIRTUAL_WIDTH * line_index + VIRTUAL_WIDTH]
+                .rotate_right(*line_scroll_value as usize);
+        }
 
-                if *pixel != 0 {
-                    self.frame[virtual_fb_offset] = *pixel;
-                }
+        if *line_scroll_value < 0 {
+            frame[VIRTUAL_WIDTH * line_index..VIRTUAL_WIDTH * line_index + VIRTUAL_WIDTH]
+                .rotate_left((-*line_scroll_value) as usize);
+        }
 
-                pixel_count += 1;
-                if pixel_count == sprite[0].value_in_physical_size().0 {
-                    pixel_count = 0;
-                    sprite_line_count += 1;
-                }
+        line_index += 1;
+    }
+}
+
+/// Gets all the sprites listed in the sprite vector and renders them at the right place in the
+/// the virtual frame buffer
+fn sprite_layer_renderer(sprites: &Vec<Sprite>, frame: &mut [u8]) {
+    for sprite in sprites {
+        let mut pixel_count = 0;
+        let mut sprite_line_count = 0;
+
+        let global_offset = frame_coord_to_index(sprite.pos_x, sprite.pos_y);
+
+        for pixel in &sprite.image {
+            let virtual_fb_offset =
+                (global_offset + VIRTUAL_WIDTH * sprite_line_count + pixel_count)
+                    % (VIRTUAL_WIDTH * VIRTUAL_HEIGHT);
+
+            if *pixel != 0 {
+                frame[virtual_fb_offset] = *pixel;
+            }
+
+            pixel_count += 1;
+            if pixel_count == sprite.value_in_physical_size().0 {
+                pixel_count = 0;
+                sprite_line_count += 1;
             }
         }
     }
-
-    fn apply_line_scroll_effect(&mut self) {
-        // let mut line_index: usize = 0;
-
-        // for line_scroll_value in self.line_scroll_list {
-        //     if line_scroll_value > 0 {
-        //         self.frame[VIRTUAL_WIDTH * line_index..VIRTUAL_WIDTH * line_index + VIRTUAL_WIDTH]
-        //             .rotate_right(line_scroll_value as usize);
-        //     }
-
-        //     if line_scroll_value < 0 {
-        //         self.frame[VIRTUAL_WIDTH * line_index..VIRTUAL_WIDTH * line_index + VIRTUAL_WIDTH]
-        //             .rotate_left((-line_scroll_value) as usize);
-        //     }
-
-        //     line_index += 1;
-        // }
-    }
-}
-
-pub const fn coord_to_vec_index(x: usize, y: usize) -> usize {
-    (y * VIRTUAL_WIDTH + x) % (VIRTUAL_WIDTH * VIRTUAL_HEIGHT)
 }
 
 fn text_layer_renderer(text_layer: &TextLayer, frame: &mut [u8], half_second_latch: bool) {
-    let horizontal_border: usize = (VIRTUAL_WIDTH - TEXT_COLUMNS * CHARACTER_WIDTH) / 2;
-    let vertical_border: usize = (VIRTUAL_HEIGHT - TEXT_ROWS * CHARACTER_HEIGHT) / 2;
-    let mut x_pos = horizontal_border;
-    let mut y_pos = vertical_border;
-    let mut text_row_count = 0;
-    let mut text_col_count = 0;
-
     for char_counter in 0..text_layer.get_len() {
 
         let text_layer_char = text_layer.get_char_map()[char_counter];
+        let frame_coord = text_index_to_frame_coord(char_counter);
 
         match text_layer_char {
 
             Some(char_struct) => {
-                text_layer_char_renderer(&char_struct, x_pos, y_pos, frame, half_second_latch);
+                text_layer_char_renderer(&char_struct, frame_coord.0, frame_coord.1, frame, half_second_latch);
             },
             None => ()
-        }
-
-        //Move to next character coordinates
-        text_col_count += 1;
-        x_pos += CHARACTER_WIDTH;
-
-        if text_col_count == TEXT_COLUMNS {
-            text_col_count = 0;
-            text_row_count += 1;
-            x_pos = horizontal_border;
-            y_pos += CHARACTER_HEIGHT;
-        }
-
-        if text_row_count == TEXT_ROWS {
-            text_col_count = 0;
-            text_row_count = 0;
-            x_pos = horizontal_border;
-            y_pos = vertical_border;
         }
     }
 }
 
 
 pub fn console_renderer(console: &Console, frame: &mut [u8], half_second_latch: bool) {
-
-    let horizontal_border: usize = (VIRTUAL_WIDTH - TEXT_COLUMNS * CHARACTER_WIDTH) / 2;
-    let vertical_border: usize = (VIRTUAL_HEIGHT - TEXT_ROWS * CHARACTER_HEIGHT) / 2;
-    let mut x_pos = horizontal_border + console.pos_x * CHARACTER_WIDTH;
-    let mut y_pos = vertical_border + console.pos_y * CHARACTER_HEIGHT;
-
-    let empty_char = TextLayerChar {c: ' ', color: console.default_color, bkg_color: console.default_bkg_color, 
-    swap: false, blink: false, shadowed: false};
+    let empty_char = TextLayerChar {
+        c: ' ', color: console.default_color, bkg_color: console.default_bkg_color, 
+        swap: false, blink: false, shadowed: false
+    };
+    
     let mut char_index = 0;
 
-    for _i in 0..console.rows {
-        for _j in 0..console.columns {                
+    for row_count in 0..console.rows {
+        for col_count in 0..console.columns {      
+            let char_x = console.pos_x + col_count;
+            let char_y = console.pos_y + row_count;     
+            let frame_coord = text_coord_to_frame_coord(char_x, char_y);
+            
             match console.content.get(char_index) {
                 Some(char) => {
-                    text_layer_char_renderer(&char, x_pos, y_pos, frame, half_second_latch);
+                    text_layer_char_renderer(&char, frame_coord.0, frame_coord.1, frame, half_second_latch);
                 },
                 None => {
-                    text_layer_char_renderer(&empty_char, x_pos, y_pos, frame, half_second_latch);
+                    text_layer_char_renderer(&empty_char, frame_coord.0, frame_coord.1, frame, half_second_latch);
                 }
             }
             
             if char_index == console.content.len() {
-                text_layer_char_renderer(&console.cursor, x_pos, y_pos, frame, half_second_latch);
+                text_layer_char_renderer(&console.cursor, frame_coord.0, frame_coord.1, frame, half_second_latch);
             }
-            
+
             char_index += 1;
-            x_pos += CHARACTER_WIDTH;
         }
-        x_pos = horizontal_border + console.pos_x * CHARACTER_WIDTH;
-        y_pos += CHARACTER_HEIGHT;
     }
 }
 
-fn text_layer_char_renderer(text_layer_char: &TextLayerChar, x_pos: usize, y_pos: usize, frame: &mut [u8], half_second_latch: bool) {
+fn text_layer_char_renderer(text_layer_char: &TextLayerChar, frame_x_pos: usize, frame_y_pos: usize, frame: &mut [u8], half_second_latch: bool) {
     let char = text_layer_char.c;
     let char_color = text_layer_char.color;
     let bck_color = text_layer_char.bkg_color;
@@ -335,7 +311,7 @@ fn text_layer_char_renderer(text_layer_char: &TextLayerChar, x_pos: usize, y_pos
 
         for col_count in 0..CHARACTER_WIDTH {
             let virtual_frame_buffer_pos =
-                x_pos + col_count + (y_pos + row_count) * VIRTUAL_WIDTH;
+            frame_x_pos + col_count + (frame_y_pos + row_count) * VIRTUAL_WIDTH;
 
             if shadowed {
                 let shadow_mask: u8 = if row_count % 2 == 0 {
@@ -376,7 +352,7 @@ pub fn draw_line(line: Line, frame: &mut [u8]) {
     let y1 = line.end_y as isize;
 
     loop {
-        frame[coord_to_vec_index(x0 as usize, y0 as usize)] = line.color;
+        frame[frame_coord_to_index(x0 as usize, y0 as usize)] = line.color;
 
         if x0 == x1 && y0 == y1 {
             break;
@@ -402,7 +378,7 @@ pub fn draw_line(line: Line, frame: &mut [u8]) {
 }
 
 pub fn draw_square(square: Square, frame: &mut [u8]) {
-    let start_offset: usize = coord_to_vec_index(square.pos_x, square.pos_y);
+    let start_offset: usize = frame_coord_to_index(square.pos_x, square.pos_y);
 
     for row in 0..square.width {
         for column in 0..square.height {

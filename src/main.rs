@@ -287,6 +287,7 @@ fn draw_loading_border(virtual_frame_buffer: &mut VirtualFrameBuffer) {
 fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &mut CrtEffectRenderer, frame_counter: u128) -> bool {
     
     virtual_frame_buffer.get_console_mut().display = false;
+
     //CRT warm up
     let br = if frame_counter > 255 {255} else {frame_counter as u8};
     crt_renderer.set_brightness(br);
@@ -306,17 +307,17 @@ fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &
         virtual_frame_buffer.clear_frame_buffer(0);
 
         //Display all possible colors on first row
-        for i in 0..32_u8 {
-            virtual_frame_buffer.get_text_layer_mut().insert_char(i as usize, ' ', Some(BLACK), Some(i), false, false, false);
-        }
+        // for i in 0..32_u8 {
+        //     virtual_frame_buffer.get_text_layer_mut().insert_char(i as usize, ' ', Some(BLACK), Some(i), false, false, false);
+        // }
 
         //Display all chars starting on second row
-        let width = virtual_frame_buffer.get_text_layer_size_xy().0;
-        for i in 0..characters_rom::ROM.len() {
-            virtual_frame_buffer.get_text_layer_mut().insert_char(width + i as usize, characters_rom::CHARS[i], Some(WHITE), Some(BLACK), false, false, false);
-        }
+        // let width = virtual_frame_buffer.get_text_layer_size_xy().0;
+        // for i in 0..characters_rom::ROM.len() {
+        //     virtual_frame_buffer.get_text_layer_mut().insert_char(width + i as usize, characters_rom::CHARS[i], Some(WHITE), Some(BLACK), false, false, false);
+        // }
 
-        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(0, 4, "Loading..." , Some(WHITE), Some(BLACK), false, false, false);
+        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(0, 0, "Loading..." , Some(WHITE), Some(BLACK), false, false, false);
     }
 
     //Display loading overscan while "loading"

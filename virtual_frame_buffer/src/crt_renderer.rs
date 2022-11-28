@@ -4,13 +4,13 @@ const SUB_PIXEL_COUNT: usize = 4;
 const RENDERED_LINE_LENGTH: usize = WIDTH * SUB_PIXEL_COUNT;
 
 pub struct CrtEffectRenderer {
-    brightness: u8,
+    brightness: u8
 }
 
 impl CrtEffectRenderer {
     pub fn new() -> CrtEffectRenderer {
         CrtEffectRenderer {
-            brightness: u8::MAX,
+            brightness: u8::MAX
         }
     }
 
@@ -192,7 +192,7 @@ impl CrtEffectRenderer {
 
                 line_count += 1;
             }
-        } else {
+        } else if UPSCALE == 3 {
             let mut rendered_scanline: [u8; RENDERED_LINE_LENGTH] = [0; RENDERED_LINE_LENGTH];
             let mut rendered_line: [u8; RENDERED_LINE_LENGTH] = [0; RENDERED_LINE_LENGTH];
 
@@ -258,6 +258,54 @@ impl CrtEffectRenderer {
                 output_frame[start + 2 * RENDERED_LINE_LENGTH..start + 3 * RENDERED_LINE_LENGTH]
                     .copy_from_slice(&rendered_scanline);
 
+                line_count += 1;
+            }
+        } else {
+            let mut rendered_line: [u8; RENDERED_LINE_LENGTH] = [u8::MAX; RENDERED_LINE_LENGTH];
+
+            let mut line_count: usize = 0;
+
+            for virt_line in virtual_frame_buffer
+                .get_frame()
+                .chunks_exact(VIRTUAL_WIDTH)
+            {
+                for pixel_index in 0..VIRTUAL_WIDTH {
+
+                    //Check if we are inside rounded corner, if true set to black else get color
+                    let inside_corner = (line_count < circle_list.len() && pixel_index < circle_list[line_count]) || //top left corner
+                    (line_count < circle_list.len() && pixel_index > VIRTUAL_WIDTH - circle_list[line_count]) || //top right corner
+                    (line_count > VIRTUAL_HEIGHT - circle_list.len() && pixel_index < circle_list[VIRTUAL_HEIGHT - line_count]) || //bottom left corner
+                    (line_count > VIRTUAL_HEIGHT - circle_list.len() && pixel_index > VIRTUAL_WIDTH - circle_list[VIRTUAL_HEIGHT - line_count]); //bottom right corner
+
+                    let rgb = if inside_corner
+                    {
+                        (0, 0, 0)
+                    } else {
+                        virtual_frame_buffer
+                            .color_palette
+                            .get_rgb(virt_line[pixel_index])
+                    };
+
+                    let r = rgb.0;
+                    let r_index = 0 + SUB_PIXEL_COUNT * pixel_index;
+
+                    let g = rgb.1;
+                    let g_index = 1 + SUB_PIXEL_COUNT * pixel_index;
+
+                    let b = rgb.2;
+                    let b_index = 2 + SUB_PIXEL_COUNT * pixel_index;
+
+                    let a = self.brightness;
+                    let a_index = 3 + SUB_PIXEL_COUNT * pixel_index;
+
+                    rendered_line[r_index] = r;
+                    rendered_line[g_index] = g;
+                    rendered_line[b_index] = b;
+                    rendered_line[a_index] = a;
+                }
+
+                let start = line_count * RENDERED_LINE_LENGTH;
+                output_frame[start..start + RENDERED_LINE_LENGTH].copy_from_slice(&rendered_line);
                 line_count += 1;
             }
         }
