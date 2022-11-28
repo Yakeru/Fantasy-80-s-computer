@@ -1,7 +1,7 @@
 use crate::{config::*, color_palettes::*, text_layer_char::{TextLayerChar}};
 
-const DEFAULT_COLOR: u8 = WHITE.0;
-const DEFAULT_BKG_COLOR: u8 = BLACK.0;
+const DEFAULT_COLOR: u8 = WHITE;
+const DEFAULT_BKG_COLOR: u8 = BLACK;
 
 pub struct TextLayer {
     pub default_color: u8,

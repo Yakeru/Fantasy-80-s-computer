@@ -306,16 +306,16 @@ fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &
 
         //Display all possible colors on first row
         for i in 0..32_u8 {
-            virtual_frame_buffer.get_text_layer_mut().insert_char(i as usize, ' ', Some(BLACK.0), Some(i), false, false, false);
+            virtual_frame_buffer.get_text_layer_mut().insert_char(i as usize, ' ', Some(BLACK), Some(i), false, false, false);
         }
 
         //Display all chars starting on second row
         let width = virtual_frame_buffer.get_text_layer_size_xy().0;
         for i in 0..characters_rom::ROM.len() {
-            virtual_frame_buffer.get_text_layer_mut().insert_char(width + i as usize, characters_rom::CHARS[i], Some(WHITE.0), Some(BLACK.0), false, false, false);
+            virtual_frame_buffer.get_text_layer_mut().insert_char(width + i as usize, characters_rom::CHARS[i], Some(WHITE), Some(BLACK), false, false, false);
         }
 
-        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(0, 4, "Loading..." , Some(WHITE.0), Some(BLACK.0), false, false, false);
+        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(0, 4, "Loading..." , Some(WHITE), Some(BLACK), false, false, false);
     }
 
     //Display loading overscan while "loading"

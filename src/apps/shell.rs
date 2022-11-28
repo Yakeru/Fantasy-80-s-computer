@@ -12,8 +12,8 @@ use winit::event_loop::ControlFlow;
 const SPLASH: &str = "Fantasy CPC Microcomputer V(0.1)\u{000D}\u{000D}2022 Damien Torreilles\u{000D}\u{000D}";
 const SHELL_START_MESSAGE: &str = "SHELL 0.1\u{000D}\u{000D}Ready\u{000D}";
 
-const DEFAULT_BKG_COLOR: u8 = TRUEBLUE.0;
-const DEFAULT_COLOR: u8 = YELLOW.0;
+const DEFAULT_BKG_COLOR: u8 = TRUEBLUE;
+const DEFAULT_COLOR: u8 = YELLOW;
 
 #[derive(AppMacro)]
 pub struct Shell {
@@ -61,8 +61,8 @@ impl Shell {
             clear_text_layer: false,
             command: Vec::new(),
             console: {
-                let cursor = TextLayerChar {c: '\u{25AE}', color: YELLOW.0, bkg_color: TRUEBLUE.0, swap: false, blink: true, shadowed: false};
-                Console::new(0, 0, 30, 10, YELLOW.0, TRUEBLUE.0, cursor, false, true)
+                let cursor = TextLayerChar {c: '\u{25AE}', color: YELLOW, bkg_color: TRUEBLUE, swap: false, blink: true, shadowed: false};
+                Console::new(0, 0, 30, 10, YELLOW, TRUEBLUE, cursor, false, true)
             },
             command_history,
             updating: false,
@@ -86,8 +86,8 @@ impl Shell {
         match style {
             StyledChar::Default(c) => TextLayerChar {c, color: self.color, bkg_color: self.bkg_color, swap: false, blink: false, shadowed: false},
             StyledChar::Highlight(c) => TextLayerChar {c, color: self.color, bkg_color: self.bkg_color, swap: true, blink: false, shadowed: false},
-            StyledChar::Warning(c) => TextLayerChar {c, color: self.color, bkg_color: BLACK.0, swap: false, blink: false, shadowed: false},
-            StyledChar::Error(c) => TextLayerChar {c, color: RED.0, bkg_color: BLACK.0, swap: false, blink: true, shadowed: false}
+            StyledChar::Warning(c) => TextLayerChar {c, color: self.color, bkg_color: BLACK, swap: false, blink: false, shadowed: false},
+            StyledChar::Error(c) => TextLayerChar {c, color: RED, bkg_color: BLACK, swap: false, blink: true, shadowed: false}
         }
     }
 
@@ -143,12 +143,12 @@ impl Shell {
     //     response
     // }
 
-    pub fn start(&mut self) {
-        // self.push_string(SPLASH, Style::Default);
-        // self.push_string(SHELL_START_MESSAGE, Style::Default);
-        // self.push_char(StyledChar::Default('>'));
-        // self.started = true;
-    }
+    // pub fn start(&mut self) {
+    //     // self.push_string(SPLASH, Style::Default);
+    //     // self.push_string(SHELL_START_MESSAGE, Style::Default);
+    //     // self.push_char(StyledChar::Default('>'));
+    //     // self.started = true;
+    // }
 
     pub fn update_app(
         &mut self,
@@ -209,7 +209,7 @@ impl Shell {
     }
 
     pub fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-        virtual_frame_buffer.clear_frame_buffer(WHITE.0);
+        virtual_frame_buffer.clear_frame_buffer(WHITE);
         if self.garbage {
             genrate_random_garbage(virtual_frame_buffer);
             self.garbage = false;
