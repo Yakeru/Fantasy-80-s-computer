@@ -258,29 +258,33 @@ fn text_layer_renderer(text_layer: &TextLayer, frame: &mut [u8], half_second_lat
 
 
 pub fn console_renderer(console: &Console, frame: &mut [u8], half_second_latch: bool) {
-    let empty_char = TextLayerChar {
+    let empty_text_cell = TextLayerChar {
         c: ' ', color: console.default_color, bkg_color: console.default_bkg_color, 
         swap: false, blink: false, shadowed: false
     };
     
     let mut char_index = 0;
-
-    for row_count in 0..console.rows {
-        for col_count in 0..console.columns {      
+    for row_count in 0..console.get_row_count() {
+        let char_y = console.pos_y + row_count;        
+        for col_count in 0..console.get_col_count() {
             let char_x = console.pos_x + col_count;
-            let char_y = console.pos_y + row_count;     
             let frame_coord = text_coord_to_frame_coord(char_x, char_y);
-            
-            match console.content.get(char_index) {
-                Some(char) => {
-                    text_layer_char_renderer(&char, frame_coord.0, frame_coord.1, frame, half_second_latch);
-                },
-                None => {
-                    text_layer_char_renderer(&empty_char, frame_coord.0, frame_coord.1, frame, half_second_latch);
+    
+            let char = console.get_content().get(char_index);
+            if char.is_some() {
+                match char.unwrap() {
+                    Some(char) => {
+                        text_layer_char_renderer(&char, frame_coord.0, frame_coord.1, frame, half_second_latch);
+                    },
+                    None => {
+                        text_layer_char_renderer(&empty_text_cell, frame_coord.0, frame_coord.1, frame, half_second_latch);
+                    }
                 }
+            } else {
+                text_layer_char_renderer(&empty_text_cell, frame_coord.0, frame_coord.1, frame, half_second_latch);
             }
-            
-            if char_index == console.content.len() {
+
+            if char_index == console.get_content().len() {
                 text_layer_char_renderer(&console.cursor, frame_coord.0, frame_coord.1, frame, half_second_latch);
             }
 

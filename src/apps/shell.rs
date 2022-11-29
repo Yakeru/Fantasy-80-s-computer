@@ -164,7 +164,7 @@ impl Shell {
             Some(unicode) => {
                 match unicode {
                     unicode::BACKSPACE => {
-                        virtual_frame_buffer.get_console_mut().content.pop();
+                        virtual_frame_buffer.get_console_mut().pop_char();
                     }
 
                     unicode::ESCAPE => {
@@ -178,7 +178,7 @@ impl Shell {
                     }
 
                     _ => {
-                        virtual_frame_buffer.get_console_mut().content.push(self.get_text_layer_char_from_style(self.style_a_char(unicode, Style::Default)))
+                        virtual_frame_buffer.get_console_mut().push_text_layer_char(self.get_text_layer_char_from_style(self.style_a_char(unicode, Style::Default)));
                     }
                 }
             }

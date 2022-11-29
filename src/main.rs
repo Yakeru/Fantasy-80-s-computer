@@ -143,7 +143,7 @@ fn main() -> Result<(), Error> {
                 }
                 WindowEvent::ReceivedCharacter(c) => {
                     char_received = Some(c);
-                    println!("Char received: {:?}", char_received);
+                    // println!("Char received: {:?}", char_received);
                 }
                 _ => {
                     char_received = None;
@@ -171,10 +171,10 @@ fn main() -> Result<(), Error> {
                     let state = k.state;
                     let key_code = k.virtual_keycode.unwrap();
 
-                    println!(
-                        "Scan: {}, state: {:?}, virt. key code: {:?}",
-                        scan_code, state, key_code
-                    );
+                    // println!(
+                    //     "Scan: {}, state: {:?}, virt. key code: {:?}",
+                    //     scan_code, state, key_code
+                    // );
                 }
                 _ => (),
             },
