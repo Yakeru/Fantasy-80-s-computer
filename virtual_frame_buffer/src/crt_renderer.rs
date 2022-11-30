@@ -1,6 +1,6 @@
 use std::ops::Range;
 
-use crate::{config::*, VirtualFrameBuffer, color_palettes::ColorPalette};
+use crate::{config::*, VirtualFrameBuffer};
 
 const SUB_PIXEL_COUNT: usize = 4;
 const RENDERED_LINE_LENGTH: usize = WIDTH * SUB_PIXEL_COUNT;
@@ -41,8 +41,6 @@ impl CrtEffectRenderer {
             .get_frame()
             .chunks_exact(VIRTUAL_WIDTH)
         {
-            let mut rgb_before: (u8, u8, u8) = (0, 0, 0);
-
             // Check if line is affected by corner
             // if so, adapt range of pixels to render to exclude corner
 
@@ -58,37 +56,20 @@ impl CrtEffectRenderer {
                 range.end = VIRTUAL_WIDTH - circle_list[VIRTUAL_HEIGHT - line_count];
             }
 
-            for pixel_index in range {
+            let mut rgb_before: (u8, u8, u8) = (0, 0, 0);
 
-                let mut rgb = virtual_frame_buffer
-                .color_palette
-                .get_rgb(virt_line[pixel_index]);
+            for pixel_index in 0..VIRTUAL_WIDTH {
 
-                let mut rgb_after: (u8, u8, u8) = (0, 0, 0);
-
-                let mut inside_corner = false;
-        
-                //Check if we are inside rounded corner, if true set to black else get color
-                if self.filter {
-                    
-                    inside_corner = (line_count < circle_list.len() && pixel_index < circle_list[line_count]) || //top left corner
-                    (line_count < circle_list.len() && pixel_index > VIRTUAL_WIDTH - circle_list[line_count]) || //top right corner
-                    (line_count > VIRTUAL_HEIGHT - circle_list.len() && pixel_index < circle_list[VIRTUAL_HEIGHT - line_count]) || //bottom left corner
-                    (line_count > VIRTUAL_HEIGHT - circle_list.len() && pixel_index > VIRTUAL_WIDTH - circle_list[VIRTUAL_HEIGHT - line_count]); //bottom right corner
-                }
-
-                rgb = if inside_corner && self.filter {
-                    (0, 0, 0)
-                } else {
+                // Check if we are inside rounded corner, if true set to black else get color
+                let rgb = if range.contains(&pixel_index) { 
                     virtual_frame_buffer
                         .color_palette
-                        .get_rgb(virt_line[pixel_index])
+                        .get_rgb(virt_line[pixel_index]) 
+                } else { 
+                    (0, 0, 0) 
                 };
-                
 
-                rgb_after = if inside_corner {
-                    (0, 0, 0)
-                } else if pixel_index < VIRTUAL_WIDTH - 1 {
+                let rgb_after: (u8, u8, u8) = if pixel_index < VIRTUAL_WIDTH - 1 {
                     virtual_frame_buffer
                         .color_palette
                         .get_rgb(virt_line[pixel_index + 1])
