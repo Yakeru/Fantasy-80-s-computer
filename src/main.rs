@@ -53,12 +53,12 @@ fn main() -> Result<(), Error> {
     let builder = WindowBuilder::new()
         .with_decorations(true)
         .with_inner_size(PhysicalSize::new(
-            virtual_frame_buffer.get_window_size().0 as i32,
-            virtual_frame_buffer.get_window_size().1 as i32,
+            config::WIDTH as i32,
+            config::HEIGHT as i32,
         ))
         .with_title("Yay, une fenêtre !")
         .with_resizable(false);
-    //.with_fullscreen(Some(Fullscreen::Borderless(None)));
+
     let window = builder
         .build(&event_loop)
         .expect("Window creation failed !");
@@ -66,14 +66,14 @@ fn main() -> Result<(), Error> {
     window
         .set_cursor_grab(winit::window::CursorGrabMode::None)
         .unwrap();
-    window.set_cursor_visible(false);
+
+    window.set_cursor_visible(true);
 
     let mut pixels = {
-        let window_size = window.inner_size();
-        let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
+        let surface_texture = SurfaceTexture::new(config::WIDTH as u32, config::HEIGHT as u32, &window);
         PixelsBuilder::new(
-            window_size.width,
-            window_size.height,
+            config::WIDTH as u32,
+            config::HEIGHT as u32,
             surface_texture,
         )
         .enable_vsync(false)

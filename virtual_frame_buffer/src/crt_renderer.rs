@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use crate::{config::*, VirtualFrameBuffer, color_palettes::ColorPalette};
 
 const SUB_PIXEL_COUNT: usize = 4;
@@ -41,7 +43,22 @@ impl CrtEffectRenderer {
         {
             let mut rgb_before: (u8, u8, u8) = (0, 0, 0);
 
-            for pixel_index in 0..VIRTUAL_WIDTH {
+            // Check if line is affected by corner
+            // if so, adapt range of pixels to render to exclude corner
+
+            let mut range: Range<usize> = 0..VIRTUAL_WIDTH;
+
+            if line_count < circle_list.len() {
+                range.start = circle_list[line_count];
+                range.end = VIRTUAL_WIDTH - circle_list[line_count];
+            }
+
+            if line_count > VIRTUAL_HEIGHT - circle_list.len() {
+                range.start = circle_list[VIRTUAL_HEIGHT - line_count];
+                range.end = VIRTUAL_WIDTH - circle_list[VIRTUAL_HEIGHT - line_count];
+            }
+
+            for pixel_index in range {
 
                 let mut rgb = virtual_frame_buffer
                 .color_palette
@@ -280,18 +297,18 @@ impl CrtEffectRenderer {
             let start = line_count * UPSCALE * RENDERED_LINE_LENGTH;
             if self.upscaling == 6 {
                 if self.filter {
-                output_frame[start..start + RENDERED_LINE_LENGTH]
-                .copy_from_slice(&rendered_scanline);
-                output_frame[start + RENDERED_LINE_LENGTH..start + 2 * RENDERED_LINE_LENGTH]
-                    .copy_from_slice(&rendered_ramp_line);
-                output_frame[start + 2 * RENDERED_LINE_LENGTH..start + 3 * RENDERED_LINE_LENGTH]
-                    .copy_from_slice(&rendered_line);
-                output_frame[start + 3 * RENDERED_LINE_LENGTH..start + 4 * RENDERED_LINE_LENGTH]
-                    .copy_from_slice(&rendered_line);
-                output_frame[start + 4 * RENDERED_LINE_LENGTH..start + 5 * RENDERED_LINE_LENGTH]
-                    .copy_from_slice(&rendered_ramp_line);
-                output_frame[start + 5 * RENDERED_LINE_LENGTH..start + 6 * RENDERED_LINE_LENGTH]
+                    output_frame[start..start + RENDERED_LINE_LENGTH]
                     .copy_from_slice(&rendered_scanline);
+                    output_frame[start + RENDERED_LINE_LENGTH..start + 2 * RENDERED_LINE_LENGTH]
+                        .copy_from_slice(&rendered_ramp_line);
+                    output_frame[start + 2 * RENDERED_LINE_LENGTH..start + 3 * RENDERED_LINE_LENGTH]
+                        .copy_from_slice(&rendered_line);
+                    output_frame[start + 3 * RENDERED_LINE_LENGTH..start + 4 * RENDERED_LINE_LENGTH]
+                        .copy_from_slice(&rendered_line);
+                    output_frame[start + 4 * RENDERED_LINE_LENGTH..start + 5 * RENDERED_LINE_LENGTH]
+                        .copy_from_slice(&rendered_ramp_line);
+                    output_frame[start + 5 * RENDERED_LINE_LENGTH..start + 6 * RENDERED_LINE_LENGTH]
+                        .copy_from_slice(&rendered_scanline);
                 } else {
                     output_frame[start..start + RENDERED_LINE_LENGTH]
                     .copy_from_slice(&rendered_line);
@@ -321,8 +338,7 @@ impl CrtEffectRenderer {
                     .copy_from_slice(&rendered_line);
                 }
             } else {
-                output_frame[start..start + RENDERED_LINE_LENGTH].copy_from_slice(&rendered_line);
-                
+                output_frame[start..start + RENDERED_LINE_LENGTH].copy_from_slice(&rendered_line); 
             }
             
             line_count += 1;
