@@ -1,7 +1,7 @@
-use crate::{config::*, color_palettes::*, text_layer_char::{TextLayerChar}};
+use crate::{config::*, color_palettes::*, text_layer_char::{TextLayerChar}, characters_rom::*};
 
-const DEFAULT_COLOR: u8 = WHITE.0;
-const DEFAULT_BKG_COLOR: u8 = BLACK.0;
+const DEFAULT_COLOR: u8 = WHITE;
+const DEFAULT_BKG_COLOR: u8 = BLACK;
 
 pub struct TextLayer {
     pub default_color: u8,
@@ -85,4 +85,22 @@ impl TextLayer {
 
 pub const fn text_coord_to_index(x: usize, y: usize) -> usize {
     (y * TEXT_COLUMNS + x) % (TEXT_COLUMNS * TEXT_ROWS)
+}
+
+pub const fn text_coord_to_frame_coord(x: usize, y: usize) -> (usize, usize) {
+    let horizontal_border: usize = (VIRTUAL_WIDTH - TEXT_COLUMNS * CHARACTER_WIDTH) / 2;
+    let vertical_border: usize = (VIRTUAL_HEIGHT - TEXT_ROWS * CHARACTER_HEIGHT) / 2;
+    let safe_x = x % TEXT_COLUMNS;
+    let safe_y = y % TEXT_ROWS;
+    let x_pos = horizontal_border + safe_x * CHARACTER_WIDTH;
+    let y_pos = vertical_border + safe_y * CHARACTER_HEIGHT;
+    (x_pos, y_pos)
+}
+
+pub const fn text_index_to_frame_coord(index: usize) -> (usize, usize) {
+    let horizontal_border: usize = (VIRTUAL_WIDTH - TEXT_COLUMNS * CHARACTER_WIDTH) / 2;
+    let vertical_border: usize = (VIRTUAL_HEIGHT - TEXT_ROWS * CHARACTER_HEIGHT) / 2;
+    let x = horizontal_border + (index % TEXT_COLUMNS) * CHARACTER_WIDTH;
+    let y = vertical_border + ((index / TEXT_COLUMNS) % TEXT_ROWS) * CHARACTER_HEIGHT;
+    (x, y)
 }

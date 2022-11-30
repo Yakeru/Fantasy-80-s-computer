@@ -34,9 +34,11 @@ impl Lines {
     pub fn update_app(
         &mut self,
         keybord_input: Option<KeyboardInput>,
-        char_received: Option<char>
-    ) -> AppResponse {
-        let mut response = AppResponse::new();
+        char_received: Option<char>,
+        virtual_frame_buffer: &mut VirtualFrameBuffer
+    ) -> Option<AppResponse> {
+        
+        virtual_frame_buffer.get_console_mut().display = false;
 
         if !self.started {
             self.start();
@@ -65,9 +67,11 @@ impl Lines {
                         match code {
                             VirtualKeyCode::Escape => {
                                 //Escape
-                                response.set_message("Escape key pressed".to_string());
-                                response.event = Some(ControlFlow::ExitWithCode(0));
+                                let mut response = AppResponse::new();
+                                response.set_message(String::from("app:quit"));
+                                response.event = Some(ControlFlow::Exit);
                                 self.end();
+                                return Some(response);
                             }
                             _ => (),
                         }
@@ -78,7 +82,7 @@ impl Lines {
             None => (),
         }
 
-        return response;
+        return None;
     }
 
     pub fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
@@ -105,8 +109,7 @@ impl Lines {
                 end_y,
                 color,
             };
-            virtual_frame_buffer.draw_line(line);
-            // self.draw_appa_line = false;
+            draw_line(line, virtual_frame_buffer.get_frame_mut());
         }
 
         if self.clear {
