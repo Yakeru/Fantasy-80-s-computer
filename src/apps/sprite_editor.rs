@@ -44,7 +44,7 @@ impl SpriteEditor {
         keybord_input: Option<KeyboardInput>,
         char_received: Option<char>,
         virtual_frame_buffer: &mut VirtualFrameBuffer
-    ) -> AppResponse {
+    ) -> Option<AppResponse> {
         let mut response = AppResponse::new();
 
         if !self.started {
@@ -134,7 +134,7 @@ impl SpriteEditor {
             None => (),
         }
 
-        return response;
+        return Some(response);
     }
 
     pub fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {

@@ -13,7 +13,7 @@ pub struct Squares {
     drawing: bool,
     started: bool,
     ended: bool,
-    draw_appa_line: bool,
+    draw_line: bool,
 }
 
 impl Squares {
@@ -24,7 +24,7 @@ impl Squares {
             drawing: false,
             started: false,
             ended: false,
-            draw_appa_line: true,
+            draw_line: true,
         }
     }
 
@@ -33,7 +33,7 @@ impl Squares {
         keybord_input: Option<KeyboardInput>,
         char_received: Option<char>,
         virtual_frame_buffer: &mut VirtualFrameBuffer
-    ) -> AppResponse {
+    ) -> Option<AppResponse> {
         let mut response = AppResponse::new();
 
         if !self.started {
@@ -54,7 +54,7 @@ impl Squares {
 
                             VirtualKeyCode::Return => {
                                 //Enter
-                                self.draw_appa_line = true;
+                                self.draw_line = true;
                             }
                             _ => (),
                         }
@@ -70,7 +70,7 @@ impl Squares {
             None => ()
         }
 
-        return response;
+        return Some(response);
     }
 
     pub fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {

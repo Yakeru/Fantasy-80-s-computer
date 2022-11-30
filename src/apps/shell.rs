@@ -1,16 +1,15 @@
-// use crate::text_layer::TextLayerChar;
-use crate::{unicode, genrate_random_garbage};
+use crate::unicode;
 use virtual_frame_buffer::*;
 use app_macro::*;
 use app_macro_derive::AppMacro;
 use virtual_frame_buffer::color_palettes::*;
-use virtual_frame_buffer::console::Console;
+use virtual_frame_buffer::config::{TEXT_COLUMNS, TEXT_ROWS};
 use virtual_frame_buffer::text_layer_char::TextLayerChar;
 use winit::event::KeyboardInput;
 use winit::event_loop::ControlFlow;
 
-const SPLASH: &str = "Fantasy CPC Microcomputer V(0.1)\u{000D}\u{000D}2022 Damien Torreilles\u{000D}\u{000D}";
-const SHELL_START_MESSAGE: &str = "SHELL 0.1\u{000D}\u{000D}Ready\u{000D}";
+const SPLASH: &str = "\u{000D} Fantasy CPC Microcomputer V(0.1)\u{000D}\u{000D} 2022 Damien Torreilles\u{000D}\u{000D}";
+const SHELL_START_MESSAGE: &str = "SHELL 0.1\u{000D}Ready\u{000D}";
 
 const DEFAULT_BKG_COLOR: u8 = TRUEBLUE;
 const DEFAULT_COLOR: u8 = YELLOW;
@@ -27,8 +26,7 @@ pub struct Shell {
     updating: bool,
     drawing: bool,
     started: bool,
-    ended: bool,
-    garbage: bool
+    ended: bool
 }
 
 #[derive(Copy, Clone)]
@@ -49,7 +47,6 @@ enum Style {
 
 impl Shell {
     pub fn new() -> Shell {
-        let display_buffer: Vec<StyledChar> = Vec::new();
         let command_history: Vec<String> = Vec::new();
 
         Shell {
@@ -63,8 +60,7 @@ impl Shell {
             updating: false,
             drawing: false,
             started: false,
-            ended: false,
-            garbage: true
+            ended: false
         }
     }
 
@@ -86,98 +82,101 @@ impl Shell {
         }
     }
 
-    // fn push_string(&mut self, string: &str, style: Style) {
-    //     for c in string.chars() {
-    //         self.display_buffer.push(self.style_a_char(c, style));
-    //     }
-    // }
+    pub fn interpret_command(&mut self, command: String) -> AppResponse{
 
-    // fn push_char(&mut self, c: StyledChar) {
-    //     self.display_buffer.push(c);
-    // }
+        let mut response: AppResponse = AppResponse::new();
 
-    // pub fn interpret_command(&mut self, command: String) -> AppResponse {
-    //     let mut response: AppResponse = AppResponse::new();
+        if command.len() > 0 {
+            println!("Command: '{}'", command);
+            if command == "help" {
+                response.set_message(String::from("Type [clear] to clear screen.\u{000D}Type [quit] or [exit] to exit."));
+            } else if command == "clear" {
+                self.command.clear();
+                self.clear_text_layer = true;
+            } else if command == "ps" {
+                // self.push_string("Name,  Updating,  Drawing\u{000D}", Style::Default);
+                // self.push_string(&format!("{},  {},  {}\u{000D}", self.name, self.updating, self.drawing), Style::Default);
+                // for app in self.apps {
+                //     self.push_string(&format!("{},  {},  {}\u{000D}", *app.get_name() , *app.get_state().0, *app.get_state().1), Style::Default);
+                // }
+            } else if command == "quit" || command == "exit" {
+                response.event = Some(ControlFlow::Exit);
+                response.set_message(String::from("Command 'quit' or 'exit' received; stopping."));
+            } else {
+                response.set_message(String::from("Syntax Error"));
+            }
+        }
+        response
+    }
 
-    //     if command.len() > 0 {
-    //         println!("Command: '{}'", command);
-    //         if command == "help" {
-    //             self.push_string("Type [clear] to clear screen.\u{000D}", Style::Default);
-    //             self.push_string("Type [quit] or [exit] to exit.\u{000D}", Style::Default);
-    //             self.push_string(
-    //                 "Type [ps] to list loaded processes.\u{000D}",
-    //                 Style::Default,
-    //             );
-    //         } else if command == "clear" {
-    //             self.display_buffer.clear();
-    //             self.command.clear();
-    //             self.clear_text_layer = true;
-    //         } else if command == "ps" {
-    //             // self.push_string("Name,  Updating,  Drawing\u{000D}", Style::Default);
-    //             // self.push_string(&format!("{},  {},  {}\u{000D}", self.name, self.updating, self.drawing), Style::Default);
-    //             // for app in self.apps {
-    //             //     self.push_string(&format!("{},  {},  {}\u{000D}", *app.get_name() , *app.get_state().0, *app.get_state().1), Style::Default);
-    //             // }
-    //         } else if command == "warning" {
-    //             self.push_string("[WARNING]!", Style::Warning);
-    //             self.push_string("this is a warning.\u{000D}", Style::Default);
-    //         } else if command == "error" {
-    //             self.push_string("[ERROR]", Style::Error);
-    //             self.push_string("this is an error.\u{000D}", Style::Default);
-    //         } else if command == "highlight" {
-    //             self.push_string("[highlighted text]", Style::Highlight);
-    //             self.push_string("this is a highlight.\u{000D}", Style::Default);
-    //         } else if command == "quit" || command == "exit" {
-    //             response.event = Some(ControlFlow::Exit);
-    //             response.set_message(String::from("Command 'quit' or 'exit' received; stopping."));
-    //         } else {
-    //             self.push_string("Syntax Error\u{000D}", Style::Default);
-    //         }
-    //     }
-    //     self.push_char(StyledChar::Default('>'));
-    //     response
-    // }
-
-    // pub fn start(&mut self) {
-    //     // self.push_string(SPLASH, Style::Default);
-    //     // self.push_string(SHELL_START_MESSAGE, Style::Default);
-    //     // self.push_char(StyledChar::Default('>'));
-    //     // self.started = true;
-    // }
+    pub fn start(&mut self) {
+        self.started = true;
+    }
 
     pub fn update_app(
         &mut self,
         keybord_input: Option<KeyboardInput>,
         char_received: Option<char>,
         virtual_frame_buffer: &mut VirtualFrameBuffer
-    ) -> AppResponse {
-        let mut response = AppResponse::new();
+    ) -> Option<AppResponse> {
+
         self.last_character_received = char_received;
 
         virtual_frame_buffer.get_console_mut().display = true;
 
         if !self.started {
+            virtual_frame_buffer.get_console_mut().pos_x = 0;
+            virtual_frame_buffer.get_console_mut().pos_y = 0;
+            virtual_frame_buffer.get_console_mut().set_col_count(TEXT_COLUMNS);
+            virtual_frame_buffer.get_console_mut().set_row_count(TEXT_ROWS);
+            virtual_frame_buffer.get_console_mut().clear();
+            virtual_frame_buffer.get_console_mut().push_string(SPLASH);
+            virtual_frame_buffer.get_console_mut().push_string(SHELL_START_MESSAGE);
+            virtual_frame_buffer.get_console_mut().push_char('>');
             self.start();
+        }
+
+        if self.clear_text_layer {
+            virtual_frame_buffer.get_console_mut().clear();
+            virtual_frame_buffer.get_console_mut().push_char('>');
+            self.clear_text_layer = false;
         }
 
         match self.last_character_received {
             Some(unicode) => {
                 match unicode {
                     unicode::BACKSPACE => {
-                        virtual_frame_buffer.get_console_mut().pop_char();
+                        if !self.command.is_empty() {
+                            self.command.pop();
+                            virtual_frame_buffer.get_console_mut().pop_char();
+                        }
+                    },
+
+                    unicode::ENTER => {
+                        let response = self.interpret_command(self.command.iter().cloned().collect::<String>());
+                        let message_string = response.get_message().clone();
+                        if message_string.is_some() {
+                            virtual_frame_buffer.get_console_mut().push_char('\u{000D}');
+                            virtual_frame_buffer.get_console_mut().push_string(&message_string.unwrap());
+                            virtual_frame_buffer.get_console_mut().push_char('\u{000D}');
+                            virtual_frame_buffer.get_console_mut().push_char('>');
+                        } else {
+                            virtual_frame_buffer.get_console_mut().push_char('\u{000D}');
+                            virtual_frame_buffer.get_console_mut().push_char('>');
+                        }
+                        self.command.clear();
+                        return Some(response);
                     }
 
                     unicode::ESCAPE => {
-                        response.event = Some(ControlFlow::Exit);
-                        // self.push_string("\u{000D}Type 'quit' or 'exit' to quit Fantasy CPC\u{000D}", Style::Default);
-                        // self.push_char(StyledChar::Default('>'));
-                        // response.set_message(String::from(
-                        //     "Type 'quit' or 'exit' to quit Fantasy CPC",
-                        // ));
-                        // return response;
+                        virtual_frame_buffer.get_console_mut().push_char('\u{000D}');
+                        virtual_frame_buffer.get_console_mut().push_string("Type 'quit' or 'exit' to quit Fantasy CPC.");
+                        virtual_frame_buffer.get_console_mut().push_char('\u{000D}');
+                        virtual_frame_buffer.get_console_mut().push_char('>');
                     }
 
                     _ => {
+                        self.command.push(unicode);
                         virtual_frame_buffer.get_console_mut().push_text_layer_char(self.get_text_layer_char_from_style(self.style_a_char(unicode, Style::Default)));
                     }
                 }
@@ -190,10 +189,10 @@ impl Shell {
                 match k.virtual_keycode {
                     Some(code) => {
                         match code {
-                            winit::event::VirtualKeyCode::Left => virtual_frame_buffer.get_console_mut().pos_x = virtual_frame_buffer.get_console_mut().pos_x - 1,
-                            winit::event::VirtualKeyCode::Right => virtual_frame_buffer.get_console_mut().pos_x = virtual_frame_buffer.get_console_mut().pos_x + 1,
-                            winit::event::VirtualKeyCode::Up => virtual_frame_buffer.get_console_mut().pos_y = virtual_frame_buffer.get_console_mut().pos_y - 1,
-                            winit::event::VirtualKeyCode::Down => virtual_frame_buffer.get_console_mut().pos_y = virtual_frame_buffer.get_console_mut().pos_y + 1,
+                            // winit::event::VirtualKeyCode::Left => virtual_frame_buffer.get_console_mut().pos_x = virtual_frame_buffer.get_console_mut().pos_x - 1,
+                            // winit::event::VirtualKeyCode::Right => virtual_frame_buffer.get_console_mut().pos_x = virtual_frame_buffer.get_console_mut().pos_x + 1,
+                            // winit::event::VirtualKeyCode::Up => virtual_frame_buffer.get_console_mut().pos_y = virtual_frame_buffer.get_console_mut().pos_y - 1,
+                            // winit::event::VirtualKeyCode::Down => virtual_frame_buffer.get_console_mut().pos_y = virtual_frame_buffer.get_console_mut().pos_y + 1,
                             _ => ()
                         }
                     },
@@ -203,14 +202,10 @@ impl Shell {
             None => (),
         }
 
-        return response;
+        return None;
     }
 
     pub fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         virtual_frame_buffer.clear_frame_buffer(WHITE);
-        if self.garbage {
-            genrate_random_garbage(virtual_frame_buffer);
-            self.garbage = false;
-        }
     }
 }

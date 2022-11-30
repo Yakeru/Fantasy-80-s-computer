@@ -49,7 +49,7 @@ fn impl_app_macro(ast: &syn::DeriveInput) -> TokenStream {
                 (self.updating, self.drawing)
             }
 
-            fn update(&mut self, keybord_input: Option<KeyboardInput>, char_received: Option<char>, virtual_frame_buffer: &mut VirtualFrameBuffer) -> AppResponse {
+            fn update(&mut self, keybord_input: Option<KeyboardInput>, char_received: Option<char>, virtual_frame_buffer: &mut VirtualFrameBuffer) -> Option<AppResponse> {
                 return self.update_app(keybord_input, char_received, virtual_frame_buffer);
             }
             

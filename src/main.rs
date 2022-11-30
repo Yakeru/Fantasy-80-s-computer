@@ -5,7 +5,7 @@ use rand::Rng;
 use std::time::Instant;
 use winit::{
     dpi::PhysicalSize,
-    event::{DeviceEvent, ElementState, Event, KeyboardInput, WindowEvent},
+    event::{DeviceEvent, ElementState, Event, KeyboardInput, WindowEvent, VirtualKeyCode},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
@@ -84,7 +84,7 @@ fn main() -> Result<(), Error> {
     //The crt renderer takes the virtual frame buffers's frame, upscales it to match pixel's frame and winit window size,
     //then applies a filter evoking CRT sub-pixels and scanlines ... or crappy LCD.
     //The upscaled and "crt'ed" image is then pushed into pixel's frame for final render.
-    let mut crt_renderer: CrtEffectRenderer = CrtEffectRenderer::new();
+    let mut crt_renderer: CrtEffectRenderer = CrtEffectRenderer::new(config::UPSCALE, true, u8::MAX);
 
     //The Shell is the command line interpreter.
     //It is launched at startup after the boot animation. 
@@ -171,10 +171,14 @@ fn main() -> Result<(), Error> {
                     let state = k.state;
                     let key_code = k.virtual_keycode.unwrap();
 
-                    // println!(
-                    //     "Scan: {}, state: {:?}, virt. key code: {:?}",
-                    //     scan_code, state, key_code
-                    // );
+                    println!(
+                        "Scan: {}, state: {:?}, virt. key code: {:?}",
+                        scan_code, state, key_code
+                    );
+
+                    if key_code == VirtualKeyCode::F1 && state == ElementState::Released {
+                        crt_renderer.toggle_filter();
+                    }
                 }
                 _ => (),
             },
@@ -184,34 +188,31 @@ fn main() -> Result<(), Error> {
                     booting = boot_animation(&mut virtual_frame_buffer, &mut crt_renderer, frame_counter);
                 } else {
                     //Updating apps
-                    let mut app_response: AppResponse = AppResponse::new();
-
                     for i in 0..app_list.len() {
                         let app = app_list.get_mut(i).unwrap();
                         if app.get_state().0 == true {
-                            app_response = app.update(keyboard_input, char_received, &mut virtual_frame_buffer);
+                            let app_response = app.update(keyboard_input, char_received, &mut virtual_frame_buffer);
+
+                            //Process app response
+                            match app_response {
+                                Some(response) => {
+                                    match response.event {
+                                        Some(event) => *control_flow = event,
+                                        None => (),
+                                    }
+    
+                                    match response.message {
+                                        Some(message) => {
+                                            println!("App message: {}", message);
+                                        }
+                                        None => (),
+                                    }
+                                },
+                                None => ()
+                            }
                         }
                     } 
-
-                    //Process app response
-                    match app_response.event {
-                        Some(event) => *control_flow = event,
-                        None => (),
-                    }
-
-                    match app_response.message {
-                        Some(message) => {
-                            // virtual_frame_buffer
-                            //     .get_text_layer()
-                            //     .push_char('\u{000D}', None, None, false);
-                            // virtual_frame_buffer
-                            //     .get_text_layer()
-                            //     .push_string(&message, None, None, false);
-                            println!("App message: {}", message);
-                        }
-                        None => (),
-                    }
-
+                    
                     //Draw app
                     for i in 0..app_list.len() {
                         let app = app_list.get_mut(i).unwrap();
@@ -226,6 +227,7 @@ fn main() -> Result<(), Error> {
                     frame_interval = Instant::now();
                     virtual_frame_buffer.render();
                     crt_renderer.render(&mut virtual_frame_buffer, pixels.get_frame_mut());
+                    println!("Render time: {} micros", frame_interval.elapsed().as_micros());
                     pixels.render().expect("Pixels render oups");
                     frame_counter = frame_counter + 1;
                 }
@@ -298,7 +300,7 @@ fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &
     }
 
     //Clear garbage and display char and color test after 2 seconds
-    if frame_counter == FRAMES_PER_SEC * 2 {
+    if frame_counter == FRAMES_PER_SEC * 3 {
 
         //Clear text layer
         virtual_frame_buffer.get_text_layer_mut().clear();
@@ -321,7 +323,7 @@ fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &
     }
 
     //Display loading overscan while "loading"
-    if frame_counter >= FRAMES_PER_SEC * 2 && frame_counter <= FRAMES_PER_SEC * 6 {
+    if frame_counter >= FRAMES_PER_SEC * 3 && frame_counter <= FRAMES_PER_SEC * 6 {
         draw_loading_border(virtual_frame_buffer);
     }
     
@@ -346,10 +348,17 @@ pub fn genrate_random_garbage(virtual_frame_buffer: &mut VirtualFrameBuffer) {
     let char_map = virtual_frame_buffer.get_text_layer_mut().get_char_map_mut();
     for index in 0..char_map.len() {
         
-        let color: u8 = random.gen_range(0..32);
-        let bkg_color: u8 = random.gen_range(0..32);
-        let c:char = characters_rom::CHARS[random.gen_range(0..characters_rom::CHARS.len())];
-        let effect:u8 = random.gen_range(0..5);
+        let mut color: u8 = random.gen_range(0..40);
+        color = if color > 31 { 0 } else { color };
+
+        let mut bkg_color: u8 = random.gen_range(0..40);
+        bkg_color = if bkg_color > 31 { 0 } else { bkg_color };
+        
+        let mut char_index = random.gen_range(0..100);
+        char_index = if char_index > characters_rom::CHARS.len() - 1 { 0 } else { char_index };
+        let c:char = characters_rom::CHARS[char_index];
+
+        let effect:u8 = random.gen_range(0..10);
         let swap: bool = if effect & 0b00000001 > 0 {true} else {false};
         let blink: bool = if effect & 0b00000010 > 0 {true} else {false};
         let shadowed: bool = if effect & 0b00000100 > 0 {true} else {false};

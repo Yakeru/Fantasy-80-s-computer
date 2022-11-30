@@ -11,8 +11,7 @@ pub struct Console {
     pub cursor: TextLayerChar,
     pub show_border: bool,
     pub show_title_bar: bool,
-    content: Vec<Option<TextLayerChar>>,
-    line_indexes: Vec<usize>
+    content: Vec<Option<TextLayerChar>>
 }
 
 impl Console {
@@ -30,8 +29,11 @@ impl Console {
                 show_border, 
                 show_title_bar, 
                 content: Vec::new(),
-                line_indexes: Vec::new()
             }
+    }
+
+    pub fn clear(&mut self) {
+        self.content.clear();
     }
 
     pub fn get_row_count(&self) -> usize {
@@ -64,23 +66,13 @@ impl Console {
     }
 
     pub fn push_char(&mut self, c: char) {
-        match c {
-            unicode::ENTER => {
-                for i in 0..(self.columns - self.content.len() % self.columns) {
-                    self.content.push(None);    
-                }
-            },
-            unicode::BACKSPACE => (),
-            _ => {
-                let text_layer_char = TextLayerChar {c, color: self.default_color, bkg_color: self.default_bkg_color, swap: false, blink: false, shadowed: false};
-                self.content.push(Some(text_layer_char));
-            }
-        }
+        let text_layer_char = TextLayerChar {c, color: self.default_color, bkg_color: self.default_bkg_color, swap: false, blink: false, shadowed: false};
+        self.push_text_layer_char(text_layer_char);
+    }
 
-        if self.content.len() == self.columns * self.rows {
-            for i in 0..self.columns {
-                self.content.remove(i);
-            }
+    pub fn push_string(&mut self, string: &str) {
+        for char in string.chars() {
+            self.push_char(char);
         }
     }
 
@@ -99,7 +91,7 @@ impl Console {
 
         if self.content.len() == self.columns * self.rows {
             for i in 0..self.columns {
-                self.content.remove(i);
+                self.content.remove(0);
             }
         }
     }

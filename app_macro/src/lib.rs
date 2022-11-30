@@ -7,7 +7,7 @@ pub trait AppMacro {
     fn get_name(&self) -> &str;
     fn set_state(&mut self, updating: bool, drawing: bool);
     fn get_state(&self) -> (bool, bool);
-    fn update(&mut self, keybord_input: Option<KeyboardInput>, char_received: Option<char>, virtual_frame_buffer: &mut VirtualFrameBuffer) -> AppResponse;
+    fn update(&mut self, keybord_input: Option<KeyboardInput>, char_received: Option<char>, virtual_frame_buffer: &mut VirtualFrameBuffer) -> Option<AppResponse>;
     fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer);
 }
 
@@ -15,14 +15,6 @@ pub trait AppMacro {
 pub struct AppResponse {
     pub event: Option<ControlFlow>,
     pub message: Option<String>,
-}
-
-pub enum AppMessage {
-    Message(String, Option<ControlFlow>),
-    StartApp(String),
-    QuitApp(String),
-    KillApp(String),
-    GiveMeFocus,
 }
 
 impl AppResponse {
@@ -35,5 +27,9 @@ impl AppResponse {
 
     pub fn set_message(&mut self, string: String) {
         self.message = Some(string);
+    }
+
+    pub fn get_message(&self) -> &Option<String> {
+        &self.message
     }
 }
