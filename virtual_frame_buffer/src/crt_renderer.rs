@@ -8,7 +8,7 @@ const RENDERED_LINE_LENGTH: usize = WIDTH * SUB_PIXEL_COUNT;
 pub struct CrtEffectRenderer {
     upscaling: usize,
     filter: bool,
-    brightness: u8
+    brightness: u8,
 }
 
 impl CrtEffectRenderer {
@@ -16,7 +16,7 @@ impl CrtEffectRenderer {
         CrtEffectRenderer {
             upscaling,
             filter,
-            brightness
+            brightness,
         }
     }
 
@@ -33,14 +33,15 @@ impl CrtEffectRenderer {
         let circle_list: [usize; 17] = [17, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 3, 2, 2, 1, 1, 1];
 
         let mut rendered_scanline: [u8; RENDERED_LINE_LENGTH] = [0; RENDERED_LINE_LENGTH];
-        let mut rendered_line: [u8; RENDERED_LINE_LENGTH] = if self.filter { [0; RENDERED_LINE_LENGTH] } else {[255; RENDERED_LINE_LENGTH]};
+        let mut rendered_line: [u8; RENDERED_LINE_LENGTH] = if self.filter {
+            [0; RENDERED_LINE_LENGTH]
+        } else {
+            [255; RENDERED_LINE_LENGTH]
+        };
         let mut rendered_ramp_line: [u8; RENDERED_LINE_LENGTH] = [0; RENDERED_LINE_LENGTH];
         let mut line_count: usize = 0;
-        
-        for virt_line in virtual_frame_buffer
-            .get_frame()
-            .chunks_exact(VIRTUAL_WIDTH)
-        {
+
+        for virt_line in virtual_frame_buffer.get_frame().chunks_exact(VIRTUAL_WIDTH) {
             // Check if line is affected by corner
             // if so, adapt range of pixels to render to exclude corner
 
@@ -59,14 +60,13 @@ impl CrtEffectRenderer {
             let mut rgb_before: (u8, u8, u8) = (0, 0, 0);
 
             for pixel_index in 0..VIRTUAL_WIDTH {
-
                 // Check if we are inside rounded corner, if true set to black else get color
-                let rgb = if range.contains(&pixel_index) { 
+                let rgb = if range.contains(&pixel_index) {
                     virtual_frame_buffer
                         .color_palette
-                        .get_rgb(virt_line[pixel_index]) 
-                } else { 
-                    (0, 0, 0) 
+                        .get_rgb(virt_line[pixel_index])
+                } else {
+                    (0, 0, 0)
                 };
 
                 let rgb_after: (u8, u8, u8) = if pixel_index < VIRTUAL_WIDTH - 1 {
@@ -76,7 +76,7 @@ impl CrtEffectRenderer {
                 } else {
                     (0, 0, 0)
                 };
-                
+
                 if self.upscaling == 6 {
                     if self.filter {
                         let scanline_alpha =
@@ -193,14 +193,12 @@ impl CrtEffectRenderer {
 
                         rgb_before = rgb;
                     } else {
-
                         let r = rgb.0;
                         let g = rgb.1;
                         let b = rgb.2;
 
                         let mut i: usize = 0;
                         while i < SUB_PIXEL_COUNT * self.upscaling {
-
                             rendered_line[i + SUB_PIXEL_COUNT * UPSCALE * pixel_index] = r;
                             rendered_line[i + SUB_PIXEL_COUNT * UPSCALE * pixel_index + 1] = g;
                             rendered_line[i + SUB_PIXEL_COUNT * UPSCALE * pixel_index + 2] = b;
@@ -208,7 +206,7 @@ impl CrtEffectRenderer {
                             i += SUB_PIXEL_COUNT;
                         }
                     }
-                } else  if self.upscaling == 3 {
+                } else if self.upscaling == 3 {
                     if self.filter {
                         let scanline_alpha =
                             self.brightness.checked_sub(SCAN_LINE_STRENGTH).unwrap_or(0);
@@ -247,7 +245,6 @@ impl CrtEffectRenderer {
 
                         let mut i: usize = 0;
                         while i < SUB_PIXEL_COUNT * self.upscaling {
-
                             rendered_line[i + SUB_PIXEL_COUNT * UPSCALE * pixel_index] = r;
                             rendered_line[i + SUB_PIXEL_COUNT * UPSCALE * pixel_index + 1] = g;
                             rendered_line[i + SUB_PIXEL_COUNT * UPSCALE * pixel_index + 2] = b;
@@ -279,49 +276,61 @@ impl CrtEffectRenderer {
             if self.upscaling == 6 {
                 if self.filter {
                     output_frame[start..start + RENDERED_LINE_LENGTH]
-                    .copy_from_slice(&rendered_scanline);
+                        .copy_from_slice(&rendered_scanline);
                     output_frame[start + RENDERED_LINE_LENGTH..start + 2 * RENDERED_LINE_LENGTH]
                         .copy_from_slice(&rendered_ramp_line);
-                    output_frame[start + 2 * RENDERED_LINE_LENGTH..start + 3 * RENDERED_LINE_LENGTH]
+                    output_frame
+                        [start + 2 * RENDERED_LINE_LENGTH..start + 3 * RENDERED_LINE_LENGTH]
                         .copy_from_slice(&rendered_line);
-                    output_frame[start + 3 * RENDERED_LINE_LENGTH..start + 4 * RENDERED_LINE_LENGTH]
+                    output_frame
+                        [start + 3 * RENDERED_LINE_LENGTH..start + 4 * RENDERED_LINE_LENGTH]
                         .copy_from_slice(&rendered_line);
-                    output_frame[start + 4 * RENDERED_LINE_LENGTH..start + 5 * RENDERED_LINE_LENGTH]
+                    output_frame
+                        [start + 4 * RENDERED_LINE_LENGTH..start + 5 * RENDERED_LINE_LENGTH]
                         .copy_from_slice(&rendered_ramp_line);
-                    output_frame[start + 5 * RENDERED_LINE_LENGTH..start + 6 * RENDERED_LINE_LENGTH]
+                    output_frame
+                        [start + 5 * RENDERED_LINE_LENGTH..start + 6 * RENDERED_LINE_LENGTH]
                         .copy_from_slice(&rendered_scanline);
                 } else {
                     output_frame[start..start + RENDERED_LINE_LENGTH]
-                    .copy_from_slice(&rendered_line);
+                        .copy_from_slice(&rendered_line);
                     output_frame[start + RENDERED_LINE_LENGTH..start + 2 * RENDERED_LINE_LENGTH]
                         .copy_from_slice(&rendered_line);
-                    output_frame[start + 2 * RENDERED_LINE_LENGTH..start + 3 * RENDERED_LINE_LENGTH]
+                    output_frame
+                        [start + 2 * RENDERED_LINE_LENGTH..start + 3 * RENDERED_LINE_LENGTH]
                         .copy_from_slice(&rendered_line);
-                    output_frame[start + 3 * RENDERED_LINE_LENGTH..start + 4 * RENDERED_LINE_LENGTH]
+                    output_frame
+                        [start + 3 * RENDERED_LINE_LENGTH..start + 4 * RENDERED_LINE_LENGTH]
                         .copy_from_slice(&rendered_line);
-                    output_frame[start + 4 * RENDERED_LINE_LENGTH..start + 5 * RENDERED_LINE_LENGTH]
+                    output_frame
+                        [start + 4 * RENDERED_LINE_LENGTH..start + 5 * RENDERED_LINE_LENGTH]
                         .copy_from_slice(&rendered_line);
-                    output_frame[start + 5 * RENDERED_LINE_LENGTH..start + 6 * RENDERED_LINE_LENGTH]
+                    output_frame
+                        [start + 5 * RENDERED_LINE_LENGTH..start + 6 * RENDERED_LINE_LENGTH]
                         .copy_from_slice(&rendered_line);
                 }
             } else if self.upscaling == 3 {
                 if self.filter {
-                    output_frame[start..start + RENDERED_LINE_LENGTH].copy_from_slice(&rendered_line);
+                    output_frame[start..start + RENDERED_LINE_LENGTH]
+                        .copy_from_slice(&rendered_line);
                     output_frame[start + RENDERED_LINE_LENGTH..start + 2 * RENDERED_LINE_LENGTH]
-                    .copy_from_slice(&rendered_line);
-                    output_frame[start + 2 * RENDERED_LINE_LENGTH..start + 3 * RENDERED_LINE_LENGTH]
-                    .copy_from_slice(&rendered_scanline);
+                        .copy_from_slice(&rendered_line);
+                    output_frame
+                        [start + 2 * RENDERED_LINE_LENGTH..start + 3 * RENDERED_LINE_LENGTH]
+                        .copy_from_slice(&rendered_scanline);
                 } else {
-                    output_frame[start..start + RENDERED_LINE_LENGTH].copy_from_slice(&rendered_line);
+                    output_frame[start..start + RENDERED_LINE_LENGTH]
+                        .copy_from_slice(&rendered_line);
                     output_frame[start + RENDERED_LINE_LENGTH..start + 2 * RENDERED_LINE_LENGTH]
-                    .copy_from_slice(&rendered_line);
-                    output_frame[start + 2 * RENDERED_LINE_LENGTH..start + 3 * RENDERED_LINE_LENGTH]
-                    .copy_from_slice(&rendered_line);
+                        .copy_from_slice(&rendered_line);
+                    output_frame
+                        [start + 2 * RENDERED_LINE_LENGTH..start + 3 * RENDERED_LINE_LENGTH]
+                        .copy_from_slice(&rendered_line);
                 }
             } else {
-                output_frame[start..start + RENDERED_LINE_LENGTH].copy_from_slice(&rendered_line); 
+                output_frame[start..start + RENDERED_LINE_LENGTH].copy_from_slice(&rendered_line);
             }
-            
+
             line_count += 1;
         }
     }

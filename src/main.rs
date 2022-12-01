@@ -95,31 +95,29 @@ fn main() -> Result<(), Error> {
     //get back to the shell.
     //Pressing "escape" again in the shell will quit the program (close winit with a WindowEvent::CloseRequested)
     let mut shell = Box::new(Shell::new());
-    shell.set_state(true, true);
+    shell.set_state(false, false);
 
     //Other apps
     let mut lines = Box::new(Lines::new());
     lines.set_state(false, false);
     let mut squares = Box::new(Squares::new());
     squares.set_state(false, false);
-    // let mut text_edit = Box::new(TextEdit::new());
-    // text_edit.set_state(false, false);
+    let mut text_edit = Box::new(TextEdit::new());
+    text_edit.set_state(false, false);
     let mut sprite_edit = Box::new(SpriteEditor::new());
     sprite_edit.set_state(false, false);
-    let mut squares = Box::new(Squares::new());
-    squares.set_state(false, false);
-    // let mut weather_app = Box::new(WeatherApp::new());
-    // weather_app.set_state(false, false);
+    let mut weather_app = Box::new(WeatherApp::new());
+    weather_app.set_state(true, true);
 
     //To be managed properly, apps must be added to that list.
     //The main goes through the list and updates/renders the apps according to their statuses.
     let mut app_list: Vec<Box<dyn AppMacro>> = Vec::new();
     app_list.push(shell);
     app_list.push(lines);
-    // app_list.push(text_edit);
+    app_list.push(text_edit);
     app_list.push(sprite_edit);
     app_list.push(squares);
-    // app_list.push(weather_app);
+    app_list.push(weather_app);
     
     //Fill the screen with black
     virtual_frame_buffer.clear_frame_buffer(0);
@@ -227,7 +225,6 @@ fn main() -> Result<(), Error> {
                     frame_interval = Instant::now();
                     virtual_frame_buffer.render();
                     crt_renderer.render(&mut virtual_frame_buffer, pixels.get_frame_mut());
-                    println!("Render time: {} micros", frame_interval.elapsed().as_micros());
                     pixels.render().expect("Pixels render oups");
                     frame_counter = frame_counter + 1;
                 }
