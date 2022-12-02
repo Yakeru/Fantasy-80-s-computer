@@ -79,7 +79,7 @@ impl Console {
     pub fn push_text_layer_char(&mut self, text_layer_char: TextLayerChar) {
         match text_layer_char.c {
             unicode::ENTER => {
-                for i in 0..(self.columns - self.content.len() % self.columns) {
+                for _i in 0..(self.columns - self.content.len() % self.columns) {
                     self.content.push(None);    
                 }
             },
@@ -90,7 +90,7 @@ impl Console {
         }
 
         if self.content.len() == self.columns * self.rows {
-            for i in 0..self.columns {
+            for _i in 0..self.columns {
                 self.content.remove(0);
             }
         }

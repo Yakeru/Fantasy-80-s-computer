@@ -80,6 +80,10 @@ impl VirtualFrameBuffer {
         }
     }
 
+    pub fn get_clock(&self) -> (bool, bool, bool) {
+        (self.second_tick, self.half_second_tick, self.half_second_latch)
+    }
+
     pub fn get_window_size(&self) -> (usize, usize) {
         (WIDTH, HEIGHT)
     }

@@ -20,6 +20,7 @@ use crate::apps::sprite_editor::*;
 use crate::apps::squares::*;
 use crate::apps::text_edit::*;
 use crate::apps::weather_app::*;
+use crate::apps::life::Life;
 
 //Settings
 const FRAME_TIME_MS: u128 = 16; //ms per frame : 16 = 60fps, 32 = 30fps, 1000 = 1fps
@@ -53,12 +54,12 @@ fn main() -> Result<(), Error> {
     let builder = WindowBuilder::new()
         .with_decorations(true)
         .with_inner_size(PhysicalSize::new(
-            virtual_frame_buffer.get_window_size().0 as i32,
-            virtual_frame_buffer.get_window_size().1 as i32,
+            config::WIDTH as i32,
+            config::HEIGHT as i32,
         ))
         .with_title("Yay, une fenêtre !")
         .with_resizable(false);
-    //.with_fullscreen(Some(Fullscreen::Borderless(None)));
+
     let window = builder
         .build(&event_loop)
         .expect("Window creation failed !");
@@ -66,14 +67,14 @@ fn main() -> Result<(), Error> {
     window
         .set_cursor_grab(winit::window::CursorGrabMode::None)
         .unwrap();
-    window.set_cursor_visible(false);
+
+    window.set_cursor_visible(true);
 
     let mut pixels = {
-        let window_size = window.inner_size();
-        let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
+        let surface_texture = SurfaceTexture::new(config::WIDTH as u32, config::HEIGHT as u32, &window);
         PixelsBuilder::new(
-            window_size.width,
-            window_size.height,
+            config::WIDTH as u32,
+            config::HEIGHT as u32,
             surface_texture,
         )
         .enable_vsync(false)
@@ -95,31 +96,33 @@ fn main() -> Result<(), Error> {
     //get back to the shell.
     //Pressing "escape" again in the shell will quit the program (close winit with a WindowEvent::CloseRequested)
     let mut shell = Box::new(Shell::new());
-    shell.set_state(true, true);
+    shell.set_state(false, false);
 
     //Other apps
     let mut lines = Box::new(Lines::new());
     lines.set_state(false, false);
     let mut squares = Box::new(Squares::new());
     squares.set_state(false, false);
-    // let mut text_edit = Box::new(TextEdit::new());
-    // text_edit.set_state(false, false);
+    let mut text_edit = Box::new(TextEdit::new());
+    text_edit.set_state(false, false);
     let mut sprite_edit = Box::new(SpriteEditor::new());
     sprite_edit.set_state(false, false);
-    let mut squares = Box::new(Squares::new());
-    squares.set_state(false, false);
-    // let mut weather_app = Box::new(WeatherApp::new());
-    // weather_app.set_state(false, false);
+    let mut weather_app = Box::new(WeatherApp::new());
+    weather_app.set_state(false, false);
 
+    let mut life = Box::new(Life::new());
+    life.set_state(true, true);
+    
     //To be managed properly, apps must be added to that list.
     //The main goes through the list and updates/renders the apps according to their statuses.
     let mut app_list: Vec<Box<dyn AppMacro>> = Vec::new();
     app_list.push(shell);
     app_list.push(lines);
-    // app_list.push(text_edit);
+    app_list.push(text_edit);
     app_list.push(sprite_edit);
     app_list.push(squares);
-    // app_list.push(weather_app);
+    app_list.push(weather_app);
+    app_list.push(life);
     
     //Fill the screen with black
     virtual_frame_buffer.clear_frame_buffer(0);
@@ -169,7 +172,7 @@ fn main() -> Result<(), Error> {
                     keyboard_input = Some(k);
                     let scan_code = k.scancode;
                     let state = k.state;
-                    let key_code = k.virtual_keycode.unwrap();
+                    let key_code = k.virtual_keycode.unwrap_or(VirtualKeyCode::NoConvert);
 
                     println!(
                         "Scan: {}, state: {:?}, virt. key code: {:?}",
@@ -227,7 +230,6 @@ fn main() -> Result<(), Error> {
                     frame_interval = Instant::now();
                     virtual_frame_buffer.render();
                     crt_renderer.render(&mut virtual_frame_buffer, pixels.get_frame_mut());
-                    println!("Render time: {} micros", frame_interval.elapsed().as_micros());
                     pixels.render().expect("Pixels render oups");
                     frame_counter = frame_counter + 1;
                 }
