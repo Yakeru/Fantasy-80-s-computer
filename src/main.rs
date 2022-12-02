@@ -20,6 +20,7 @@ use crate::apps::sprite_editor::*;
 use crate::apps::squares::*;
 use crate::apps::text_edit::*;
 use crate::apps::weather_app::*;
+use crate::apps::life::Life;
 
 //Settings
 const FRAME_TIME_MS: u128 = 16; //ms per frame : 16 = 60fps, 32 = 30fps, 1000 = 1fps
@@ -107,8 +108,11 @@ fn main() -> Result<(), Error> {
     let mut sprite_edit = Box::new(SpriteEditor::new());
     sprite_edit.set_state(false, false);
     let mut weather_app = Box::new(WeatherApp::new());
-    weather_app.set_state(true, true);
+    weather_app.set_state(false, false);
 
+    let mut life = Box::new(Life::new());
+    life.set_state(true, true);
+    
     //To be managed properly, apps must be added to that list.
     //The main goes through the list and updates/renders the apps according to their statuses.
     let mut app_list: Vec<Box<dyn AppMacro>> = Vec::new();
@@ -118,6 +122,7 @@ fn main() -> Result<(), Error> {
     app_list.push(sprite_edit);
     app_list.push(squares);
     app_list.push(weather_app);
+    app_list.push(life);
     
     //Fill the screen with black
     virtual_frame_buffer.clear_frame_buffer(0);
