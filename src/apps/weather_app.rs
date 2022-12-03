@@ -5,7 +5,7 @@ use app_macro_derive::AppMacro;
 // use crate::text_layer::TextLayerChar;
 use winit::event::{KeyboardInput};
 
-use virtual_frame_buffer::{*, color_palettes::{DARKGREY, WHITE}};
+use virtual_frame_buffer::{*, color_palettes::{DARK_GREY, WHITE}};
 use openweathermap::Receiver;
 use std::time::{Duration, Instant};
 
@@ -125,8 +125,8 @@ impl WeatherApp {
 
     fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         virtual_frame_buffer.get_text_layer_mut().clear();
-        virtual_frame_buffer.clear_frame_buffer(DARKGREY);
+        virtual_frame_buffer.clear_frame_buffer(DARK_GREY);
         virtual_frame_buffer
-            .get_text_layer_mut().insert_string_xy(0, 0, &self.message, Some(WHITE), Some(DARKGREY), false, false, false);
+            .get_text_layer_mut().insert_string_xy(0, 0, &self.message, Some(WHITE), Some(DARK_GREY), false, false, false);
     }
 }

@@ -70,7 +70,7 @@ impl VirtualFrameBuffer {
             line_scroll_list: Box::new([0; VIRTUAL_HEIGHT]),
             text_layer,
             console: Console::new(10, 10, 30, 10, 
-                YELLOW, TRUEBLUE, TextLayerChar { c: '\u{25AE}', color: YELLOW, bkg_color: TRUEBLUE, 
+                YELLOW, TRUE_BLUE, TextLayerChar { c: '\u{25AE}', color: YELLOW, bkg_color: TRUE_BLUE, 
                 swap: false, blink: true, shadowed: false }, false, false),
             sprites,
             frame_counter: 0,

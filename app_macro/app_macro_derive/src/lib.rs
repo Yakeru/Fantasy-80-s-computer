@@ -50,6 +50,18 @@ fn impl_app_macro(ast: &syn::DeriveInput) -> TokenStream {
             }
 
             fn update(&mut self, keybord_input: Option<KeyboardInput>, char_received: Option<char>, virtual_frame_buffer: &mut VirtualFrameBuffer) -> Option<AppResponse> {
+                
+                // match keybord_input {
+                //     Some(key) => if key.virtual_keycode == VirtualKeyCode::Escape && key.state == ElementState::Released {
+                //         let quit: bool = self.on_escape();
+
+                //         if quit {
+                //             return 
+                //         }
+                //     },
+                //     None => ()
+                // }
+                
                 return self.update_app(keybord_input, char_received, virtual_frame_buffer);
             }
             

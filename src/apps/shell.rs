@@ -11,7 +11,7 @@ use winit::event_loop::ControlFlow;
 const SPLASH: &str = "\u{000D} Fantasy CPC Microcomputer V(0.1)\u{000D}\u{000D} 2022 Damien Torreilles\u{000D}\u{000D}";
 const SHELL_START_MESSAGE: &str = "SHELL 0.1\u{000D}Ready\u{000D}";
 
-const DEFAULT_BKG_COLOR: u8 = TRUEBLUE;
+const DEFAULT_BKG_COLOR: u8 = TRUE_BLUE;
 const DEFAULT_COLOR: u8 = YELLOW;
 
 #[derive(AppMacro)]

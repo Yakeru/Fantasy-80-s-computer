@@ -103,7 +103,7 @@ impl Life {
 
         let bkg_color = Some(BLACK);
 
-        let colors = [RED, DARKORANGE, ORANGE, YELLOW, LIGHTYELLOW, WHITE];
+        let colors = [RED, DARK_ORANGE, ORANGE, YELLOW, LIGHT_YELLOW, WHITE];
         let len = colors.len() - 1;
         //render gen_a else render gen_b
         if self.toggle_gen {

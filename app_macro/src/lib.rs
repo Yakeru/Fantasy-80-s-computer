@@ -1,4 +1,5 @@
 use winit::{event::KeyboardInput, event_loop::ControlFlow};
+use winit::event::VirtualKeyCode;
 use virtual_frame_buffer::*;
 
 pub trait AppMacro {

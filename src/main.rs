@@ -4,10 +4,10 @@ use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
 use std::time::Instant;
 use winit::{
-    dpi::PhysicalSize,
+    dpi::{PhysicalSize, Position, PhysicalPosition},
     event::{DeviceEvent, ElementState, Event, KeyboardInput, WindowEvent, VirtualKeyCode},
     event_loop::{ControlFlow, EventLoop},
-    window::WindowBuilder,
+    window::{WindowBuilder, Fullscreen}, monitor::MonitorHandle,
 };
 
 use unicode;
@@ -50,6 +50,7 @@ fn main() -> Result<(), Error> {
     let mut virtual_frame_buffer: VirtualFrameBuffer = VirtualFrameBuffer::new(FRAME_TIME_MS);
 
     //winit init and setup
+
     let event_loop = EventLoop::new();
     let builder = WindowBuilder::new()
         .with_decorations(true)
@@ -57,9 +58,9 @@ fn main() -> Result<(), Error> {
             config::WIDTH as i32,
             config::HEIGHT as i32,
         ))
-        .with_title("Yay, une fenêtre !")
-        .with_resizable(false);
-
+        .with_title("Fantasy CPC")
+        .with_resizable(false)
+        .with_position(Position::Physical(PhysicalPosition::new(5, 5)));
     let window = builder
         .build(&event_loop)
         .expect("Window creation failed !");
@@ -67,6 +68,16 @@ fn main() -> Result<(), Error> {
     window
         .set_cursor_grab(winit::window::CursorGrabMode::None)
         .unwrap();
+
+    for monitor in window.available_monitors() {
+        if monitor.name().is_some() {
+            if monitor.name().unwrap().contains("DISPLAY2") {
+                window.set_decorations(false);
+                window.set_fullscreen(Some(Fullscreen::Borderless(Some(monitor))));
+                break;
+            }
+        }
+    }
 
     window.set_cursor_visible(true);
 
@@ -100,7 +111,7 @@ fn main() -> Result<(), Error> {
 
     //Other apps
     let mut lines = Box::new(Lines::new());
-    lines.set_state(false, false);
+    lines.set_state(true, true);
     let mut squares = Box::new(Squares::new());
     squares.set_state(false, false);
     let mut text_edit = Box::new(TextEdit::new());
@@ -111,7 +122,7 @@ fn main() -> Result<(), Error> {
     weather_app.set_state(false, false);
 
     let mut life = Box::new(Life::new());
-    life.set_state(true, true);
+    life.set_state(false, false);
     
     //To be managed properly, apps must be added to that list.
     //The main goes through the list and updates/renders the apps according to their statuses.
@@ -178,14 +189,6 @@ fn main() -> Result<(), Error> {
                         "Scan: {}, state: {:?}, virt. key code: {:?}",
                         scan_code, state, key_code
                     );
-
-                    if key_code == VirtualKeyCode::F1 && state == ElementState::Released {
-                        crt_renderer.toggle_filter();
-                    }
-
-                    if key_code == VirtualKeyCode::F2 && state == ElementState::Released {
-                        crt_renderer.toggle_alternate();
-                    }
                 }
                 _ => (),
             },
@@ -234,9 +237,9 @@ fn main() -> Result<(), Error> {
                     frame_interval = Instant::now();
                     virtual_frame_buffer.render();
 
-                    let start = Instant::now();
+                    //let start = Instant::now();
                     crt_renderer.render(&mut virtual_frame_buffer, pixels.get_frame_mut());
-                    println!("Render time: {} micros", start.elapsed().as_micros());
+                    //println!("Render time: {} micros", start.elapsed().as_micros());
                     pixels.render().expect("Pixels render oups");
                     frame_counter = frame_counter + 1;
                 }

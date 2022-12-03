@@ -8,17 +8,15 @@ const RENDERED_LINE_LENGTH: usize = WIDTH * SUB_PIXEL_COUNT;
 pub struct CrtEffectRenderer {
     upscaling: usize,
     filter: bool,
-    alternate: bool,
     brightness: u8,
 }
 
 impl CrtEffectRenderer {
-    pub fn new(upscaling: usize, filter: bool, alternate: bool, brightness: u8) -> CrtEffectRenderer {
+    pub fn new(upscaling: usize, filter: bool, brightness: u8) -> CrtEffectRenderer {
         CrtEffectRenderer {
             upscaling,
             filter,
             brightness,
-            alternate
         }
     }
 
@@ -28,10 +26,6 @@ impl CrtEffectRenderer {
 
     pub fn toggle_filter(&mut self) {
         self.filter = !self.filter;
-    }
-
-    pub fn toggle_alternate(&mut self) {
-        self.alternate = !self.alternate;
     }
 
     pub fn render(&self, virtual_frame_buffer: &VirtualFrameBuffer, output_frame: &mut [u8]) {
@@ -138,43 +132,23 @@ impl CrtEffectRenderer {
                             rgb.2
                         };
 
-                        let mut r1_index = 0 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
-                        let mut ar1_index = 3 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
+                        let r1_index = 0 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
+                        let ar1_index = 3 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
 
-                        let mut g1_index = 5 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
-                        let mut ag1_index = 7 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
+                        let g1_index = 5 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
+                        let ag1_index = 7 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
 
-                        let mut b1_index = 10 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
-                        let mut ab1_index = 11 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
+                        let b1_index = 10 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
+                        let ab1_index = 11 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
 
-                        let mut r2_index = 12 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
-                        let mut ar2_index = 15 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
+                        let r2_index = 12 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
+                        let ar2_index = 15 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
 
-                        let mut g2_index = 17 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
-                        let mut ag2_index = 19 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
+                        let g2_index = 17 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
+                        let ag2_index = 19 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
 
-                        let mut b2_index = 22 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
-                        let mut ab2_index = 23 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
-
-                        if self.alternate {
-                            r1_index = 0 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
-                            ar1_index = 3 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
-    
-                            g1_index = 1 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
-                            ag1_index = 3 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
-    
-                            b1_index = 2 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
-                            ab1_index = 3 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
-    
-                            r2_index = 12 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
-                            ar2_index = 15 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
-    
-                            g2_index = 13 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
-                            ag2_index = 15 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
-    
-                            b2_index = 14 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
-                            ab2_index = 15 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
-                        }
+                        let b2_index = 22 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
+                        let ab2_index = 23 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;
 
                         rendered_scanline[r1_index] = r1 >> 1;
                         rendered_scanline[ar1_index] = scanline_alpha;
