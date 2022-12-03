@@ -229,7 +229,10 @@ fn main() -> Result<(), Error> {
                 if frame_interval.elapsed().as_micros() >= FRAME_TIME_MS * 1000 {
                     frame_interval = Instant::now();
                     virtual_frame_buffer.render();
+
+                    let start = Instant::now();
                     crt_renderer.render(&mut virtual_frame_buffer, pixels.get_frame_mut());
+                    println!("Render time: {} micros", start.elapsed().as_micros());
                     pixels.render().expect("Pixels render oups");
                     frame_counter = frame_counter + 1;
                 }
