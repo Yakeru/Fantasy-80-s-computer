@@ -96,7 +96,7 @@ fn main() -> Result<(), Error> {
     //The crt renderer takes the virtual frame buffers's frame, upscales it to match pixel's frame and winit window size,
     //then applies a filter evoking CRT sub-pixels and scanlines ... or crappy LCD.
     //The upscaled and "crt'ed" image is then pushed into pixel's frame for final render.
-    let mut crt_renderer: CrtEffectRenderer = CrtEffectRenderer::new(config::UPSCALE, true, false, u8::MAX);
+    let mut crt_renderer: CrtEffectRenderer = CrtEffectRenderer::new(config::UPSCALE, true, u8::MAX);
 
     //The Shell is the command line interpreter.
     //It is launched at startup after the boot animation. 
