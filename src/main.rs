@@ -7,7 +7,7 @@ use winit::{
     dpi::{PhysicalSize, Position, PhysicalPosition},
     event::{DeviceEvent, ElementState, Event, KeyboardInput, WindowEvent, VirtualKeyCode},
     event_loop::{ControlFlow, EventLoop},
-    window::{WindowBuilder, Fullscreen}, monitor::MonitorHandle,
+    window::{WindowBuilder, Fullscreen}
 };
 
 use unicode;
@@ -26,31 +26,13 @@ use crate::apps::life::Life;
 const FRAME_TIME_MS: u128 = 16; //ms per frame : 16 = 60fps, 32 = 30fps, 1000 = 1fps
 const FRAMES_PER_SEC: u128 = 60;
 
-///*********************************************************THE MAIN
 fn main() -> Result<(), Error> {
 
-    //Boolean used to play boot animation once.
-    let mut booting = true;
-
-    //The variables passed to the app.update(...)
-    let mut keyboard_input: Option<KeyboardInput> = None;
-    let mut char_received: Option<char> = None;
-    let mut mouse_move_delta: (f64, f64) = (0.0, 0.0);
-    //let boot_time = Instant::now();
-    let mut frame_counter:  u128 = 0;
-
-    //Instant used to time frame refresh
-    let mut frame_interval = Instant::now();
-
-    //Custom intermediate frame buffer
-    //Has 1/3 the horizontal resolution and 1/3 the vertical resoluton of pixels surface texture and winit window size.
-    //The virtual frame buffer has a text layer, sprite lists, background layers and tiles layers that can be accessed
-    //by Processes (structs implemeting "process") to build their image.
-    //Its rendere combines all the layers in its frame to produce the complete image.
-    let mut virtual_frame_buffer: VirtualFrameBuffer = VirtualFrameBuffer::new(FRAME_TIME_MS);
-
-    //winit init and setup
-
+    // ************************************************ DISPLAY SETUP *********************************************
+    // winit setup
+    // For best effect, should display in border-less full-screen and native resolution on high DPI screen
+    // This project was conceived with a recycled QHD iPAD pannel in mind
+    // But winit can be set-up anyway you want.
     let event_loop = EventLoop::new();
     let builder = WindowBuilder::new()
         .with_decorations(true)
@@ -81,6 +63,9 @@ fn main() -> Result<(), Error> {
 
     window.set_cursor_visible(true);
 
+    // pixels set-up 
+    // with the same goal in mind as winit's setup above, it is set to the exact same resolution as the window's 
+    // inner size to avoid any scaling.
     let mut pixels = {
         let surface_texture = SurfaceTexture::new(config::WIDTH as u32, config::HEIGHT as u32, &window);
         PixelsBuilder::new(
@@ -93,51 +78,81 @@ fn main() -> Result<(), Error> {
         .expect("Pixels : Failed to setup rendering")
     };
 
-    //The crt renderer takes the virtual frame buffers's frame, upscales it to match pixel's frame and winit window size,
-    //then applies a filter evoking CRT sub-pixels and scanlines ... or crappy LCD.
-    //The upscaled and "crt'ed" image is then pushed into pixel's frame for final render.
+    // **************************************************** GRAPHICS ENGINE SETUP **********************************************
+
+    // Boolean used to play boot animation once.
+    let mut booting = true;
+
+    // The variables passed to the app.update(...) that is in focus
+    // or to the shell if no other app is running.
+    let mut keyboard_input: Option<KeyboardInput> = None;
+    let mut char_received: Option<char> = None;
+    let mut mouse_move_delta: (f64, f64) = (0.0, 0.0);
+    let mut frame_counter:  u128 = 0;
+
+    // Instant used to time the frame refresh rate
+    // Apps are updated and drawn as frequently as possible, independently from that frame_interval
+    // but the graphics engine (virtual_frame_buffer + crt_renderer + pixels) renders
+    // the final on screen picture at this frame interval.
+    let mut frame_interval = Instant::now();
+
+    // My graphics engine
+    // Offers a text layer, console, sprite layer, background layers and tiles layers that can be accessed
+    // by Processes (structs implemeting "process") to build their image.
+    // Its render combines all the layers in its frame, applies the crt filter and sends it to
+    // pixels to display the final image in the window.
+    let mut virtual_frame_buffer: VirtualFrameBuffer = VirtualFrameBuffer::new(FRAME_TIME_MS);
+
+    // The crt renderer takes the virtual frame buffers's frame, upscales it to match pixel's frame and winit window size,
+    // then applies a filter evoking CRT sub-pixels and scanlines.
+    // The upscaled and "crt'ed" image is then pushed into pixel's frame for on-screen render.
     let mut crt_renderer: CrtEffectRenderer = CrtEffectRenderer::new(config::UPSCALE, true, u8::MAX);
 
-    //The Shell is the command line interpreter.
-    //It is launched at startup after the boot animation. 
-    //The winit event loop will update and render the shell by default if
-    //no other process is running or has the focus.
-    //The Shell uses the always running console 0 as default output.
-    //When pressing "escape" in any other app, it will quit the app and
-    //get back to the shell.
-    //Pressing "escape" again in the shell will quit the program (close winit with a WindowEvent::CloseRequested)
-    let mut shell = Box::new(Shell::new());
-    shell.set_state(false, false);
-
-    //Other apps
-    let mut lines = Box::new(Lines::new());
-    lines.set_state(true, true);
-    let mut squares = Box::new(Squares::new());
-    squares.set_state(false, false);
-    let mut text_edit = Box::new(TextEdit::new());
-    text_edit.set_state(false, false);
-    let mut sprite_edit = Box::new(SpriteEditor::new());
-    sprite_edit.set_state(false, false);
-    let mut weather_app = Box::new(WeatherApp::new());
-    weather_app.set_state(false, false);
-
-    let mut life = Box::new(Life::new());
-    life.set_state(false, false);
+    // ****************************************************** APPS SETUP ***********************************************
     
-    //To be managed properly, apps must be added to that list.
-    //The main goes through the list and updates/renders the apps according to their statuses.
+    // The Shell is the command line interpreter app.
+    // It is launched at startup after the boot animation. 
+    // The winit event loop will update and render the shell by default if
+    // no other process is running or has the focus.
+    // The Shell uses the console as default output.
+    // When closing/quitting an app, it should always fall back to the shell.
+    let mut shell = Box::new(Shell::new());
+    shell.set_state(true, true);
+
+    // To be managed properly, apps must be added to that list.
+    // The main goes through the list and updates/renders the apps according to their statuses.
     let mut app_list: Vec<Box<dyn AppMacro>> = Vec::new();
-    app_list.push(shell);
+
+    // ********* //
+    // The apps  //
+    // ********* //
+
+    // LINES DEMO
+    let lines = Box::new(Lines::new());
     app_list.push(lines);
-    app_list.push(text_edit);
-    app_list.push(sprite_edit);
+
+    // SQUARES DEMO
+    let squares = Box::new(Squares::new());
     app_list.push(squares);
+
+    // TEXT EDITOR
+    let text_edit = Box::new(TextEdit::new());
+    app_list.push(text_edit);
+
+    // SPRITE EDITOR
+    let sprite_edit = Box::new(SpriteEditor::new());
+    app_list.push(sprite_edit);
+
+    // WEATHER APP
+    let weather_app = Box::new(WeatherApp::new());
     app_list.push(weather_app);
+
+    // CONWAY'S GAME OF LIFE
+    let life = Box::new(Life::new());
     app_list.push(life);
     
-    //Fill the screen with black
-    virtual_frame_buffer.clear_frame_buffer(0);
-
+    // ****************************************************** MAIN WINIT EVENT LOOP ***********************************************
+    
     //The event loop here can be seen as the "bios + boot rom + console" part of the Fantasy computer.
     //It initialises the virtual_frame_buffer, Console 0 and Shell.
     //If no app is running/rendering, it defaults back to running/rendering the Console 0 and Shell.
@@ -193,60 +208,75 @@ fn main() -> Result<(), Error> {
                 _ => (),
             },
             Event::MainEventsCleared => {
-                //BOOT, play boot animation once then run apps
+                // BOOT, play boot animation once before showing the shell or any other app.
                 if booting {
                     booting = boot_animation(&mut virtual_frame_buffer, &mut crt_renderer, frame_counter);
                 } else {
                     //Updating apps
-                    for i in 0..app_list.len() {
-                        let app = app_list.get_mut(i).unwrap();
-                        if app.get_state().0 == true {
-                            let app_response = app.update(keyboard_input, char_received, &mut virtual_frame_buffer);
+                    let mut show_shell: bool = true;
+                    let mut app_response: Option<AppResponse> = None;
+                    for app in app_list.chunks_exact_mut(1) {
+                        
+                        // If app is running and drawing (in focus), call update with keyboard inputs and dont render shell.
+                        if app[0].get_state().0 && app[0].get_state().1 {
+                            app_response = app[0].update(keyboard_input, char_received, &mut virtual_frame_buffer);
+                            app[0].draw(&mut virtual_frame_buffer);
+                            show_shell = false;
+                        }
+                        
+                        // If app is running but not drawing (running in the background), call update without keyboard inputs.
+                        // dont draw.
+                        else if app[0].get_state().0 && !app[0].get_state().1 {
+                            app_response = app[0].update(None, None, &mut virtual_frame_buffer);
+                        }
+                    }
 
-                            //Process app response
-                            match app_response {
-                                Some(response) => {
-                                    match response.event {
-                                        Some(event) => *control_flow = event,
-                                        None => (),
-                                    }
-    
-                                    match response.message {
-                                        Some(message) => {
-                                            println!("App message: {}", message);
-                                        }
-                                        None => (),
-                                    }
-                                },
-                                None => ()
+                    // If no app is in focus, run the shell
+                    if show_shell {
+                        app_response = shell.update(keyboard_input, char_received, &mut virtual_frame_buffer);
+                        shell.draw(&mut virtual_frame_buffer);
+                    }
+
+                    // Process app response
+                    match app_response {
+                        Some(response) => {
+                            match response.event {
+                                Some(event) => *control_flow = event,
+                                None => (),
                             }
-                        }
-                    } 
-                    
-                    //Draw app
-                    for i in 0..app_list.len() {
-                        let app = app_list.get_mut(i).unwrap();
-                        if app.get_state().1 == true {
-                            app.draw(&mut virtual_frame_buffer);
-                        }
+
+                            match response.message {
+                                Some(message) => {
+                                    println!("App message: {}", message);
+
+                                    for app in app_list.chunks_exact_mut(1) {
+                                        if app[0].get_name() == message {
+                                            app[0].set_state(true, true);
+                                        }
+                                    }
+                                }
+                                None => (),
+                            }
+                        },
+                        None => ()
                     }
                 }
 
-                //Render virtual frame buffer to pixels frame buffer with upscaling and CRT effect
+                // Render virtual frame buffer to pixels frame buffer with upscaling and CRT effect
                 if frame_interval.elapsed().as_micros() >= FRAME_TIME_MS * 1000 {
                     frame_interval = Instant::now();
                     virtual_frame_buffer.render();
 
-                    //let start = Instant::now();
+                    // let start = Instant::now();
                     crt_renderer.render(&mut virtual_frame_buffer, pixels.get_frame_mut());
-                    //println!("Render time: {} micros", start.elapsed().as_micros());
+                    // println!("Render time: {} micros", start.elapsed().as_micros());
                     pixels.render().expect("Pixels render oups");
                     frame_counter = frame_counter + 1;
                 }
 
                 window.request_redraw();
 
-                //Reset input buffers for next loop
+                // Reset input buffers for next loop
                 char_received = None;
                 keyboard_input = None;
                 mouse_move_delta.0 = 0.0;

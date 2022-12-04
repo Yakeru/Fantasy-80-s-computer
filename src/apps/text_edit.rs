@@ -12,6 +12,7 @@ const DEFAULT_COLOR: u8 = 0;
 
 #[derive(AppMacro)]
 pub struct TextEdit {
+    is_shell: bool,
     name: String,
     selected_color: u8,
     selected_bkg_color: u8,
@@ -27,6 +28,7 @@ impl TextEdit {
         let buffer = Vec::new();
 
         TextEdit {
+            is_shell: false,
             name: String::from("textEdit"),
             selected_color: DEFAULT_COLOR,
             selected_bkg_color: DEFAULT_BKG_COLOR,
@@ -45,11 +47,6 @@ impl TextEdit {
         virtual_frame_buffer: &mut VirtualFrameBuffer
     ) -> Option<AppResponse> {
         let mut response = AppResponse::new();
-
-        if !self.started {
-            self.start();
-            self.started = true;
-        }
 
         match char_received {
             Some(c) => match c {
@@ -111,13 +108,6 @@ impl TextEdit {
                                     //self.text_layer.scroll_up();
                                 }
 
-                                VirtualKeyCode::Escape => {
-                                    //Escape
-                                    response.set_message("Escape key pressed".to_string());
-                                    response.event = Some(ControlFlow::ExitWithCode(0));
-                                    self.end();
-                                }
-
                                 _ => (),
                             }
                         }
@@ -135,6 +125,8 @@ impl TextEdit {
         virtual_frame_buffer.get_text_layer_mut().clear();
         //virtual_frame_buffer.get_text_layer().show_cursor = false;
         virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
+        virtual_frame_buffer.get_console_mut().display = false;
+
 
         let mut count = 0;
         for text_layer_char in self.buffer.chunks_exact_mut(1) {
