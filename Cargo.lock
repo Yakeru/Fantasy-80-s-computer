@@ -39,15 +39,16 @@ dependencies = [
 
 [[package]]
 name = "app_macro"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "virtual_frame_buffer",
  "winit",
+ "winit_input_helper",
 ]
 
 [[package]]
 name = "app_macro_derive"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "quote",
  "syn",
@@ -2283,7 +2284,7 @@ checksum = "e2e7917148b2812d1eeafaeb22a97e4813dfa60a3f8f78ebe204bcc88f12f024"
 
 [[package]]
 name = "windows_project"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "app_macro",
  "app_macro_derive",

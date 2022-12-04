@@ -5,17 +5,21 @@ use app_macro_derive::AppMacro;
 use virtual_frame_buffer::color_palettes::*;
 use virtual_frame_buffer::config::{TEXT_COLUMNS, TEXT_ROWS};
 use virtual_frame_buffer::text_layer_char::TextLayerChar;
-use winit::event::KeyboardInput;
-use winit::event_loop::ControlFlow;
+
+use winit::{
+    event::{KeyboardInput, VirtualKeyCode, ElementState},
+    event_loop::ControlFlow,
+};
 
 const SPLASH: &str = "\u{000D} Fantasy CPC Microcomputer V(0.1)\u{000D}\u{000D} 2022 Damien Torreilles\u{000D}\u{000D}";
 const SHELL_START_MESSAGE: &str = "SHELL 0.1\u{000D}Ready\u{000D}";
 
-const DEFAULT_BKG_COLOR: u8 = TRUEBLUE;
+const DEFAULT_BKG_COLOR: u8 = TRUE_BLUE;
 const DEFAULT_COLOR: u8 = YELLOW;
 
 #[derive(AppMacro)]
 pub struct Shell {
+    is_shell: bool,
     name: String,
     color: u8,
     bkg_color: u8,
@@ -50,6 +54,7 @@ impl Shell {
         let command_history: Vec<String> = Vec::new();
 
         Shell {
+            is_shell: true,
             name: String::from("shell"),
             color: DEFAULT_COLOR,
             bkg_color: DEFAULT_BKG_COLOR,
@@ -103,7 +108,7 @@ impl Shell {
                 response.event = Some(ControlFlow::Exit);
                 response.set_message(String::from("Command 'quit' or 'exit' received; stopping."));
             } else {
-                response.set_message(String::from("Syntax Error"));
+                response.set_message(String::from(command));
             }
         }
         response

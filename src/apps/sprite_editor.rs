@@ -13,6 +13,7 @@ const EDITOR_PIXEL_HIGHLIGHT_SIZE: PhysicalSize<usize> =
 
 #[derive(AppMacro)]
 pub struct SpriteEditor {
+    is_shell: bool,
     name: String,
     updating: bool,
     drawing: bool,
@@ -27,6 +28,7 @@ pub struct SpriteEditor {
 impl SpriteEditor {
     pub fn new() -> SpriteEditor {
         SpriteEditor {
+            is_shell: false,
             name: String::from("spriteEdit"),
             updating: false,
             drawing: false,
@@ -46,11 +48,6 @@ impl SpriteEditor {
         virtual_frame_buffer: &mut VirtualFrameBuffer
     ) -> Option<AppResponse> {
         let mut response = AppResponse::new();
-
-        if !self.started {
-            self.start();
-            self.started = true;
-        }
 
         match char_received {
             Some(c) => {
@@ -116,13 +113,6 @@ impl SpriteEditor {
 
                                 VirtualKeyCode::PageUp => {}
 
-                                VirtualKeyCode::Escape => {
-                                    //Escape
-                                    response.set_message("Escape key pressed".to_string());
-                                    response.event = Some(ControlFlow::ExitWithCode(0));
-                                    self.end();
-                                }
-
                                 _ => (),
                             }
                         }
@@ -138,8 +128,9 @@ impl SpriteEditor {
     }
 
     pub fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+        virtual_frame_buffer.get_console_mut().display = false;
         virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
-        //virtual_frame_buffer.get_text_layer().clear();
+        virtual_frame_buffer.get_text_layer_mut().clear();
         //virtual_frame_buffer.get_text_layer().show_cursor = false;
 
         //Drawing are Background square

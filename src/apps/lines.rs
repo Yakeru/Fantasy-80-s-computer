@@ -3,12 +3,13 @@ use app_macro::*;
 use app_macro_derive::AppMacro;
 use rand::Rng;
 use winit::{
-    event::{KeyboardInput, VirtualKeyCode},
+    event::{KeyboardInput, VirtualKeyCode, ElementState},
     event_loop::ControlFlow,
 };
 
 #[derive(AppMacro)]
 pub struct Lines {
+    is_shell: bool,
     name: String,
     updating: bool,
     drawing: bool,
@@ -21,7 +22,8 @@ pub struct Lines {
 impl Lines {
     pub fn new() -> Lines {
         Lines {
-            name: String::from("Lines"),
+            is_shell: false,
+            name: String::from("lines"),
             updating: false,
             drawing: false,
             started: false,
@@ -40,10 +42,6 @@ impl Lines {
         
         virtual_frame_buffer.get_console_mut().display = false;
 
-        if !self.started {
-            self.start();
-        }
-
         match char_received {
             Some(unicode) => {
                 match unicode {
@@ -60,28 +58,6 @@ impl Lines {
             None => (),
         }
 
-        match keybord_input {
-            Some(key) => {
-                match key.virtual_keycode {
-                    Some(code) => {
-                        match code {
-                            VirtualKeyCode::Escape => {
-                                //Escape
-                                let mut response = AppResponse::new();
-                                response.set_message(String::from("app:quit"));
-                                response.event = Some(ControlFlow::Exit);
-                                self.end();
-                                return Some(response);
-                            }
-                            _ => (),
-                        }
-                    }
-                    None => (),
-                }
-            }
-            None => (),
-        }
-
         return None;
     }
 
@@ -89,6 +65,7 @@ impl Lines {
         let max_x = virtual_frame_buffer.get_width();
         let max_y = virtual_frame_buffer.get_height();
 
+        virtual_frame_buffer.get_console_mut().display = false;
         virtual_frame_buffer.get_text_layer_mut().clear();
         //virtual_frame_buffer.get_text_layer().show_cursor = false;
 

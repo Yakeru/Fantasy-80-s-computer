@@ -41,6 +41,8 @@ impl CrtEffectRenderer {
         let mut rendered_ramp_line: [u8; RENDERED_LINE_LENGTH] = [0; RENDERED_LINE_LENGTH];
         let mut line_count: usize = 0;
 
+        let scanline_alpha = self.brightness.checked_sub(SCAN_LINE_STRENGTH).unwrap_or(0);
+
         for virt_line in virtual_frame_buffer.get_frame().chunks_exact(VIRTUAL_WIDTH) {
             // Check if line is affected by corner
             // if so, adapt range of pixels to render to exclude corner
@@ -52,9 +54,9 @@ impl CrtEffectRenderer {
                 range.end = VIRTUAL_WIDTH - circle_list[line_count];
             }
 
-            if line_count > VIRTUAL_HEIGHT - circle_list.len() {
-                range.start = circle_list[VIRTUAL_HEIGHT - line_count];
-                range.end = VIRTUAL_WIDTH - circle_list[VIRTUAL_HEIGHT - line_count];
+            if line_count > VIRTUAL_HEIGHT - circle_list.len() - 1 {
+                range.start = circle_list[VIRTUAL_HEIGHT - line_count - 1];
+                range.end = VIRTUAL_WIDTH - circle_list[VIRTUAL_HEIGHT - line_count - 1];
             }
 
             let mut rgb_before: (u8, u8, u8) = (0, 0, 0);
@@ -69,7 +71,7 @@ impl CrtEffectRenderer {
                     (0, 0, 0)
                 };
 
-                let rgb_after: (u8, u8, u8) = if pixel_index < VIRTUAL_WIDTH - 1 {
+                let rgb_after: (u8, u8, u8) = if pixel_index < VIRTUAL_WIDTH - 1 && range.contains(&(pixel_index + 1)) {
                     virtual_frame_buffer
                         .color_palette
                         .get_rgb(virt_line[pixel_index + 1])
@@ -77,11 +79,11 @@ impl CrtEffectRenderer {
                     (0, 0, 0)
                 };
 
+                //print!("rgb: {:?}, before: {:?}, after: {:?}", rgb, rgb_before, rgb_after);
+
                 if self.upscaling == 6 {
                     if self.filter {
-                        let scanline_alpha =
-                            self.brightness.checked_sub(SCAN_LINE_STRENGTH).unwrap_or(0);
-
+                        
                         let r1 = if rgb.0 > rgb_before.0 {
                             rgb.0 - ((rgb.0 - rgb_before.0) / 5)
                         } else if rgb.0 < rgb_before.0 {
@@ -192,6 +194,7 @@ impl CrtEffectRenderer {
                         rendered_line[ab2_index] = self.brightness;
 
                         rgb_before = rgb;
+                        
                     } else {
                         let r = rgb.0;
                         let g = rgb.1;
@@ -208,8 +211,6 @@ impl CrtEffectRenderer {
                     }
                 } else if self.upscaling == 3 {
                     if self.filter {
-                        let scanline_alpha =
-                            self.brightness.checked_sub(SCAN_LINE_STRENGTH).unwrap_or(0);
 
                         let r = rgb.0;
                         let r_index = 0 + SUB_PIXEL_COUNT * UPSCALE * pixel_index;

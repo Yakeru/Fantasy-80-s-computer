@@ -41,8 +41,8 @@ fn impl_app_macro(ast: &syn::DeriveInput) -> TokenStream {
                 self.updating = updating;
                 self.drawing = drawing;
 
-                if drawing {self.updating = true}
-                if !updating {self.drawing = false}
+                if self.drawing {self.updating = true}
+                if !self.updating {self.drawing = false}
             }
 
             fn get_state(&self) -> (bool, bool) {
@@ -50,6 +50,25 @@ fn impl_app_macro(ast: &syn::DeriveInput) -> TokenStream {
             }
 
             fn update(&mut self, keybord_input: Option<KeyboardInput>, char_received: Option<char>, virtual_frame_buffer: &mut VirtualFrameBuffer) -> Option<AppResponse> {
+                
+                // Implementing default behaviour when ESCAPE key is pressed in app
+                // Ignore for shell
+                if !self.is_shell {
+                    match keybord_input {
+                        Some(key) => {
+                            match(key.virtual_keycode) {
+                                Some(keycode) => {
+                                    if keycode == VirtualKeyCode::Escape && key.state == ElementState::Released {
+                                        self.end()
+                                    }
+                                },
+                                None => ()
+                            } 
+                        },
+                        None => ()
+                    }
+                }
+                
                 return self.update_app(keybord_input, char_received, virtual_frame_buffer);
             }
             

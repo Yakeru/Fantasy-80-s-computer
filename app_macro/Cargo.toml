@@ -1,10 +1,11 @@
 [package]
 name = "app_macro"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 winit = "0.27.3"
+winit_input_helper = "0.13.0"
 virtual_frame_buffer = { path = "../virtual_frame_buffer" }

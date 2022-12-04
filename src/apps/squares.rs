@@ -1,13 +1,16 @@
 use app_macro::*;
 use app_macro_derive::AppMacro;
-use winit::event_loop::ControlFlow;
-
 use virtual_frame_buffer::*;
 use rand::Rng;
-use winit::event::{KeyboardInput, VirtualKeyCode};
+
+use winit::{
+    event::{KeyboardInput, VirtualKeyCode, ElementState},
+    event_loop::ControlFlow,
+};
 
 #[derive(AppMacro)]
 pub struct Squares {
+    is_shell: bool,
     name: String,
     updating: bool,
     drawing: bool,
@@ -19,6 +22,7 @@ pub struct Squares {
 impl Squares {
     pub fn new() -> Squares {
         Squares {
+            is_shell: false,
             name: String::from("Squares"),
             updating: false,
             drawing: false,
@@ -38,35 +42,6 @@ impl Squares {
 
         virtual_frame_buffer.get_console_mut().display = false;
 
-        if !self.started {
-            self.start();
-        }
-
-        match keybord_input {
-            Some(key) => {
-                match key.virtual_keycode {
-                    Some(code) => {
-                        match code {
-                            VirtualKeyCode::Escape => {
-                                //Escape
-                                response.set_message("Escape key pressed".to_string());
-                                response.event = Some(ControlFlow::ExitWithCode(0));
-                                self.end();
-                            }
-
-                            VirtualKeyCode::Return => {
-                                //Enter
-                                self.draw_square = true;
-                            }
-                            _ => (),
-                        }
-                    }
-                    None => (),
-                }
-            }
-            None => (),
-        }
-
         match char_received {
             Some(_c) => (),
             None => ()
@@ -78,7 +53,7 @@ impl Squares {
     pub fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         //virtual_frame_buffer.get_text_layer().clear();
         //virtual_frame_buffer.get_text_layer().show_cursor = false;
-
+        virtual_frame_buffer.get_console_mut().display = false;
         virtual_frame_buffer.get_text_layer_mut().clear();
 
 

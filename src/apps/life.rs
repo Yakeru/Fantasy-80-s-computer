@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{time::Instant, ops::ControlFlow};
 
 use app_macro::{AppMacro, AppResponse};
 use app_macro_derive::AppMacro;
@@ -8,6 +8,7 @@ use winit::event::{KeyboardInput, VirtualKeyCode, ElementState};
 
 #[derive(AppMacro)]
 pub struct Life {
+    is_shell: bool,
     name: String,
     updating: bool,
     drawing: bool,
@@ -23,7 +24,8 @@ pub struct Life {
 impl Life {
     pub fn new() -> Life {
         Life {
-            name: String::from("Life"),
+            is_shell: false,
+            name: String::from("life"),
             updating: false,
             drawing: false,
             started: false,
@@ -43,7 +45,22 @@ impl Life {
         virtual_frame_buffer: &mut VirtualFrameBuffer
     ) -> Option<AppResponse> {
 
-        //Re-start if 'c' is pressed
+        // // Quit app if ESCAPE is pressed
+        // match keybord_input {
+        //     Some(key) => {
+        //         match(key.virtual_keycode) {
+        //             Some(keycode) => {
+        //                 if keycode == VirtualKeyCode::Escape && key.state == ElementState::Released {
+        //                     self.end();
+        //                 }
+        //             },
+        //             None => ()
+        //         }
+        //     },
+        //     None => ()
+        // }
+        
+        // Clear and re-start if 'c' is pressed
         match char_received {
             Some(char) => {
                 if char == 'c' {
@@ -99,11 +116,12 @@ impl Life {
 
     pub fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         virtual_frame_buffer.get_text_layer_mut().clear();
-        virtual_frame_buffer.clear_frame_buffer(BLUE);
+        virtual_frame_buffer.get_console_mut().display = false;
+        virtual_frame_buffer.clear_frame_buffer(WHITE);
 
         let bkg_color = Some(BLACK);
 
-        let colors = [RED, DARKORANGE, ORANGE, YELLOW, LIGHTYELLOW, WHITE];
+        let colors = [RED, DARK_ORANGE, ORANGE, YELLOW, LIGHT_YELLOW, WHITE];
         let len = colors.len() - 1;
         //render gen_a else render gen_b
         if self.toggle_gen {
