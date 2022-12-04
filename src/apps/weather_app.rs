@@ -8,7 +8,7 @@ use winit::{
 };
 
 use virtual_frame_buffer::{*, color_palettes::{DARK_GREY, WHITE}};
-use openweathermap::Receiver;
+use openweathermap::{Receiver, CurrentWeather};
 use std::time::{Duration, Instant};
 
 const DEFAULT_BKG_COLOR: u8 = 7;
@@ -24,7 +24,8 @@ pub struct WeatherApp {
     receiver: Receiver,
     update_appinterval: Duration,
     last_update: Instant,
-    message: String,
+    current_weather: Option<Result<CurrentWeather, String>>,
+    first_time: bool
 }
 
 impl WeatherApp {
@@ -40,7 +41,7 @@ impl WeatherApp {
             },
 
             None => {
-                println!("WeatherApp : Environment variable not found");
+                println!("WeatherApp : Environment variable OWM_KEY not found");
             }
         }
 
@@ -54,7 +55,8 @@ impl WeatherApp {
             receiver: openweathermap::init("45.4874487,-73.5745913", "metric", "fr", key, 1),
             update_appinterval: Duration::from_secs(60),
             last_update: Instant::now().checked_add(Duration::from_secs(55)).unwrap(),
-            message: String::from("Loading..."),
+            current_weather: None,
+            first_time: true
         }
     }
 
@@ -66,26 +68,10 @@ impl WeatherApp {
     ) -> Option<AppResponse> {
         let response = AppResponse::new();
 
-        if Instant::now().duration_since(self.last_update) >= self.update_appinterval {
-            let weather = openweathermap::update(&self.receiver);
-
-            match weather {
-                Some(result) => match result {
-                    Ok(current_weather) => {
-                        self.message = format!("Temp: {}c\u{000D}feels like: {}c\u{000D}Humidity: {}%\u{000D}Pressure: {}Kpa\u{000D}Description: {}", current_weather.main.temp, 
-                                current_weather.main.feels_like, current_weather.main.humidity, current_weather.main.pressure, &current_weather.weather[0].description);
-                    }
-                    Err(message) => println!("OpenWeather API message {}", message),
-                },
-                None => (),
-            }
-
+        if Instant::now().duration_since(self.last_update) >= self.update_appinterval || self.first_time {
+            self.current_weather = openweathermap::update(&self.receiver);
             self.last_update = Instant::now();
-        }
-
-        if !self.started {
-            self.start();
-            self.started = true;
+            self.first_time = false;
         }
 
         match keybord_input {
@@ -125,7 +111,40 @@ impl WeatherApp {
         virtual_frame_buffer.get_text_layer_mut().clear();
         virtual_frame_buffer.clear_frame_buffer(DARK_GREY);
         virtual_frame_buffer.get_console_mut().display = false;
-        virtual_frame_buffer
-            .get_text_layer_mut().insert_string_xy(0, 0, &self.message, Some(WHITE), Some(DARK_GREY), false, false, false);
+        
+        match &self.current_weather {
+            Some(result) => match result {
+                Ok(current_weather) => {
+
+                    virtual_frame_buffer.get_text_layer_mut().insert_string_xy(0, 0, 
+                        &format!("Description: {}", current_weather.weather[0].description), Some(WHITE), Some(DARK_GREY), 
+                        false, false, false);
+
+                    virtual_frame_buffer.get_text_layer_mut().insert_string_xy(0, 1, 
+                        &format!("Temp: {} c", current_weather.main.temp), Some(WHITE), Some(DARK_GREY), 
+                        false, false, false);
+
+                    virtual_frame_buffer.get_text_layer_mut().insert_string_xy(0, 2, 
+                        &format!("feels like: {} c", current_weather.main.feels_like), Some(WHITE), Some(DARK_GREY), 
+                        false, false, false);
+
+                    virtual_frame_buffer.get_text_layer_mut().insert_string_xy(0, 3, 
+                        &format!("Humidity: {} %", current_weather.main.humidity), Some(WHITE), Some(DARK_GREY), 
+                        false, false, false);
+
+                    virtual_frame_buffer.get_text_layer_mut().insert_string_xy(0, 4, 
+                        &format!("Pressure: {} Kpa", current_weather.main.pressure), Some(WHITE), Some(DARK_GREY), 
+                        false, false, false);
+                }
+                Err(message) => {
+                    virtual_frame_buffer.get_text_layer_mut().insert_string_xy(0, 0, 
+                        message, Some(WHITE), Some(DARK_GREY), 
+                        false, false, false);
+                }
+            },
+            None => {
+                
+            },
+        }
     }
 }

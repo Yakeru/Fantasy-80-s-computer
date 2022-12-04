@@ -1,6 +1,8 @@
+use std::time::Instant;
+
 use app_macro::*;
 use app_macro_derive::AppMacro;
-use virtual_frame_buffer::*;
+use virtual_frame_buffer::{*, config::{VIRTUAL_HEIGHT, VIRTUAL_WIDTH}};
 use rand::Rng;
 
 use winit::{
@@ -17,18 +19,20 @@ pub struct Squares {
     started: bool,
     ended: bool,
     draw_square: bool,
+    last_update: Instant
 }
 
 impl Squares {
     pub fn new() -> Squares {
         Squares {
             is_shell: false,
-            name: String::from("Squares"),
+            name: String::from("squares"),
             updating: false,
             drawing: false,
             started: false,
             ended: false,
             draw_square: true,
+            last_update: Instant::now()
         }
     }
 
@@ -47,6 +51,12 @@ impl Squares {
             None => ()
         }
 
+        let now = Instant::now();
+        if now.duration_since(self.last_update).as_millis() >= 500 {
+            self.draw_square = true;
+            self.last_update = Instant::now();
+        }
+
         return Some(response);
     }
 
@@ -56,19 +66,16 @@ impl Squares {
         virtual_frame_buffer.get_console_mut().display = false;
         virtual_frame_buffer.get_text_layer_mut().clear();
 
+        if self.draw_square {
 
-        let max_x = virtual_frame_buffer.get_width();
-        let max_y = virtual_frame_buffer.get_height();
+            let mut random = rand::thread_rng();
 
-        let mut random = rand::thread_rng();
-
-        for _i in 0..5 {
-            let pos_x: usize = random.gen_range(0..max_x);
-            let pos_y: usize = random.gen_range(0..max_y);
-            let width: usize = random.gen_range(0..max_x);
-            let height: usize = random.gen_range(0..max_y);
+            let pos_x: usize = random.gen_range(0..VIRTUAL_WIDTH);
+            let pos_y: usize = random.gen_range(0..VIRTUAL_HEIGHT);
+            let width: usize = random.gen_range(0..(VIRTUAL_WIDTH - pos_x));
+            let height: usize = random.gen_range(0..(VIRTUAL_HEIGHT - pos_y));
             let color: u8 = random.gen_range(0..32);
-            let fill = if random.gen_range(0..4) > 2 {
+            let fill = if random.gen_range(0..2) == 0 {
                 true
             } else {
                 false
@@ -84,6 +91,8 @@ impl Squares {
                 color,
             };
             draw_square(square, virtual_frame_buffer.get_frame_mut());
+            
+            self.draw_square = false;
         }
     }
 }
