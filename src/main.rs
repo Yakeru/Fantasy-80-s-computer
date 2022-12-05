@@ -81,7 +81,7 @@ fn main() -> Result<(), Error> {
     // **************************************************** GRAPHICS ENGINE SETUP **********************************************
 
     // Boolean used to play boot animation once.
-    let mut booting = true;
+    let mut booting = false;
 
     // The variables passed to the app.update(...) that is in focus
     // or to the shell if no other app is running.
@@ -132,7 +132,8 @@ fn main() -> Result<(), Error> {
     app_list.push(lines);
 
     // SQUARES DEMO
-    let squares = Box::new(Squares::new());
+    let mut squares = Box::new(Squares::new());
+    squares.set_state(true, true);
     app_list.push(squares);
 
     // TEXT EDITOR

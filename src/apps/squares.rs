@@ -52,7 +52,7 @@ impl Squares {
         }
 
         let now = Instant::now();
-        if now.duration_since(self.last_update).as_millis() >= 500 {
+        if now.duration_since(self.last_update).as_millis() >= 250 {
             self.draw_square = true;
             self.last_update = Instant::now();
         }
@@ -90,8 +90,8 @@ impl Squares {
                 fill,
                 color,
             };
+
             draw_square(square, virtual_frame_buffer.get_frame_mut());
-            
             self.draw_square = false;
         }
     }

@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use characters_rom::{rom, CHARACTER_WIDTH, CHARACTER_HEIGHT};
 use color_palettes::*;
 use config::*;
@@ -386,25 +388,36 @@ pub fn draw_line(line: Line, frame: &mut [u8]) {
 }
 
 pub fn draw_square(square: Square, frame: &mut [u8]) {
-    let start_offset: usize = frame_coord_to_index(square.pos_x, square.pos_y);
+    let mut current_line: usize = 0;
+    let line_range: Range<usize> = square.pos_y..(square.pos_y + square.height + 1);
 
-    for row in 0..square.width {
-        for column in 0..square.height {
-            if square.fill {
-                let offset = (start_offset + column + VIRTUAL_WIDTH * row)
-                    % (VIRTUAL_WIDTH * VIRTUAL_HEIGHT);
-                frame[offset] = square.color;
+    for virtual_frame_row in frame.chunks_exact_mut(VIRTUAL_WIDTH) { // TODO use advance_by once it's stable
+        if line_range.contains(&current_line) {
+            if current_line == square.pos_y || current_line == square.pos_y + square.height {
+                for pixel_index in square.pos_x..(square.pos_x + square.width + 1) {
+                    if pixel_index < VIRTUAL_WIDTH {
+                        virtual_frame_row[pixel_index] = square.color;
+                    }
+                }
             } else {
-                if row == 0
-                    || row == square.width - 1
-                    || column == 0
-                    || column == square.height - 1
-                {
-                    let offset = (start_offset + column + VIRTUAL_WIDTH * row)
-                        % (VIRTUAL_WIDTH * VIRTUAL_HEIGHT);
-                    frame[offset] = square.color;
+                if square.fill {
+                    for pixel_index in square.pos_x..(square.pos_x + square.width + 1) {
+                        if pixel_index < VIRTUAL_WIDTH {
+                            virtual_frame_row[pixel_index] = square.color;
+                        }
+                    }
+                } else {
+                    if square.pos_x < VIRTUAL_WIDTH {
+                        virtual_frame_row[square.pos_x] = square.color;
+                    }
+
+                    if square.pos_x + square.width < VIRTUAL_WIDTH {
+                        virtual_frame_row[square.pos_x + square.width] = square.color;
+                    }
                 }
             }
         }
+        current_line += 1;
+        if current_line == square.pos_y + square.height + 1 { break };
     }
 }
