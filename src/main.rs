@@ -81,7 +81,7 @@ fn main() -> Result<(), Error> {
     // **************************************************** GRAPHICS ENGINE SETUP **********************************************
 
     // Boolean used to play boot animation once.
-    let mut booting = true;
+    let mut booting = false;
 
     // The variables passed to the app.update(...) that is in focus
     // or to the shell if no other app is running.

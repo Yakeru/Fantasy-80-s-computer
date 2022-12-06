@@ -465,17 +465,28 @@ pub fn draw_circle(circle: Circle, frame: &mut [u8]) {
         b = index;
         a = (((circle.r * circle.r) - (b * b)) as f64).sqrt();
 
-        let point = frame_coord_to_index(circle.x + b as usize, circle.y + a.round() as usize);
-        if point.is_some() {frame[point.unwrap()] = circle.color};
+        let point1 = (circle.x + b, circle.y + a.round() as usize);
+        let point2 = (circle.x + b, circle.y - a.round() as usize);
+        let point3 = (circle.x - b, circle.y + a.round() as usize);
+        let point4 = (circle.x - b, circle.y - a.round() as usize);
 
-        let point = frame_coord_to_index(circle.x + b as usize, circle.y - a.round() as usize);
-        if point.is_some() {frame[point.unwrap()] = circle.color};
-
-        let point = frame_coord_to_index(circle.x - b as usize, circle.y + a.round() as usize);
-        if point.is_some() {frame[point.unwrap()] = circle.color};
-
-        let point = frame_coord_to_index(circle.x - b as usize, circle.y - a.round() as usize);
-        if point.is_some() {frame[point.unwrap()] = circle.color};
+        if !circle.fill {
+            let point = frame_coord_to_index(point1.0, point1.1);
+            if point.is_some() {frame[point.unwrap()] = circle.color};
+    
+            let point = frame_coord_to_index(point2.0, point2.1);
+            if point.is_some() {frame[point.unwrap()] = circle.color};
+    
+            let point = frame_coord_to_index(point3.0, point4.1);
+            if point.is_some() {frame[point.unwrap()] = circle.color};
+    
+            let point = frame_coord_to_index(point4.0, point4.1);
+            if point.is_some() {frame[point.unwrap()] = circle.color};
+        } else {
+            draw_a_line(point1.0, point1.1, point3.0, point3.1, circle.color, frame);
+            draw_a_line(point2.0, point2.1, point4.0, point4.1, circle.color, frame);
+        }
+        
     }
 
     let mut b: f64 = 0.0;
@@ -485,17 +496,27 @@ pub fn draw_circle(circle: Circle, frame: &mut [u8]) {
         a = index;
         b = (((circle.r * circle.r) - (a * a)) as f64).sqrt();
 
-        let point = frame_coord_to_index(circle.x + b.round() as usize, circle.y + a as usize);
-        if point.is_some() {frame[point.unwrap()] = circle.color};
+        let point1 = (circle.x + b.round() as usize, circle.y + a);
+        let point2 = (circle.x + b.round() as usize, circle.y - a);
+        let point3 = (circle.x - b.round() as usize, circle.y + a);
+        let point4 = (circle.x - b.round() as usize, circle.y - a);
+        
+        if !circle.fill {
+            let point = frame_coord_to_index(point1.0, point1.1);
+            if point.is_some() {frame[point.unwrap()] = circle.color};
 
-        let point = frame_coord_to_index(circle.x + b.round() as usize, circle.y - a as usize);
-        if point.is_some() {frame[point.unwrap()] = circle.color};
+            let point = frame_coord_to_index(point2.0, point2.1);
+            if point.is_some() {frame[point.unwrap()] = circle.color};
 
-        let point = frame_coord_to_index(circle.x - b.round() as usize, circle.y + a as usize);
-        if point.is_some() {frame[point.unwrap()] = circle.color};
+            let point = frame_coord_to_index(point3.0, point4.1);
+            if point.is_some() {frame[point.unwrap()] = circle.color};
 
-        let point = frame_coord_to_index(circle.x - b.round() as usize, circle.y - a as usize);
-        if point.is_some() {frame[point.unwrap()] = circle.color};
+            let point = frame_coord_to_index(point4.0, point4.1);
+            if point.is_some() {frame[point.unwrap()] = circle.color};
+        } else {
+            draw_a_line(point1.0, point1.1, point3.0, point3.1, circle.color, frame);
+            draw_a_line(point2.0, point2.1, point4.0, point4.1, circle.color, frame);
+        }
     }
 }
 

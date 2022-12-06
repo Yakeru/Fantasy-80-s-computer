@@ -4,10 +4,9 @@ use app_macro_derive::AppMacro;
 
 use winit::{
     event::{KeyboardInput, VirtualKeyCode, ElementState},
-    event_loop::ControlFlow,
 };
 
-use virtual_frame_buffer::{*, color_palettes::{DARK_GREY, WHITE}};
+use virtual_frame_buffer::{*, color_palettes::*};
 use openweathermap::{Receiver, CurrentWeather};
 use std::time::{Duration, Instant};
 
@@ -53,7 +52,7 @@ impl WeatherApp {
             started: false,
             ended: false,
             receiver: openweathermap::init("45.4874487,-73.5745913", "metric", "fr", key, 1),
-            update_appinterval: Duration::from_secs(60),
+            update_appinterval: Duration::from_secs(5),
             last_update: Instant::now().checked_add(Duration::from_secs(55)).unwrap(),
             current_weather: None,
             first_time: true
@@ -69,7 +68,10 @@ impl WeatherApp {
         let response = AppResponse::new();
 
         if Instant::now().duration_since(self.last_update) >= self.update_appinterval || self.first_time {
-            self.current_weather = openweathermap::update(&self.receiver);
+            let last_update = openweathermap::update(&self.receiver);
+            if last_update.is_some() {
+                self.current_weather = last_update;
+            }
             self.last_update = Instant::now();
             self.first_time = false;
         }
@@ -111,6 +113,21 @@ impl WeatherApp {
         virtual_frame_buffer.get_text_layer_mut().clear();
         virtual_frame_buffer.clear_frame_buffer(DARK_GREY);
         virtual_frame_buffer.get_console_mut().display = false;
+
+        let x: usize = 100;
+        let y: usize = 150;
+        let r: usize = 50;
+
+        draw_a_circle(x+1, y-1, r, WHITE, true, virtual_frame_buffer.get_frame_mut());
+        draw_a_circle(x-1, y+1, r, BLACK, true, virtual_frame_buffer.get_frame_mut());
+        draw_a_circle(x, y, r, YELLOW, true, virtual_frame_buffer.get_frame_mut());
+        draw_a_circle(x+1, y-1, r-10, BLACK, true, virtual_frame_buffer.get_frame_mut());
+        draw_a_circle(x-1, y+1, r-10, WHITE, true, virtual_frame_buffer.get_frame_mut());
+        draw_a_circle(x, y, r-10, LIGHT_GREY, true, virtual_frame_buffer.get_frame_mut());
+        draw_a_line(x, y, x, y-r+14, RED, virtual_frame_buffer.get_frame_mut());
+        draw_a_line(x+1, y-r+15, x+1, y-r+17, RED, virtual_frame_buffer.get_frame_mut());
+        draw_a_line(x-1, y-r+15, x-1, y-r+17, RED, virtual_frame_buffer.get_frame_mut());
+        draw_a_circle(x, y, 4, RED, true, virtual_frame_buffer.get_frame_mut());
         
         match &self.current_weather {
             Some(result) => match result {
