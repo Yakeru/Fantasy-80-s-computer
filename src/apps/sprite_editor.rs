@@ -139,8 +139,8 @@ impl SpriteEditor {
             SPRITE_SIZE.height * EDITOR_PIXEL_SIZE.height + SPRITE_SIZE.height + 3;
         
         let bkg_square: Square = Square {
-            pos_x: 20,
-            pos_y: 20,
+            x: 20,
+            y: 20,
             width: bkg_square_width,
             height: bkg_square_height,
             color: 5,
@@ -152,12 +152,12 @@ impl SpriteEditor {
         //Pixels
         for row in 0..SPRITE_SIZE.height {
             for column in 0..SPRITE_SIZE.width {
-                let pos_x: usize = column * EDITOR_PIXEL_SIZE.width + column + bkg_square.pos_x + 2;
-                let pos_y: usize = row * EDITOR_PIXEL_SIZE.height + row + bkg_square.pos_y + 2;
+                let x: usize = column * EDITOR_PIXEL_SIZE.width + column + bkg_square.x + 2;
+                let y: usize = row * EDITOR_PIXEL_SIZE.height + row + bkg_square.y + 2;
 
                 let pixel_square: Square = Square {
-                    pos_x,
-                    pos_y,
+                    x,
+                    y,
                     width: EDITOR_PIXEL_SIZE.width,
                     height: EDITOR_PIXEL_SIZE.height,
                     color: self.pixel_grid[row * SPRITE_SIZE.width + column],
@@ -169,8 +169,8 @@ impl SpriteEditor {
                 //Highlight pixel if selected
                 if self.selected_pixel_x == column && self.selected_pixel_y == row {
                     let highlight_square: Square = Square {
-                        pos_x: pos_x - 1,
-                        pos_y: pos_y - 1,
+                        x: x - 1,
+                        y: y - 1,
                         width: EDITOR_PIXEL_HIGHLIGHT_SIZE.width,
                         height: EDITOR_PIXEL_HIGHLIGHT_SIZE.height,
                         color: 7,

@@ -52,7 +52,7 @@ impl Squares {
         }
 
         let now = Instant::now();
-        if now.duration_since(self.last_update).as_millis() >= 250 {
+        if now.duration_since(self.last_update).as_millis() >= 500 {
             self.draw_square = true;
             self.last_update = Instant::now();
         }
@@ -61,8 +61,6 @@ impl Squares {
     }
 
     pub fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-        //virtual_frame_buffer.get_text_layer().clear();
-        //virtual_frame_buffer.get_text_layer().show_cursor = false;
         virtual_frame_buffer.get_console_mut().display = false;
         virtual_frame_buffer.get_text_layer_mut().clear();
 
@@ -70,28 +68,18 @@ impl Squares {
 
             let mut random = rand::thread_rng();
 
-            let pos_x: usize = random.gen_range(0..VIRTUAL_WIDTH);
-            let pos_y: usize = random.gen_range(0..VIRTUAL_HEIGHT);
-            let width: usize = random.gen_range(0..(VIRTUAL_WIDTH - pos_x));
-            let height: usize = random.gen_range(0..(VIRTUAL_HEIGHT - pos_y));
+            let x: usize = random.gen_range(0..VIRTUAL_WIDTH);
+            let y: usize = random.gen_range(0..VIRTUAL_HEIGHT);
+            let width: usize = random.gen_range(0..(VIRTUAL_WIDTH - x));
+            let height: usize = random.gen_range(0..(VIRTUAL_HEIGHT - y));
             let color: u8 = random.gen_range(0..32);
             let fill = if random.gen_range(0..2) == 0 {
                 true
             } else {
                 false
             };
-            //if color >= 2 {color = 28} else {color = 0};
 
-            let square: Square = Square {
-                pos_x,
-                pos_y,
-                width,
-                height,
-                fill,
-                color,
-            };
-
-            draw_square(square, virtual_frame_buffer.get_frame_mut());
+            draw_a_square(x, y, width, height, color, fill, virtual_frame_buffer.get_frame_mut());
             self.draw_square = false;
         }
     }

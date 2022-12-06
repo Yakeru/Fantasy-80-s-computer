@@ -1,4 +1,4 @@
-use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}, text_layer_char::TextLayerChar, crt_renderer::CrtEffectRenderer};
+use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}, text_layer_char::TextLayerChar, crt_renderer::CrtEffectRenderer, config::{VIRTUAL_WIDTH, VIRTUAL_HEIGHT}};
 use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
@@ -81,7 +81,7 @@ fn main() -> Result<(), Error> {
     // **************************************************** GRAPHICS ENGINE SETUP **********************************************
 
     // Boolean used to play boot animation once.
-    let mut booting = false;
+    let mut booting = true;
 
     // The variables passed to the app.update(...) that is in focus
     // or to the shell if no other app is running.
@@ -132,8 +132,7 @@ fn main() -> Result<(), Error> {
     app_list.push(lines);
 
     // SQUARES DEMO
-    let mut squares = Box::new(Squares::new());
-    squares.set_state(true, true);
+    let squares = Box::new(Squares::new());
     app_list.push(squares);
 
     // TEXT EDITOR
@@ -148,7 +147,7 @@ fn main() -> Result<(), Error> {
     let weather_app = Box::new(WeatherApp::new());
     app_list.push(weather_app);
 
-    // CONWAY'S GAME OF LIFE
+    // CONWAY'S GAME OF LIFE, TEXT MODE
     let life = Box::new(Life::new());
     app_list.push(life);
     

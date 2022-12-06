@@ -153,7 +153,7 @@ impl Shell {
                     unicode::BACKSPACE => {
                         if !self.command.is_empty() {
                             self.command.pop();
-                            virtual_frame_buffer.get_console_mut().pop_char();
+                            virtual_frame_buffer.get_console_mut().push_char(unicode);
                         }
                     },
 

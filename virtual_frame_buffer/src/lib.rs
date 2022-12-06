@@ -1,4 +1,4 @@
-use std::ops::Range;
+use std::{ops::Range, f64::consts::PI};
 
 use characters_rom::{rom, CHARACTER_WIDTH, CHARACTER_HEIGHT};
 use color_palettes::*;
@@ -39,8 +39,8 @@ pub struct VirtualFrameBuffer {
 
 #[derive(Copy, Clone)]
 pub struct Square {
-    pub pos_x: usize,
-    pub pos_y: usize,
+    pub x: usize,
+    pub y: usize,
     pub width: usize,
     pub height: usize,
     pub color: u8,
@@ -49,11 +49,20 @@ pub struct Square {
 
 #[derive(Copy, Clone)]
 pub struct Line {
-    pub start_x: usize,
-    pub start_y: usize,
-    pub end_x: usize,
-    pub end_y: usize,
+    pub x1: usize,
+    pub y1: usize,
+    pub x2: usize,
+    pub y2: usize,
+    pub color: u8
+}
+
+#[derive(Copy, Clone)]
+pub struct Circle {
+    pub x: usize,
+    pub y: usize,
+    pub r: usize,
     pub color: u8,
+    pub fill: bool
 }
 
 impl VirtualFrameBuffer {
@@ -110,14 +119,20 @@ impl VirtualFrameBuffer {
         &self.frame
     }
 
-    pub fn get_pixel(&mut self, x: usize, y: usize) -> u8 {
+    pub fn get_pixel(&mut self, x: usize, y: usize) -> Option<u8> {
         let index = frame_coord_to_index(x, y);
-        self.frame[index]
+        if index.is_some() {
+            return Some(self.frame[index.unwrap()])
+        } else {
+            None
+        }
     }
 
     pub fn set_pixel(&mut self, x: usize, y: usize, color: u8) {
         let index = frame_coord_to_index(x, y);
-        self.frame[index] = color
+        if index.is_some() {
+            self.frame[index.unwrap()] = color
+        }
     }
 
     pub fn get_line_scroll_list(&mut self) -> &mut Box<[i8]> {
@@ -195,10 +210,16 @@ impl VirtualFrameBuffer {
     }
 }
 
-pub const fn frame_coord_to_index(x: usize, y: usize) -> usize {
-    let safe_x = x % VIRTUAL_WIDTH;
-    let safe_y = y % VIRTUAL_HEIGHT;
-    safe_y * VIRTUAL_WIDTH + safe_x
+pub const fn frame_coord_to_index(x: usize, y: usize) -> Option<usize> {
+    // let safe_x = x % VIRTUAL_WIDTH;
+    // let safe_y = y % VIRTUAL_HEIGHT;
+    // safe_y * VIRTUAL_WIDTH + safe_x
+
+    if x < VIRTUAL_WIDTH && y < VIRTUAL_HEIGHT {
+        Some(y * VIRTUAL_WIDTH + x)
+    } else {
+        None
+    }
 }
 
 fn apply_line_scroll_effect(line_scroll_list: &[i8], frame: &mut [u8]) {
@@ -228,19 +249,21 @@ fn sprite_layer_renderer(sprites: &Vec<Sprite>, frame: &mut [u8]) {
 
         let global_offset = frame_coord_to_index(sprite.pos_x, sprite.pos_y);
 
-        for pixel in &sprite.image {
-            let virtual_fb_offset =
-                (global_offset + VIRTUAL_WIDTH * sprite_line_count + pixel_count)
-                    % (VIRTUAL_WIDTH * VIRTUAL_HEIGHT);
-
-            if *pixel != 0 {
-                frame[virtual_fb_offset] = *pixel;
-            }
-
-            pixel_count += 1;
-            if pixel_count == sprite.value_in_physical_size().0 {
-                pixel_count = 0;
-                sprite_line_count += 1;
+        if global_offset.is_some() {
+            for pixel in &sprite.image {
+                let virtual_fb_offset =
+                    (global_offset.unwrap() + VIRTUAL_WIDTH * sprite_line_count + pixel_count)
+                        % (VIRTUAL_WIDTH * VIRTUAL_HEIGHT);
+    
+                if *pixel != 0 {
+                    frame[virtual_fb_offset] = *pixel;
+                }
+    
+                pixel_count += 1;
+                if pixel_count == sprite.value_in_physical_size().0 {
+                    pixel_count = 0;
+                    sprite_line_count += 1;
+                }
             }
         }
     }
@@ -350,19 +373,22 @@ fn text_layer_char_renderer(text_layer_char: &TextLayerChar, frame_x_pos: usize,
 }
 
 pub fn draw_line(line: Line, frame: &mut [u8]) {
-    let dx: isize = (line.end_x as isize - line.start_x as isize).abs();
-    let dy: isize = -(line.end_y as isize - line.start_y as isize).abs();
-    let sx: isize = if line.start_x < line.end_x { 1 } else { -1 };
-    let sy: isize = if line.start_y < line.end_y { 1 } else { -1 };
+    let dx: isize = (line.x2 as isize - line.x1 as isize).abs();
+    let dy: isize = -(line.y2 as isize - line.y1 as isize).abs();
+    let sx: isize = if line.x1 < line.x2 { 1 } else { -1 };
+    let sy: isize = if line.y1 < line.y2 { 1 } else { -1 };
     let mut error = dx + dy;
 
-    let mut x0 = line.start_x as isize;
-    let mut y0 = line.start_y as isize;
-    let x1 = line.end_x as isize;
-    let y1 = line.end_y as isize;
+    let mut x0 = line.x1 as isize;
+    let mut y0 = line.y1 as isize;
+    let x1 = line.x2 as isize;
+    let y1 = line.y2 as isize;
 
     loop {
-        frame[frame_coord_to_index(x0 as usize, y0 as usize)] = line.color;
+        let index = frame_coord_to_index(x0 as usize, y0 as usize);
+        if index.is_some() {
+            frame[index.unwrap()] = line.color;
+        }
 
         if x0 == x1 && y0 == y1 {
             break;
@@ -387,37 +413,93 @@ pub fn draw_line(line: Line, frame: &mut [u8]) {
     }
 }
 
+pub fn draw_a_line(x1: usize, y1: usize, x2: usize, y2: usize, color: u8, frame: &mut [u8]) {
+    let line: Line = Line { x1, y1, x2, y2, color };
+    draw_line(line, frame);
+}
+
 pub fn draw_square(square: Square, frame: &mut [u8]) {
     let mut current_line: usize = 0;
-    let line_range: Range<usize> = square.pos_y..(square.pos_y + square.height + 1);
+    let line_range: Range<usize> = square.y..(square.y + square.height + 1);
 
     for virtual_frame_row in frame.chunks_exact_mut(VIRTUAL_WIDTH) { // TODO use advance_by once it's stable
         if line_range.contains(&current_line) {
-            if current_line == square.pos_y || current_line == square.pos_y + square.height {
-                for pixel_index in square.pos_x..(square.pos_x + square.width + 1) {
+            if current_line == square.y || current_line == square.y + square.height {
+                for pixel_index in square.x..(square.x + square.width + 1) {
                     if pixel_index < VIRTUAL_WIDTH {
                         virtual_frame_row[pixel_index] = square.color;
                     }
                 }
             } else {
                 if square.fill {
-                    for pixel_index in square.pos_x..(square.pos_x + square.width + 1) {
+                    for pixel_index in square.x..(square.x + square.width + 1) {
                         if pixel_index < VIRTUAL_WIDTH {
                             virtual_frame_row[pixel_index] = square.color;
                         }
                     }
                 } else {
-                    if square.pos_x < VIRTUAL_WIDTH {
-                        virtual_frame_row[square.pos_x] = square.color;
+                    if square.x < VIRTUAL_WIDTH {
+                        virtual_frame_row[square.x] = square.color;
                     }
 
-                    if square.pos_x + square.width < VIRTUAL_WIDTH {
-                        virtual_frame_row[square.pos_x + square.width] = square.color;
+                    if square.x + square.width < VIRTUAL_WIDTH {
+                        virtual_frame_row[square.x + square.width] = square.color;
                     }
                 }
             }
         }
         current_line += 1;
-        if current_line == square.pos_y + square.height + 1 { break };
+        if current_line == square.y + square.height + 1 { break };
     }
+}
+
+pub fn draw_a_square(x: usize, y: usize, width: usize, height: usize, color: u8, fill: bool, frame: &mut [u8]) {
+    let square: Square = Square { x, y, width, height, color, fill };
+    draw_square(square, frame);  
+}
+
+pub fn draw_circle(circle: Circle, frame: &mut [u8]) {
+    let mut a: f64 = 0.0;
+    let mut b = 0;
+    for index in 0..(circle.r * 3/4  + 1) {
+        b = index;
+        a = (((circle.r * circle.r) - (b * b)) as f64).sqrt();
+
+        let point = frame_coord_to_index(circle.x + b as usize, circle.y + a.round() as usize);
+        if point.is_some() {frame[point.unwrap()] = circle.color};
+
+        let point = frame_coord_to_index(circle.x + b as usize, circle.y - a.round() as usize);
+        if point.is_some() {frame[point.unwrap()] = circle.color};
+
+        let point = frame_coord_to_index(circle.x - b as usize, circle.y + a.round() as usize);
+        if point.is_some() {frame[point.unwrap()] = circle.color};
+
+        let point = frame_coord_to_index(circle.x - b as usize, circle.y - a.round() as usize);
+        if point.is_some() {frame[point.unwrap()] = circle.color};
+    }
+
+    let mut b: f64 = 0.0;
+    let mut a = 0;
+
+    for index in 0..(circle.r * 3/4 + 1) {
+        a = index;
+        b = (((circle.r * circle.r) - (a * a)) as f64).sqrt();
+
+        let point = frame_coord_to_index(circle.x + b.round() as usize, circle.y + a as usize);
+        if point.is_some() {frame[point.unwrap()] = circle.color};
+
+        let point = frame_coord_to_index(circle.x + b.round() as usize, circle.y - a as usize);
+        if point.is_some() {frame[point.unwrap()] = circle.color};
+
+        let point = frame_coord_to_index(circle.x - b.round() as usize, circle.y + a as usize);
+        if point.is_some() {frame[point.unwrap()] = circle.color};
+
+        let point = frame_coord_to_index(circle.x - b.round() as usize, circle.y - a as usize);
+        if point.is_some() {frame[point.unwrap()] = circle.color};
+    }
+}
+
+pub fn draw_a_circle(x: usize, y: usize, r: usize, color: u8, fill: bool, frame: &mut [u8]) {
+    let circle: Circle = Circle { x, y, r, color, fill };
+    draw_circle(circle, frame);
 }

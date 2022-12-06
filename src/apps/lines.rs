@@ -72,18 +72,18 @@ impl Lines {
         let mut random = rand::thread_rng();
 
         if self.draw_line {
-            let start_x: usize = random.gen_range(0..max_x);
-            let start_y: usize = random.gen_range(0..max_y);
-            let end_x: usize = random.gen_range(0..max_x);
-            let end_y: usize = random.gen_range(0..max_y);
+            let x1: usize = random.gen_range(0..max_x);
+            let y1: usize = random.gen_range(0..max_y);
+            let x2: usize = random.gen_range(0..max_x);
+            let y2: usize = random.gen_range(0..max_y);
             let color: u8 = random.gen_range(0..32);
             //if color >= 2 {color = 28} else {color = 0};
 
             let line: Line = Line {
-                start_x,
-                start_y,
-                end_x,
-                end_y,
+                x1,
+                y1,
+                x2,
+                y2,
                 color,
             };
             draw_line(line, virtual_frame_buffer.get_frame_mut());
