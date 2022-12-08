@@ -95,6 +95,10 @@ impl VirtualFrameBuffer {
         (self.second_tick, self.half_second_tick, self.half_second_latch)
     }
 
+    pub fn get_frame_counter(&self) -> usize {
+        self.frame_counter
+    }
+
     pub fn get_window_size(&self) -> (usize, usize) {
         (WIDTH, HEIGHT)
     }
@@ -416,6 +420,34 @@ pub fn draw_line(line: Line, frame: &mut [u8]) {
 pub fn draw_a_line(x1: usize, y1: usize, x2: usize, y2: usize, color: u8, frame: &mut [u8]) {
     let line: Line = Line { x1, y1, x2, y2, color };
     draw_line(line, frame);
+}
+
+pub fn draw_a_line_differently(x: usize, y: usize, l: usize, color: u8, a:f32, frame: &mut [u8]) {
+
+    let x1 = x;
+    let y1 = y;
+
+    let x_move = a.cos() * l as f32;
+    let y_move = a.sin() * l as f32;
+
+    let mut x2: usize = 0;
+    
+    if x_move < 0.0 {
+        x2 = x1 - (-x_move).round() as usize;
+    } else {
+        x2 = x1 + x_move.round() as usize;
+    }
+
+    let mut y2 = 0;
+   
+    if y_move < 0.0 {
+        y2 = y1 - (-y_move).round() as usize;
+    } else {
+        y2 = y1 + y_move.round() as usize;
+    }
+
+    draw_a_line(x1, y1, x2, y2, color, frame);
+
 }
 
 pub fn draw_square(square: Square, frame: &mut [u8]) {

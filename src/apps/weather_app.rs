@@ -8,7 +8,7 @@ use winit::{
 
 use virtual_frame_buffer::{*, color_palettes::*};
 use openweathermap::{Receiver, CurrentWeather};
-use std::time::{Duration, Instant};
+use std::{time::{Duration, Instant}, f32::consts::PI};
 
 const DEFAULT_BKG_COLOR: u8 = 7;
 
@@ -24,7 +24,8 @@ pub struct WeatherApp {
     update_appinterval: Duration,
     last_update: Instant,
     current_weather: Option<Result<CurrentWeather, String>>,
-    first_time: bool
+    first_time: bool,
+    angle: f32
 }
 
 impl WeatherApp {
@@ -55,7 +56,8 @@ impl WeatherApp {
             update_appinterval: Duration::from_secs(5),
             last_update: Instant::now().checked_add(Duration::from_secs(55)).unwrap(),
             current_weather: None,
-            first_time: true
+            first_time: true,
+            angle: -PI
         }
     }
 
@@ -106,6 +108,14 @@ impl WeatherApp {
             None => (),
         }
 
+        
+            self.angle += 0.001;
+
+            if self.angle > PI {
+                self.angle = -PI
+            }
+        
+
         return Some(response);
     }
 
@@ -128,6 +138,8 @@ impl WeatherApp {
         draw_a_line(x+1, y-r+15, x+1, y-r+17, RED, virtual_frame_buffer.get_frame_mut());
         draw_a_line(x-1, y-r+15, x-1, y-r+17, RED, virtual_frame_buffer.get_frame_mut());
         draw_a_circle(x, y, 4, RED, true, virtual_frame_buffer.get_frame_mut());
+
+        draw_a_line_differently(x, y, 30, RED, self.angle, virtual_frame_buffer.get_frame_mut());
         
         match &self.current_weather {
             Some(result) => match result {
