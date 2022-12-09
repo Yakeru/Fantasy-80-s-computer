@@ -2,14 +2,11 @@ use virtual_frame_buffer::*;
 use app_macro::*;
 use app_macro_derive::AppMacro;
 use rand::Rng;
-use winit::{
-    event::{KeyboardInput, VirtualKeyCode, ElementState},
-    event_loop::ControlFlow,
-};
+use winit::event::{VirtualKeyCode, ElementState};
 
 #[derive(AppMacro)]
 pub struct Lines {
-    is_shell: bool,
+    enable_auto_escape: bool,
     name: String,
     updating: bool,
     drawing: bool,
@@ -22,7 +19,7 @@ pub struct Lines {
 impl Lines {
     pub fn new() -> Lines {
         Lines {
-            is_shell: false,
+            enable_auto_escape: true,
             name: String::from("lines"),
             updating: false,
             drawing: false,
@@ -35,14 +32,13 @@ impl Lines {
 
     pub fn update_app(
         &mut self,
-        keybord_input: Option<KeyboardInput>,
-        char_received: Option<char>,
+        app_message: AppMessage,
         virtual_frame_buffer: &mut VirtualFrameBuffer
     ) -> Option<AppResponse> {
         
         virtual_frame_buffer.get_console_mut().display = false;
 
-        match char_received {
+        match app_message.char_received {
             Some(unicode) => {
                 match unicode {
                     // unicode::ENTER => {

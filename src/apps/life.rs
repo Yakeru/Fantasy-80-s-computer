@@ -1,14 +1,14 @@
 use std::{time::Instant, ops::ControlFlow};
 
-use app_macro::{AppMacro, AppResponse};
+use app_macro::{AppMacro, AppResponse, AppMessage};
 use app_macro_derive::AppMacro;
 use rand::Rng;
 use virtual_frame_buffer::{VirtualFrameBuffer, config::{TEXT_COLUMNS, TEXT_ROWS}, color_palettes::*};
-use winit::event::{KeyboardInput, VirtualKeyCode, ElementState};
+use winit::event::{VirtualKeyCode, ElementState};
 
 #[derive(AppMacro)]
 pub struct Life {
-    is_shell: bool,
+    enable_auto_escape: bool,
     name: String,
     updating: bool,
     drawing: bool,
@@ -24,7 +24,7 @@ pub struct Life {
 impl Life {
     pub fn new() -> Life {
         Life {
-            is_shell: false,
+            enable_auto_escape: true,
             name: String::from("life"),
             updating: false,
             drawing: false,
@@ -40,8 +40,7 @@ impl Life {
 
     pub fn update_app(
         &mut self,
-        keybord_input: Option<KeyboardInput>,
-        char_received: Option<char>,
+        app_message: AppMessage,
         virtual_frame_buffer: &mut VirtualFrameBuffer
     ) -> Option<AppResponse> {
 
@@ -61,7 +60,7 @@ impl Life {
         // }
         
         // Clear and re-start if 'c' is pressed
-        match char_received {
+        match app_message.char_received {
             Some(char) => {
                 if char == 'c' {
                     self.init = true;

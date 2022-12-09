@@ -2,17 +2,14 @@ use app_macro::*;
 use app_macro_derive::AppMacro;
 use crate::unicode;
 use virtual_frame_buffer::*;
-use winit::{
-    event::{ElementState, KeyboardInput, VirtualKeyCode},
-    event_loop::ControlFlow,
-};
+use winit::event::{ElementState, VirtualKeyCode};
 
 const DEFAULT_BKG_COLOR: u8 = 7;
 const DEFAULT_COLOR: u8 = 0;
 
 #[derive(AppMacro)]
 pub struct TextEdit {
-    is_shell: bool,
+    enable_auto_escape: bool,
     name: String,
     selected_color: u8,
     selected_bkg_color: u8,
@@ -28,7 +25,7 @@ impl TextEdit {
         let buffer = Vec::new();
 
         TextEdit {
-            is_shell: false,
+            enable_auto_escape: true,
             name: String::from("textEdit"),
             selected_color: DEFAULT_COLOR,
             selected_bkg_color: DEFAULT_BKG_COLOR,
@@ -42,13 +39,12 @@ impl TextEdit {
 
     pub fn update_app(
         &mut self,
-        keybord_input: Option<KeyboardInput>,
-        char_received: Option<char>,
+        app_message: AppMessage,
         virtual_frame_buffer: &mut VirtualFrameBuffer
     ) -> Option<AppResponse> {
         let mut response = AppResponse::new();
 
-        match char_received {
+        match app_message.char_received {
             Some(c) => match c {
                 unicode::BACKSPACE => {
                     self.buffer.pop();
@@ -66,7 +62,7 @@ impl TextEdit {
             None => (),
         }
 
-        match keybord_input {
+        match app_message.keyboard_input {
             Some(k) => {
                 if k.state == ElementState::Pressed {
                     match k.virtual_keycode {

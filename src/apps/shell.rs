@@ -7,7 +7,7 @@ use virtual_frame_buffer::config::{TEXT_COLUMNS, TEXT_ROWS};
 use virtual_frame_buffer::text_layer_char::TextLayerChar;
 
 use winit::{
-    event::{KeyboardInput, VirtualKeyCode, ElementState},
+    event::{VirtualKeyCode, ElementState},
     event_loop::ControlFlow,
 };
 
@@ -19,7 +19,7 @@ const DEFAULT_COLOR: u8 = YELLOW;
 
 #[derive(AppMacro)]
 pub struct Shell {
-    is_shell: bool,
+    enable_auto_escape: bool,
     name: String,
     color: u8,
     bkg_color: u8,
@@ -54,7 +54,7 @@ impl Shell {
         let command_history: Vec<String> = Vec::new();
 
         Shell {
-            is_shell: true,
+            enable_auto_escape: false,
             name: String::from("shell"),
             color: DEFAULT_COLOR,
             bkg_color: DEFAULT_BKG_COLOR,
@@ -120,12 +120,11 @@ impl Shell {
 
     pub fn update_app(
         &mut self,
-        keybord_input: Option<KeyboardInput>,
-        char_received: Option<char>,
+        app_message: AppMessage,
         virtual_frame_buffer: &mut VirtualFrameBuffer
     ) -> Option<AppResponse> {
 
-        self.last_character_received = char_received;
+        self.last_character_received = app_message.char_received;
 
         virtual_frame_buffer.get_console_mut().display = true;
 
@@ -189,7 +188,7 @@ impl Shell {
             None => (),
         }
 
-        match keybord_input {
+        match app_message.keyboard_input {
             Some(k) => {
                 match k.virtual_keycode {
                     Some(code) => {

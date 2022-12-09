@@ -2,9 +2,7 @@ use crate::unicode;
 use app_macro::*;
 use app_macro_derive::AppMacro;
 
-use winit::{
-    event::{KeyboardInput, VirtualKeyCode, ElementState},
-};
+use winit::event::{VirtualKeyCode, ElementState};
 
 use virtual_frame_buffer::{*, color_palettes::*};
 use openweathermap::{Receiver, CurrentWeather};
@@ -14,7 +12,7 @@ const DEFAULT_BKG_COLOR: u8 = 7;
 
 #[derive(AppMacro)]
 pub struct WeatherApp {
-    is_shell: bool,
+    enable_auto_escape: bool,
     name: String,
     updating: bool,
     drawing: bool,
@@ -46,7 +44,7 @@ impl WeatherApp {
         }
 
         WeatherApp {
-            is_shell: false,
+            enable_auto_escape: true,
             name: String::from("weather"),
             updating: false,
             drawing: false,
@@ -63,8 +61,7 @@ impl WeatherApp {
 
     fn update_app(
         &mut self,
-        keybord_input: Option<KeyboardInput>,
-        char_received: Option<char>,
+        app_message: AppMessage,
         virtual_frame_buffer: &mut VirtualFrameBuffer
     ) -> Option<AppResponse> {
         let response = AppResponse::new();
@@ -78,12 +75,12 @@ impl WeatherApp {
             self.first_time = false;
         }
 
-        match keybord_input {
+        match app_message.keyboard_input {
             Some(_c) => (),
             None => ()
         }
 
-        match char_received {
+        match app_message.char_received {
             Some(c) => {
                 match c {
                     unicode::BACKSPACE => {
@@ -109,7 +106,7 @@ impl WeatherApp {
         }
 
         
-            self.angle += 0.001;
+            self.angle += 0.01;
 
             if self.angle > PI {
                 self.angle = -PI

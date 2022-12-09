@@ -1,4 +1,5 @@
-use winit::{event::{KeyboardInput, VirtualKeyCode, ElementState}, event_loop::ControlFlow};
+use clock::Clock;
+use winit::{event::KeyboardInput, event_loop::ControlFlow};
 use virtual_frame_buffer::*;
 
 pub trait AppMacro {
@@ -7,7 +8,7 @@ pub trait AppMacro {
     fn get_name(&self) -> &str;
     fn set_state(&mut self, updating: bool, drawing: bool);
     fn get_state(&self) -> (bool, bool);
-    fn update(&mut self, keybord_input: Option<KeyboardInput>, char_received: Option<char>, virtual_frame_buffer: &mut VirtualFrameBuffer) -> Option<AppResponse>;
+    fn update(&mut self, app_message: AppMessage, virtual_frame_buffer: &mut VirtualFrameBuffer) -> Option<AppResponse>;
     fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer);
 }
 
@@ -15,6 +16,14 @@ pub trait AppMacro {
 pub struct AppResponse {
     pub event: Option<ControlFlow>,
     pub message: Option<String>,
+}
+
+#[derive(Clone, Copy)]
+pub struct AppMessage {
+    pub keyboard_input: Option<KeyboardInput>,
+    pub char_received: Option<char>,
+    pub mouse_move_delta: (f64, f64),
+    pub system_clock: Clock
 }
 
 impl AppResponse {

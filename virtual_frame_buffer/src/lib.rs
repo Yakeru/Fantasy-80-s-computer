@@ -1,6 +1,7 @@
-use std::{ops::Range, f64::consts::PI};
+use std::{ops::Range};
 
 use characters_rom::{rom, CHARACTER_WIDTH, CHARACTER_HEIGHT};
+use clock::Clock;
 use color_palettes::*;
 use config::*;
 use console::Console;
@@ -22,7 +23,6 @@ pub mod crt_renderer;
 /// This frame buffer is meant to contain a low resolution low color picure that
 /// will be upscaled into the final pixel 2D frame buffer.
 pub struct VirtualFrameBuffer {
-    frame_time_ms: u128,
     frame: Box<[u8]>,
     color_palette: ColorPalette,
     line_scroll_list: Box<[i8]>,
@@ -31,10 +31,7 @@ pub struct VirtualFrameBuffer {
     console: Console,
     //background_layer
     //tiles_layer
-    frame_counter: usize,
-    second_tick: bool,
-    half_second_tick: bool,
-    half_second_latch: bool,
+    clock: Clock
 }
 
 #[derive(Copy, Clone)]
@@ -66,7 +63,7 @@ pub struct Circle {
 }
 
 impl VirtualFrameBuffer {
-    pub fn new(frame_time_ms: u128) -> VirtualFrameBuffer {
+    pub fn new() -> VirtualFrameBuffer {
         let virtual_frame_buffer: Box<[u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]> =
             Box::new([0; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]);
         let text_layer: TextLayer = TextLayer::new();
@@ -75,7 +72,6 @@ impl VirtualFrameBuffer {
         //TODO init background_layers, tiles_layers, sprites_layers... and correesponding renderes
 
         VirtualFrameBuffer {
-            frame_time_ms,
             frame: virtual_frame_buffer,
             color_palette: ColorPalette::new(),
             line_scroll_list: Box::new([0; VIRTUAL_HEIGHT]),
@@ -84,19 +80,8 @@ impl VirtualFrameBuffer {
                 YELLOW, TRUE_BLUE, TextLayerChar { c: '\u{25AE}', color: YELLOW, bkg_color: TRUE_BLUE, 
                 swap: false, blink: true, shadowed: false }, false, false),
             sprites,
-            frame_counter: 0,
-            second_tick: false,
-            half_second_tick: false,
-            half_second_latch: false,
+            clock: Clock::new()
         }
-    }
-
-    pub fn get_clock(&self) -> (bool, bool, bool) {
-        (self.second_tick, self.half_second_tick, self.half_second_latch)
-    }
-
-    pub fn get_frame_counter(&self) -> usize {
-        self.frame_counter
     }
 
     pub fn get_window_size(&self) -> (usize, usize) {
@@ -188,29 +173,14 @@ impl VirtualFrameBuffer {
     }
 
     pub fn render(&mut self) {
-        self.second_tick = false;
-        self.half_second_tick = false;
-
-        if self.frame_counter == (1000 / self.frame_time_ms as usize) / 2 - 1 {
-            self.half_second_tick = true;
-            self.half_second_latch = !self.half_second_latch;
-        }
-
-        if self.frame_counter == (1000 / self.frame_time_ms as usize) - 1 {
-            self.frame_counter = 0;
-            self.second_tick = true;
-            self.half_second_tick = true;
-            self.half_second_latch = !self.half_second_latch;
-        } else {
-            self.frame_counter += 1;
-        }
-
+        self.clock.update();
         sprite_layer_renderer(&self.sprites, &mut self.frame);
-        text_layer_renderer(&self.text_layer, &mut self.frame, self.half_second_latch);
+        text_layer_renderer(&self.text_layer, &mut self.frame, self.clock.half_second_latch);
         if self.console.display {
-            console_renderer(&self.console, &mut self.frame, self.half_second_latch);
+            console_renderer(&self.console, &mut self.frame, self.clock.half_second_latch);
         }
         apply_line_scroll_effect(&self.line_scroll_list, &mut self.frame);
+        self.clock.count_frame();
     }
 }
 
@@ -430,7 +400,7 @@ pub fn draw_a_line_differently(x: usize, y: usize, l: usize, color: u8, a:f32, f
     let x_move = a.cos() * l as f32;
     let y_move = a.sin() * l as f32;
 
-    let mut x2: usize = 0;
+    let x2: usize;
     
     if x_move < 0.0 {
         x2 = x1 - (-x_move).round() as usize;
@@ -438,7 +408,7 @@ pub fn draw_a_line_differently(x: usize, y: usize, l: usize, color: u8, a:f32, f
         x2 = x1 + x_move.round() as usize;
     }
 
-    let mut y2 = 0;
+    let y2: usize;
    
     if y_move < 0.0 {
         y2 = y1 - (-y_move).round() as usize;
@@ -491,11 +461,9 @@ pub fn draw_a_square(x: usize, y: usize, width: usize, height: usize, color: u8,
 }
 
 pub fn draw_circle(circle: Circle, frame: &mut [u8]) {
-    let mut a: f64 = 0.0;
-    let mut b = 0;
-    for index in 0..(circle.r * 3/4  + 1) {
-        b = index;
-        a = (((circle.r * circle.r) - (b * b)) as f64).sqrt();
+
+    for b in 0..(circle.r * 3/4  + 1) {
+        let a: f64 = (((circle.r * circle.r) - (b * b)) as f64).sqrt();
 
         let point1 = (circle.x + b, circle.y + a.round() as usize);
         let point2 = (circle.x + b, circle.y - a.round() as usize);
@@ -521,12 +489,8 @@ pub fn draw_circle(circle: Circle, frame: &mut [u8]) {
         
     }
 
-    let mut b: f64 = 0.0;
-    let mut a = 0;
-
-    for index in 0..(circle.r * 3/4 + 1) {
-        a = index;
-        b = (((circle.r * circle.r) - (a * a)) as f64).sqrt();
+    for a in 0..(circle.r * 3/4 + 1) {
+        let b: f64 = (((circle.r * circle.r) - (a * a)) as f64).sqrt();
 
         let point1 = (circle.x + b.round() as usize, circle.y + a);
         let point2 = (circle.x + b.round() as usize, circle.y - a);

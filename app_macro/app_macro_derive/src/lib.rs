@@ -49,12 +49,12 @@ fn impl_app_macro(ast: &syn::DeriveInput) -> TokenStream {
                 (self.updating, self.drawing)
             }
 
-            fn update(&mut self, keybord_input: Option<KeyboardInput>, char_received: Option<char>, virtual_frame_buffer: &mut VirtualFrameBuffer) -> Option<AppResponse> {
+            fn update(&mut self, app_message: AppMessage, virtual_frame_buffer: &mut VirtualFrameBuffer) -> Option<AppResponse> {
                 
                 // Implementing default behaviour when ESCAPE key is pressed in app
                 // Ignore for shell
-                if !self.is_shell {
-                    match keybord_input {
+                if self.enable_auto_escape {
+                    match app_message.keyboard_input {
                         Some(key) => {
                             match(key.virtual_keycode) {
                                 Some(keycode) => {
@@ -69,7 +69,7 @@ fn impl_app_macro(ast: &syn::DeriveInput) -> TokenStream {
                     }
                 }
                 
-                return self.update_app(keybord_input, char_received, virtual_frame_buffer);
+                return self.update_app(app_message, virtual_frame_buffer);
             }
             
             fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {

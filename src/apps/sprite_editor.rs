@@ -13,7 +13,7 @@ const EDITOR_PIXEL_HIGHLIGHT_SIZE: PhysicalSize<usize> =
 
 #[derive(AppMacro)]
 pub struct SpriteEditor {
-    is_shell: bool,
+    enable_auto_escape: bool,
     name: String,
     updating: bool,
     drawing: bool,
@@ -28,7 +28,7 @@ pub struct SpriteEditor {
 impl SpriteEditor {
     pub fn new() -> SpriteEditor {
         SpriteEditor {
-            is_shell: false,
+            enable_auto_escape: true,
             name: String::from("spriteEdit"),
             updating: false,
             drawing: false,
@@ -43,13 +43,12 @@ impl SpriteEditor {
 
     pub fn update_app(
         &mut self,
-        keybord_input: Option<KeyboardInput>,
-        char_received: Option<char>,
+        app_message: AppMessage,
         virtual_frame_buffer: &mut VirtualFrameBuffer
     ) -> Option<AppResponse> {
         let mut response = AppResponse::new();
 
-        match char_received {
+        match app_message.char_received {
             Some(c) => {
                 match c {
                     '\u{0008}' => { //Backspace
@@ -67,7 +66,7 @@ impl SpriteEditor {
             None => (),
         }
 
-        match keybord_input {
+        match app_message.keyboard_input {
             Some(k) => {
                 if k.state == ElementState::Pressed {
                     match k.virtual_keycode {

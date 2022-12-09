@@ -5,14 +5,11 @@ use app_macro_derive::AppMacro;
 use virtual_frame_buffer::{*, config::{VIRTUAL_HEIGHT, VIRTUAL_WIDTH}};
 use rand::Rng;
 
-use winit::{
-    event::{KeyboardInput, VirtualKeyCode, ElementState},
-    event_loop::ControlFlow,
-};
+use winit::event::{VirtualKeyCode, ElementState};
 
 #[derive(AppMacro)]
 pub struct Squares {
-    is_shell: bool,
+    enable_auto_escape: bool,
     name: String,
     updating: bool,
     drawing: bool,
@@ -25,7 +22,7 @@ pub struct Squares {
 impl Squares {
     pub fn new() -> Squares {
         Squares {
-            is_shell: false,
+            enable_auto_escape: true,
             name: String::from("squares"),
             updating: false,
             drawing: false,
@@ -38,15 +35,14 @@ impl Squares {
 
     pub fn update_app(
         &mut self,
-        keybord_input: Option<KeyboardInput>,
-        char_received: Option<char>,
+        app_message: AppMessage,
         virtual_frame_buffer: &mut VirtualFrameBuffer
     ) -> Option<AppResponse> {
         let mut response = AppResponse::new();
 
         virtual_frame_buffer.get_console_mut().display = false;
 
-        match char_received {
+        match app_message.char_received {
             Some(_c) => (),
             None => ()
         }

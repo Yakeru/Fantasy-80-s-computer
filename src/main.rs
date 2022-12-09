@@ -1,8 +1,8 @@
-use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}, text_layer_char::TextLayerChar, crt_renderer::CrtEffectRenderer, config::{VIRTUAL_WIDTH, VIRTUAL_HEIGHT}};
+use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}, text_layer_char::TextLayerChar, crt_renderer::CrtEffectRenderer};
 use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
-use std::time::Instant;
+use std::time::Duration;
 use winit::{
     dpi::{PhysicalSize, Position, PhysicalPosition},
     event::{DeviceEvent, ElementState, Event, KeyboardInput, WindowEvent, VirtualKeyCode},
@@ -11,6 +11,7 @@ use winit::{
 };
 
 use unicode;
+use clock::Clock;
 
 //Apps
 mod apps;
@@ -23,8 +24,8 @@ use crate::apps::weather_app::*;
 use crate::apps::life::Life;
 
 //Settings
-const FRAME_TIME_MS: u128 = 16; //ms per frame : 16 = 60fps, 32 = 30fps, 1000 = 1fps
-const FRAMES_PER_SEC: u128 = 60;
+//const FRAME_TIME_MS: u128 = 16; //ms per frame : 16 = 60fps, 32 = 30fps, 1000 = 1fps
+//const FRAMES_PER_SEC: u128 = 60;
 
 fn main() -> Result<(), Error> {
 
@@ -73,35 +74,31 @@ fn main() -> Result<(), Error> {
             config::HEIGHT as u32,
             surface_texture,
         )
-        .enable_vsync(false)
+        .enable_vsync(true)
         .build()
         .expect("Pixels : Failed to setup rendering")
     };
 
     // **************************************************** GRAPHICS ENGINE SETUP **********************************************
 
+    // The "system clock"
+    let mut system_clock: Clock = Clock::new();
+
     // Boolean used to play boot animation once.
-    let mut booting = false;
+    let mut booting = true;
 
     // The variables passed to the app.update(...) that is in focus
     // or to the shell if no other app is running.
     let mut keyboard_input: Option<KeyboardInput> = None;
     let mut char_received: Option<char> = None;
     let mut mouse_move_delta: (f64, f64) = (0.0, 0.0);
-    let mut frame_counter:  u128 = 0;
 
-    // Instant used to time the frame refresh rate
-    // Apps are updated and drawn as frequently as possible, independently from that frame_interval
-    // but the graphics engine (virtual_frame_buffer + crt_renderer + pixels) renders
-    // the final on screen picture at this frame interval.
-    let mut frame_interval = Instant::now();
-
-    // My graphics engine
+    // Fantasy CPC graphics engine
     // Offers a text layer, console, sprite layer, background layers and tiles layers that can be accessed
     // by Processes (structs implemeting "process") to build their image.
     // Its render combines all the layers in its frame, applies the crt filter and sends it to
     // pixels to display the final image in the window.
-    let mut virtual_frame_buffer: VirtualFrameBuffer = VirtualFrameBuffer::new(FRAME_TIME_MS);
+    let mut virtual_frame_buffer: VirtualFrameBuffer = VirtualFrameBuffer::new();
 
     // The crt renderer takes the virtual frame buffers's frame, upscales it to match pixel's frame and winit window size,
     // then applies a filter evoking CRT sub-pixels and scanlines.
@@ -161,7 +158,12 @@ fn main() -> Result<(), Error> {
     //It reads the messages returned by the apps and displays them to Console 0.
     event_loop.run(move |event, _, control_flow| {
 
-        *control_flow = ControlFlow::Poll;
+        // let now = Instant::now();
+        // let plop = Duration::from_millis(2);
+        // *control_flow = ControlFlow::WaitUntil(now.checked_add(plop).unwrap());
+        *control_flow = ControlFlow::Poll; //Poll is synchronized with V-Sync
+
+        system_clock.update();
 
         match event {
             Event::WindowEvent { event, .. } => match event {
@@ -210,16 +212,17 @@ fn main() -> Result<(), Error> {
             Event::MainEventsCleared => {
                 // BOOT, play boot animation once before showing the shell or any other app.
                 if booting {
-                    booting = boot_animation(&mut virtual_frame_buffer, &mut crt_renderer, frame_counter);
+                    booting = boot_animation(&mut virtual_frame_buffer, &mut crt_renderer, &system_clock);
                 } else {
                     //Updating apps
                     let mut show_shell: bool = true;
                     let mut app_response: Option<AppResponse> = None;
+                    let app_message: AppMessage = AppMessage { keyboard_input, char_received, mouse_move_delta, system_clock };
                     for app in app_list.chunks_exact_mut(1) {
                         
                         // If app is running and drawing (in focus), call update with keyboard inputs and dont render shell.
                         if app[0].get_state().0 && app[0].get_state().1 {
-                            app_response = app[0].update(keyboard_input, char_received, &mut virtual_frame_buffer);
+                            app_response = app[0].update(app_message, &mut virtual_frame_buffer);
                             app[0].draw(&mut virtual_frame_buffer);
                             show_shell = false;
                         }
@@ -227,13 +230,13 @@ fn main() -> Result<(), Error> {
                         // If app is running but not drawing (running in the background), call update without keyboard inputs.
                         // dont draw.
                         else if app[0].get_state().0 && !app[0].get_state().1 {
-                            app_response = app[0].update(None, None, &mut virtual_frame_buffer);
+                            app_response = app[0].update(app_message, &mut virtual_frame_buffer);
                         }
                     }
 
                     // If no app is in focus, run the shell
                     if show_shell {
-                        app_response = shell.update(keyboard_input, char_received, &mut virtual_frame_buffer);
+                        app_response = shell.update(app_message, &mut virtual_frame_buffer);
                         shell.draw(&mut virtual_frame_buffer);
                     }
 
@@ -263,18 +266,13 @@ fn main() -> Result<(), Error> {
                 }
 
                 // Render virtual frame buffer to pixels frame buffer with upscaling and CRT effect
-                if frame_interval.elapsed().as_micros() >= FRAME_TIME_MS * 1000 {
-                    frame_interval = Instant::now();
-                    virtual_frame_buffer.render();
-
-                    // let start = Instant::now();
-                    crt_renderer.render(&mut virtual_frame_buffer, pixels.get_frame_mut());
-                    // println!("Render time: {} micros", start.elapsed().as_micros());
-                    pixels.render().expect("Pixels render oups");
-                    frame_counter = frame_counter + 1;
-                }
-
+                virtual_frame_buffer.render();
+                // let start = Instant::now();
+                crt_renderer.render(&mut virtual_frame_buffer, pixels.get_frame_mut());
+                // println!("Render time: {} micros", start.elapsed().as_micros());
+                pixels.render().expect("Pixels render oups");
                 window.request_redraw();
+                system_clock.count_frame();
 
                 // Reset input buffers for next loop
                 char_received = None;
@@ -328,48 +326,32 @@ fn draw_loading_border(virtual_frame_buffer: &mut VirtualFrameBuffer) {
 }
 
 ///Boot animation
-fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &mut CrtEffectRenderer, frame_counter: u128) -> bool {
+fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &mut CrtEffectRenderer, clock: &Clock) -> bool {
     
     virtual_frame_buffer.get_console_mut().display = false;
 
-    //CRT warm up
-    let br = if frame_counter > 255 {255} else {frame_counter as u8};
-    crt_renderer.set_brightness(br);
+    //CRT warm up, brightness increases from 0 to 255 in 2 seconds
+    let brigthness = if clock.total_running_time >= Duration::new(2, 0) {255} else {(clock.total_running_time.as_millis() * 255 / 2000) as u8};
+    crt_renderer.set_brightness(brigthness);
 
     //Fill text layer with random garbage
-    if frame_counter == 0 {
+    if clock.get_frame_count() == 0 {
         genrate_random_garbage(virtual_frame_buffer);
     }
 
-    //Clear garbage and display char and color test after 2 seconds
-    if frame_counter == FRAMES_PER_SEC * 3 {
-
-        //Clear text layer
+    //Clear garbage and display Loading...
+    if clock.total_running_time >= Duration::new(3, 0) {
         virtual_frame_buffer.get_text_layer_mut().clear();
-
-        //Clear frame buffer
         virtual_frame_buffer.clear_frame_buffer(0);
-
-        //Display all possible colors on first row
-        // for i in 0..32_u8 {
-        //     virtual_frame_buffer.get_text_layer_mut().insert_char(i as usize, ' ', Some(BLACK), Some(i), false, false, false);
-        // }
-
-        //Display all chars starting on second row
-        // let width = virtual_frame_buffer.get_text_layer_size_xy().0;
-        // for i in 0..characters_rom::ROM.len() {
-        //     virtual_frame_buffer.get_text_layer_mut().insert_char(width + i as usize, characters_rom::CHARS[i], Some(WHITE), Some(BLACK), false, false, false);
-        // }
-
         virtual_frame_buffer.get_text_layer_mut().insert_string_xy(0, 0, "Loading..." , Some(WHITE), Some(BLACK), false, false, false);
     }
 
     //Display loading overscan while "loading"
-    if frame_counter >= FRAMES_PER_SEC * 3 && frame_counter <= FRAMES_PER_SEC * 6 {
+    if clock.total_running_time >= Duration::new(3, 0) && clock.total_running_time < Duration::new(6, 0) {
         draw_loading_border(virtual_frame_buffer);
     }
     
-    if frame_counter >= 6 * FRAMES_PER_SEC {
+    if clock.total_running_time >= Duration::new(6, 0) {
         virtual_frame_buffer.get_text_layer_mut().clear();
         virtual_frame_buffer.clear_frame_buffer(0);
         return false;
