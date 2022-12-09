@@ -3,8 +3,6 @@ use winit::{event::KeyboardInput, event_loop::ControlFlow};
 use virtual_frame_buffer::*;
 
 pub trait AppMacro {
-    fn start(&mut self);
-    fn end(&mut self);
     fn get_name(&self) -> &str;
     fn set_state(&mut self, updating: bool, drawing: bool);
     fn get_state(&self) -> (bool, bool);

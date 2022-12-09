@@ -10,8 +10,7 @@ pub struct Lines {
     name: String,
     updating: bool,
     drawing: bool,
-    started: bool,
-    ended: bool,
+    initialized: bool,
     draw_line: bool,
     clear: bool
 }
@@ -23,12 +22,13 @@ impl Lines {
             name: String::from("lines"),
             updating: false,
             drawing: false,
-            started: false,
-            ended: false,
+            initialized: false,
             draw_line: true,
             clear: false
         }
     }
+
+    pub fn init_app(&mut self, _virtual_frame_buffer: &mut VirtualFrameBuffer) {}
 
     pub fn update_app(
         &mut self,

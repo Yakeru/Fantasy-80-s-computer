@@ -1,9 +1,9 @@
 use app_macro::*;
 use app_macro_derive::AppMacro;
-use winit::event::{ElementState, KeyboardInput};
+use winit::event::ElementState;
 use virtual_frame_buffer::*;
 use winit::dpi::PhysicalSize;
-use winit::{event::VirtualKeyCode, event_loop::ControlFlow};
+use winit::event::VirtualKeyCode;
 
 const DEFAULT_BKG_COLOR: u8 = 0;
 const SPRITE_SIZE: PhysicalSize<usize> = PhysicalSize::new(16, 16);
@@ -21,8 +21,7 @@ pub struct SpriteEditor {
     selected_pixel_x: usize,
     selected_pixel_y: usize,
     selected_color: u8,
-    started: bool,
-    ended: bool,
+    initialized: bool
 }
 
 impl SpriteEditor {
@@ -32,8 +31,7 @@ impl SpriteEditor {
             name: String::from("spriteEdit"),
             updating: false,
             drawing: false,
-            started: false,
-            ended: false,
+            initialized: false,
             pixel_grid: [0; SPRITE_SIZE.width * SPRITE_SIZE.height],
             selected_pixel_x: 0,
             selected_pixel_y: 0,
@@ -41,12 +39,14 @@ impl SpriteEditor {
         }
     }
 
+    pub fn init_app(&mut self, _virtual_frame_buffer: &mut VirtualFrameBuffer) {}
+
     pub fn update_app(
         &mut self,
         app_message: AppMessage,
-        virtual_frame_buffer: &mut VirtualFrameBuffer
+        _virtual_frame_buffer: &mut VirtualFrameBuffer
     ) -> Option<AppResponse> {
-        let mut response = AppResponse::new();
+        let response = AppResponse::new();
 
         match app_message.char_received {
             Some(c) => {

@@ -1,4 +1,3 @@
-use crate::unicode;
 use app_macro::*;
 use app_macro_derive::AppMacro;
 
@@ -8,21 +7,17 @@ use virtual_frame_buffer::{*, color_palettes::*};
 use openweathermap::{Receiver, CurrentWeather};
 use std::{time::{Duration, Instant}, f32::consts::PI};
 
-const DEFAULT_BKG_COLOR: u8 = 7;
-
 #[derive(AppMacro)]
 pub struct WeatherApp {
     enable_auto_escape: bool,
     name: String,
     updating: bool,
     drawing: bool,
-    started: bool,
-    ended: bool,
+    initialized: bool,
     receiver: Receiver,
     update_appinterval: Duration,
-    last_update: Instant,
+    last_update_time: Instant,
     current_weather: Option<Result<CurrentWeather, String>>,
-    first_time: bool,
     angle: f32
 }
 
@@ -48,71 +43,40 @@ impl WeatherApp {
             name: String::from("weather"),
             updating: false,
             drawing: false,
-            started: false,
-            ended: false,
-            receiver: openweathermap::init("45.4874487,-73.5745913", "metric", "fr", key, 1),
+            initialized: false,
+            receiver: openweathermap::init("45.4874487,-73.5745913", "metric", "fr", key, 10),
             update_appinterval: Duration::from_secs(5),
-            last_update: Instant::now().checked_add(Duration::from_secs(55)).unwrap(),
+            last_update_time: Instant::now(),
             current_weather: None,
-            first_time: true,
             angle: -PI
         }
     }
 
+    pub fn init_app(&mut self, _virtual_frame_buffer: &mut VirtualFrameBuffer) {
+        openweathermap::update(&self.receiver);
+    }
+
     fn update_app(
         &mut self,
-        app_message: AppMessage,
-        virtual_frame_buffer: &mut VirtualFrameBuffer
+        _app_message: AppMessage,
+        _virtual_frame_buffer: &mut VirtualFrameBuffer
     ) -> Option<AppResponse> {
         let response = AppResponse::new();
 
-        if Instant::now().duration_since(self.last_update) >= self.update_appinterval || self.first_time {
-            let last_update = openweathermap::update(&self.receiver);
-            if last_update.is_some() {
-                self.current_weather = last_update;
+        if Instant::now().duration_since(self.last_update_time) >= self.update_appinterval {
+            let last_weather_update = openweathermap::update(&self.receiver);
+            if last_weather_update.is_some() {
+                self.current_weather = last_weather_update;
             }
-            self.last_update = Instant::now();
-            self.first_time = false;
+            self.last_update_time = Instant::now();
         }
 
-        match app_message.keyboard_input {
-            Some(_c) => (),
-            None => ()
+        self.angle += 0.01;
+
+        if self.angle > PI {
+            self.angle = -PI
         }
-
-        match app_message.char_received {
-            Some(c) => {
-                match c {
-                    unicode::BACKSPACE => {
-                    }
-
-                    unicode::ENTER => {
-                    }
-
-                    _ => {
-                        // let plop: TextLayerChar = TextLayerChar {
-                        //     unicode: c,
-                        //     color: self.selected_color,
-                        //     background_color: self.selected_bkg_color,
-                        //     blink: false,
-                        //     flipp: false
-                        // };
-
-                        // self.buffer.push(plop);
-                    }
-                }
-            }
-            None => (),
-        }
-
         
-            self.angle += 0.01;
-
-            if self.angle > PI {
-                self.angle = -PI
-            }
-        
-
         return Some(response);
     }
 

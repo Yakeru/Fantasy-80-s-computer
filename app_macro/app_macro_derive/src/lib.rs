@@ -19,20 +19,6 @@ fn impl_app_macro(ast: &syn::DeriveInput) -> TokenStream {
     let gen = quote! {
         impl AppMacro for #name {
 
-            fn start(&mut self) {
-                self.started = true;
-                self.drawing = true;
-                self.updating = true;
-                self.ended = false;
-            }
-
-            fn end(&mut self) {
-                self.started = false;
-                self.drawing = false;
-                self.updating = false;
-                self.ended = true;
-            }
-
             fn get_name(&self) -> &str {
                 &self.name
             }
@@ -51,6 +37,11 @@ fn impl_app_macro(ast: &syn::DeriveInput) -> TokenStream {
 
             fn update(&mut self, app_message: AppMessage, virtual_frame_buffer: &mut VirtualFrameBuffer) -> Option<AppResponse> {
                 
+                if !self.initialized {
+                    self.init_app(virtual_frame_buffer);
+                    self.initialized = true;
+                }
+
                 // Implementing default behaviour when ESCAPE key is pressed in app
                 // Ignore for shell
                 if self.enable_auto_escape {
@@ -59,7 +50,7 @@ fn impl_app_macro(ast: &syn::DeriveInput) -> TokenStream {
                             match(key.virtual_keycode) {
                                 Some(keycode) => {
                                     if keycode == VirtualKeyCode::Escape && key.state == ElementState::Released {
-                                        self.end()
+                                        self.set_state(false, false)
                                     }
                                 },
                                 None => ()

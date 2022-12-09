@@ -160,7 +160,7 @@ fn main() -> Result<(), Error> {
 
         // let now = Instant::now();
         // let plop = Duration::from_millis(2);
-        // *control_flow = ControlFlow::WaitUntil(now.checked_add(plop).unwrap());
+        //*control_flow = ControlFlow::WaitUntil(now.checked_add(plop).unwrap());
         *control_flow = ControlFlow::Poll; //Poll is synchronized with V-Sync
 
         system_clock.update();

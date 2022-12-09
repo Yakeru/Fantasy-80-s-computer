@@ -26,32 +26,31 @@ pub struct Shell {
     last_character_received: Option<char>,
     clear_text_layer: bool,
     command: Vec<char>,
-    command_history: Vec<String>,
+    // command_history: Vec<String>,
     updating: bool,
     drawing: bool,
-    started: bool,
-    ended: bool
+    initialized: bool
 }
 
 #[derive(Copy, Clone)]
 enum StyledChar {
     Default(char),
-    Highlight(char),
-    Warning(char),
-    Error(char),
+//     Highlight(char),
+//     Warning(char),
+//     Error(char),
 }
 
 #[derive(Copy, Clone)]
 enum Style {
     Default,
-    Highlight,
-    Warning,
-    Error,
+    // Highlight,
+    // Warning,
+    // Error,
 }
 
 impl Shell {
     pub fn new() -> Shell {
-        let command_history: Vec<String> = Vec::new();
+        // let command_history: Vec<String> = Vec::new();
 
         Shell {
             enable_auto_escape: false,
@@ -61,29 +60,28 @@ impl Shell {
             last_character_received: None,
             clear_text_layer: false,
             command: Vec::new(),
-            command_history,
+            // command_history,
             updating: false,
             drawing: false,
-            started: false,
-            ended: false
+            initialized: false
         }
     }
 
     fn style_a_char(&self, c: char, style: Style) -> StyledChar {
         match style {
             Style::Default => StyledChar::Default(c),
-            Style::Highlight => StyledChar::Highlight(c),
-            Style::Warning => StyledChar::Warning(c),
-            Style::Error => StyledChar::Error(c),
+            // Style::Highlight => StyledChar::Highlight(c),
+            // Style::Warning => StyledChar::Warning(c),
+            // Style::Error => StyledChar::Error(c),
         }
     }
 
     fn get_text_layer_char_from_style(&self, style: StyledChar) -> TextLayerChar {
         match style {
             StyledChar::Default(c) => TextLayerChar {c, color: self.color, bkg_color: self.bkg_color, swap: false, blink: false, shadowed: false},
-            StyledChar::Highlight(c) => TextLayerChar {c, color: self.color, bkg_color: self.bkg_color, swap: true, blink: false, shadowed: false},
-            StyledChar::Warning(c) => TextLayerChar {c, color: self.color, bkg_color: BLACK, swap: false, blink: false, shadowed: false},
-            StyledChar::Error(c) => TextLayerChar {c, color: RED, bkg_color: BLACK, swap: false, blink: true, shadowed: false}
+            // StyledChar::Highlight(c) => TextLayerChar {c, color: self.color, bkg_color: self.bkg_color, swap: true, blink: false, shadowed: false},
+            // StyledChar::Warning(c) => TextLayerChar {c, color: self.color, bkg_color: BLACK, swap: false, blink: false, shadowed: false},
+            // StyledChar::Error(c) => TextLayerChar {c, color: RED, bkg_color: BLACK, swap: false, blink: true, shadowed: false}
         }
     }
 
@@ -114,8 +112,15 @@ impl Shell {
         response
     }
 
-    pub fn start(&mut self) {
-        self.started = true;
+    pub fn init_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+        virtual_frame_buffer.get_console_mut().pos_x = 0;
+        virtual_frame_buffer.get_console_mut().pos_y = 0;
+        virtual_frame_buffer.get_console_mut().set_col_count(TEXT_COLUMNS);
+        virtual_frame_buffer.get_console_mut().set_row_count(TEXT_ROWS);
+        virtual_frame_buffer.get_console_mut().clear();
+        virtual_frame_buffer.get_console_mut().push_string(SPLASH);
+        virtual_frame_buffer.get_console_mut().push_string(SHELL_START_MESSAGE);
+        virtual_frame_buffer.get_console_mut().push_char('>');
     }
 
     pub fn update_app(
@@ -125,20 +130,6 @@ impl Shell {
     ) -> Option<AppResponse> {
 
         self.last_character_received = app_message.char_received;
-
-        virtual_frame_buffer.get_console_mut().display = true;
-
-        if !self.started {
-            virtual_frame_buffer.get_console_mut().pos_x = 0;
-            virtual_frame_buffer.get_console_mut().pos_y = 0;
-            virtual_frame_buffer.get_console_mut().set_col_count(TEXT_COLUMNS);
-            virtual_frame_buffer.get_console_mut().set_row_count(TEXT_ROWS);
-            virtual_frame_buffer.get_console_mut().clear();
-            virtual_frame_buffer.get_console_mut().push_string(SPLASH);
-            virtual_frame_buffer.get_console_mut().push_string(SHELL_START_MESSAGE);
-            virtual_frame_buffer.get_console_mut().push_char('>');
-            self.start();
-        }
 
         if self.clear_text_layer {
             virtual_frame_buffer.get_console_mut().clear();
@@ -211,5 +202,6 @@ impl Shell {
 
     pub fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         virtual_frame_buffer.clear_frame_buffer(WHITE);
+        virtual_frame_buffer.get_console_mut().display = true;
     }
 }

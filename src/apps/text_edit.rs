@@ -16,8 +16,7 @@ pub struct TextEdit {
     buffer: Vec<(char, u8, u8)>,
     updating: bool,
     drawing: bool,
-    started: bool,
-    ended: bool,
+    initialized: bool
 }
 
 impl TextEdit {
@@ -32,17 +31,18 @@ impl TextEdit {
             buffer,
             updating: false,
             drawing: false,
-            started: false,
-            ended: false,
+            initialized: false
         }
     }
+
+    pub fn init_app(&mut self, _virtual_frame_buffer: &mut VirtualFrameBuffer) {}
 
     pub fn update_app(
         &mut self,
         app_message: AppMessage,
-        virtual_frame_buffer: &mut VirtualFrameBuffer
+        _virtual_frame_buffer: &mut VirtualFrameBuffer
     ) -> Option<AppResponse> {
-        let mut response = AppResponse::new();
+        let response = AppResponse::new();
 
         match app_message.char_received {
             Some(c) => match c {
@@ -119,10 +119,8 @@ impl TextEdit {
 
     pub fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         virtual_frame_buffer.get_text_layer_mut().clear();
-        //virtual_frame_buffer.get_text_layer().show_cursor = false;
         virtual_frame_buffer.clear_frame_buffer(DEFAULT_BKG_COLOR);
         virtual_frame_buffer.get_console_mut().display = false;
-
 
         let mut count = 0;
         for text_layer_char in self.buffer.chunks_exact_mut(1) {

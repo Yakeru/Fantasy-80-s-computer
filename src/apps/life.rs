@@ -1,4 +1,4 @@
-use std::{time::Instant, ops::ControlFlow};
+use std::time::Instant;
 
 use app_macro::{AppMacro, AppResponse, AppMessage};
 use app_macro_derive::AppMacro;
@@ -12,13 +12,13 @@ pub struct Life {
     name: String,
     updating: bool,
     drawing: bool,
-    started: bool,
-    ended: bool,
+    initialized: bool,
     gen_a: Box<[[u8; TEXT_COLUMNS]; TEXT_ROWS]>,
     gen_b: Box<[[u8; TEXT_COLUMNS]; TEXT_ROWS]>,
     init: bool,
     toggle_gen: bool,
-    last_update: Instant
+    last_update: Instant,
+    alive: bool
 }
 
 impl Life {
@@ -28,14 +28,33 @@ impl Life {
             name: String::from("life"),
             updating: false,
             drawing: false,
-            started: false,
-            ended: false,
+            initialized: false,
             gen_a: Box::new([[0; TEXT_COLUMNS]; TEXT_ROWS]),
             gen_b: Box::new([[0; TEXT_COLUMNS]; TEXT_ROWS]),
             init: true,
             toggle_gen: true,
-            last_update: Instant::now()
+            last_update: Instant::now(),
+            alive: true
         }
+    }
+
+    // Randomizes gen_a. gen_B is emptied,
+    // Sets everything back to show gen_a and calculate gen_b
+    pub fn init_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+        virtual_frame_buffer.get_console_mut().display = false;
+
+        self.gen_b = Box::new([[0; TEXT_COLUMNS]; TEXT_ROWS]);
+
+        let mut random = rand::thread_rng();
+
+        for row in 0..TEXT_ROWS {
+            for col in 0..TEXT_COLUMNS {
+                self.gen_a[row][col] = random.gen_range(0..2);
+            }
+        }
+
+        self.alive = true;
+        self.toggle_gen = true;
     }
 
     pub fn update_app(
@@ -43,69 +62,32 @@ impl Life {
         app_message: AppMessage,
         virtual_frame_buffer: &mut VirtualFrameBuffer
     ) -> Option<AppResponse> {
-
-        // // Quit app if ESCAPE is pressed
-        // match keybord_input {
-        //     Some(key) => {
-        //         match(key.virtual_keycode) {
-        //             Some(keycode) => {
-        //                 if keycode == VirtualKeyCode::Escape && key.state == ElementState::Released {
-        //                     self.end();
-        //                 }
-        //             },
-        //             None => ()
-        //         }
-        //     },
-        //     None => ()
-        // }
         
         // Clear and re-start if 'c' is pressed
         match app_message.char_received {
             Some(char) => {
                 if char == 'c' {
-                    self.init = true;
+                    self.init_app(virtual_frame_buffer);
                 }
             },
             _ => ()
         }
 
-        // Called once at start-up, or when C is pressed
-        // Randomizes gen_a. gen_B is emptied,
-        // Sets everything back to show gen_a and calculate gen_b
-        if self.init {
-            virtual_frame_buffer.get_console_mut().display = false;
-            virtual_frame_buffer.get_console_mut().display = false;
-
-            self.gen_b = Box::new([[0; TEXT_COLUMNS]; TEXT_ROWS]);
-
-            let mut random = rand::thread_rng();
-
-            for row in 0..TEXT_ROWS {
-                for col in 0..TEXT_COLUMNS {
-                    self.gen_a[row][col] = random.gen_range(0..2);
-                }
-            }
-
-            self.toggle_gen = true;
-            self.init = false;
-        }
-
         let now = Instant::now();
-        let mut alive: bool = true;
 
         if now.duration_since(self.last_update).as_millis() >= 50 {
             // Calculate gen_b from gen_a, else calculate gen_b from gen_a
             if self.toggle_gen {
-                alive = calculate_life(&mut self.gen_a, &mut self.gen_b);
+                self.alive = calculate_life(&mut self.gen_a, &mut self.gen_b);
                 self.toggle_gen = !self.toggle_gen;
             } else {
-                alive = calculate_life(&mut self.gen_b, &mut self.gen_a);
+                self.alive = calculate_life(&mut self.gen_b, &mut self.gen_a);
                 self.toggle_gen = !self.toggle_gen;
             }
 
             self.last_update = Instant::now();
 
-            if !alive {
+            if !self.alive {
                 self.init = true;
             }
         }
