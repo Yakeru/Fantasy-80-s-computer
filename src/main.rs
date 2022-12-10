@@ -10,17 +10,11 @@ use winit::{
     window::{WindowBuilder, Fullscreen}
 };
 
-use unicode;
 use clock::Clock;
 
 //Apps
 mod apps;
-use crate::apps::lines::*;
 use crate::apps::shell::*;
-use crate::apps::sprite_editor::*;
-use crate::apps::squares::*;
-use crate::apps::text_edit::*;
-use crate::apps::weather_app::*;
 use crate::apps::life::Life;
 
 //Settings
@@ -124,26 +118,6 @@ fn main() -> Result<(), Error> {
     // The apps  //
     // ********* //
 
-    // LINES DEMO
-    let lines = Box::new(Lines::new());
-    app_list.push(lines);
-
-    // SQUARES DEMO
-    let squares = Box::new(Squares::new());
-    app_list.push(squares);
-
-    // TEXT EDITOR
-    let text_edit = Box::new(TextEdit::new());
-    app_list.push(text_edit);
-
-    // SPRITE EDITOR
-    let sprite_edit = Box::new(SpriteEditor::new());
-    app_list.push(sprite_edit);
-
-    // WEATHER APP
-    let weather_app = Box::new(WeatherApp::new());
-    app_list.push(weather_app);
-
     // CONWAY'S GAME OF LIFE, TEXT MODE
     let life = Box::new(Life::new());
     app_list.push(life);
@@ -217,27 +191,27 @@ fn main() -> Result<(), Error> {
                     //Updating apps
                     let mut show_shell: bool = true;
                     let mut app_response: Option<AppResponse> = None;
-                    let app_message: AppMessage = AppMessage { keyboard_input, char_received, mouse_move_delta, system_clock };
+                    let app_inputs: AppInputs = AppInputs { keyboard_input, char_received, mouse_move_delta, system_clock };
                     for app in app_list.chunks_exact_mut(1) {
                         
                         // If app is running and drawing (in focus), call update with keyboard inputs and dont render shell.
                         if app[0].get_state().0 && app[0].get_state().1 {
-                            app_response = app[0].update(app_message, &mut virtual_frame_buffer);
-                            app[0].draw(&mut virtual_frame_buffer);
+                            app_response = app[0].update(app_inputs, &mut virtual_frame_buffer);
+                            app[0].draw(app_inputs, &mut virtual_frame_buffer);
                             show_shell = false;
                         }
                         
                         // If app is running but not drawing (running in the background), call update without keyboard inputs.
                         // dont draw.
                         else if app[0].get_state().0 && !app[0].get_state().1 {
-                            app_response = app[0].update(app_message, &mut virtual_frame_buffer);
+                            app_response = app[0].update(app_inputs, &mut virtual_frame_buffer);
                         }
                     }
 
                     // If no app is in focus, run the shell
                     if show_shell {
-                        app_response = shell.update(app_message, &mut virtual_frame_buffer);
-                        shell.draw(&mut virtual_frame_buffer);
+                        app_response = shell.update(app_inputs, &mut virtual_frame_buffer);
+                        shell.draw(app_inputs, &mut virtual_frame_buffer);
                     }
 
                     // Process app response

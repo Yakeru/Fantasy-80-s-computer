@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use app_macro::{AppMacro, AppResponse, AppMessage};
+use app_macro::{AppMacro, AppResponse, AppInputs};
 use app_macro_derive::AppMacro;
 use rand::Rng;
 use virtual_frame_buffer::{VirtualFrameBuffer, config::{TEXT_COLUMNS, TEXT_ROWS}, color_palettes::*};
@@ -18,6 +18,9 @@ pub struct Life {
     init: bool,
     toggle_gen: bool,
     last_update: Instant,
+    welcome_screen: bool,
+    game: bool,
+    menu: bool,
     alive: bool
 }
 
@@ -34,15 +37,51 @@ impl Life {
             init: true,
             toggle_gen: true,
             last_update: Instant::now(),
-            alive: true
+            alive: true,
+            welcome_screen: true,
+            game: false,
+            menu: false
         }
     }
 
     // Randomizes gen_a. gen_B is emptied,
     // Sets everything back to show gen_a and calculate gen_b
-    pub fn init_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-        virtual_frame_buffer.get_console_mut().display = false;
+    pub fn init_app(&mut self, _virtual_frame_buffer: &mut VirtualFrameBuffer) {
+        self.welcome_screen = true;
+        self.game = false;
+        self.menu = false;
+        self.restart_sim();
+    }
 
+    pub fn update_app(
+        &mut self,
+        app_inputs: AppInputs,
+        _virtual_frame_buffer: &mut VirtualFrameBuffer
+    ) -> Option<AppResponse> {
+        
+        if self.welcome_screen {
+            self.update_welcome_screen(app_inputs);
+        } else if self.game {
+            self.update_game(app_inputs);
+        } else {
+            self.update_menu(app_inputs);
+        }
+
+        return None;
+    }
+
+    pub fn draw_app(&mut self, app_inputs: AppInputs, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+
+        if self.welcome_screen {
+            self.draw_welcome_screen(app_inputs, virtual_frame_buffer);
+        } else if self.game {
+            self.draw_game(virtual_frame_buffer);
+        } else if self.menu {
+            self.draw_menu(virtual_frame_buffer);
+        }
+    }
+
+    fn restart_sim(&mut self) {
         self.gen_b = Box::new([[0; TEXT_COLUMNS]; TEXT_ROWS]);
 
         let mut random = rand::thread_rng();
@@ -57,45 +96,57 @@ impl Life {
         self.toggle_gen = true;
     }
 
-    pub fn update_app(
-        &mut self,
-        app_message: AppMessage,
-        virtual_frame_buffer: &mut VirtualFrameBuffer
-    ) -> Option<AppResponse> {
-        
-        // Clear and re-start if 'c' is pressed
-        match app_message.char_received {
-            Some(char) => {
-                if char == 'c' {
-                    self.init_app(virtual_frame_buffer);
-                }
-            },
-            _ => ()
+    fn draw_welcome_screen(&mut self, app_inputs: AppInputs, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+        virtual_frame_buffer.get_text_layer_mut().clear();
+        virtual_frame_buffer.get_console_mut().display = false;
+        virtual_frame_buffer.clear_frame_buffer(BLACK);
+        if app_inputs.system_clock.second_latch  && app_inputs.system_clock.half_second_latch {
+            virtual_frame_buffer.get_text_layer_mut().insert_string_xy(6, 10, "   C n a '  G m  O  L f    ", Some(TRUE_BLUE), Some(BLACK), false, false, false);
+            virtual_frame_buffer.get_text_layer_mut().insert_string_xy(6, 11, "**  o w y s  a e  f  i e **", Some(TRUE_BLUE), Some(BLACK), false, false, false);
+        } else if app_inputs.system_clock.second_latch  && !app_inputs.system_clock.half_second_latch{
+            virtual_frame_buffer.get_text_layer_mut().insert_string_xy(6, 11, "** Conway's Game Of Life **", Some(TRUE_BLUE), Some(BLACK), false, false, false);
+        } else {
+            virtual_frame_buffer.get_text_layer_mut().insert_string_xy(6, 11, "** C n a '  G m  O  L f  **", Some(TRUE_BLUE), Some(BLACK), false, false, false);
+            virtual_frame_buffer.get_text_layer_mut().insert_string_xy(6, 12, "    o w y s  a e  f  i e   ", Some(TRUE_BLUE), Some(BLACK), false, false, false);
         }
-
-        let now = Instant::now();
-
-        if now.duration_since(self.last_update).as_millis() >= 50 {
-            // Calculate gen_b from gen_a, else calculate gen_b from gen_a
-            if self.toggle_gen {
-                self.alive = calculate_life(&mut self.gen_a, &mut self.gen_b);
-                self.toggle_gen = !self.toggle_gen;
-            } else {
-                self.alive = calculate_life(&mut self.gen_b, &mut self.gen_a);
-                self.toggle_gen = !self.toggle_gen;
-            }
-
-            self.last_update = Instant::now();
-
-            if !self.alive {
-                self.init = true;
-            }
-        }
-
-        return None;
+        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(8, 20, "Press any key to start", Some(TRUE_BLUE), Some(BLACK), false, true, false);
     }
 
-    pub fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    fn update_welcome_screen(&mut self, app_inputs: AppInputs) {
+        match app_inputs.char_received {
+            Some(_c) => {
+                self.welcome_screen = false;
+                self.game = true;
+                self.menu = false;
+            },
+            None => ()
+        }
+
+        match app_inputs.keyboard_input {
+            Some(input) => {
+                match input.virtual_keycode {
+                    Some(code) => {
+                        match code {
+                            VirtualKeyCode::Escape => {
+                                self.welcome_screen = false;
+                                self.menu = true;
+                                self.game = false;
+                            },
+                            _ => {
+                                self.welcome_screen = false;
+                                self.menu = false;
+                                self.game = true;
+                            }
+                        }
+                    },
+                    None => ()
+                }
+            },
+            None => ()
+        }
+    }
+
+    fn draw_game(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         virtual_frame_buffer.get_text_layer_mut().clear();
         virtual_frame_buffer.get_console_mut().display = false;
         virtual_frame_buffer.clear_frame_buffer(WHITE);
@@ -129,6 +180,62 @@ impl Life {
             }
         }
     }
+
+    fn update_game(&mut self, app_message: AppInputs) {
+        match app_message.char_received {
+            Some(char) => {
+                if char == 'c' {
+                    self.restart_sim();
+                }
+            },
+            _ => ()
+        }
+
+        let now = Instant::now();
+
+        if now.duration_since(self.last_update).as_millis() >= 50 {
+            // Calculate gen_b from gen_a, else calculate gen_b from gen_a
+            if self.toggle_gen {
+                self.alive = calculate_life(&mut self.gen_a, &mut self.gen_b);
+                self.toggle_gen = !self.toggle_gen;
+            } else {
+                self.alive = calculate_life(&mut self.gen_b, &mut self.gen_a);
+                self.toggle_gen = !self.toggle_gen;
+            }
+
+            self.last_update = Instant::now();
+
+            if !self.alive {
+                self.init = true;
+            }
+        }
+    }
+
+    fn draw_menu(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+
+    }
+
+    fn update_menu(&mut self, app_message: AppInputs) {
+        match app_message.keyboard_input {
+            Some(input) => {
+                match input.virtual_keycode {
+                    Some(code) => {
+                        match code {
+                            VirtualKeyCode::Escape => {
+                                self.welcome_screen = false;
+                                self.menu = false;
+                                self.game = false;
+                            },
+                            _ => ()
+                        }
+                    },
+                    None => ()
+                }
+            },
+            None => ()
+        }
+    }
+
 }
 
 /// Conway's Game of Life

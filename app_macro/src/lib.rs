@@ -6,8 +6,8 @@ pub trait AppMacro {
     fn get_name(&self) -> &str;
     fn set_state(&mut self, updating: bool, drawing: bool);
     fn get_state(&self) -> (bool, bool);
-    fn update(&mut self, app_message: AppMessage, virtual_frame_buffer: &mut VirtualFrameBuffer) -> Option<AppResponse>;
-    fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer);
+    fn update(&mut self, app_inputs: AppInputs, virtual_frame_buffer: &mut VirtualFrameBuffer) -> Option<AppResponse>;
+    fn draw(&mut self, app_inputs: AppInputs, virtual_frame_buffer: &mut VirtualFrameBuffer);
 }
 
 #[derive(Clone)]
@@ -17,7 +17,7 @@ pub struct AppResponse {
 }
 
 #[derive(Clone, Copy)]
-pub struct AppMessage {
+pub struct AppInputs {
     pub keyboard_input: Option<KeyboardInput>,
     pub char_received: Option<char>,
     pub mouse_move_delta: (f64, f64),

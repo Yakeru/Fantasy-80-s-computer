@@ -1,4 +1,3 @@
-use crate::unicode;
 use virtual_frame_buffer::*;
 use app_macro::*;
 use app_macro_derive::AppMacro;
@@ -50,7 +49,7 @@ enum Style {
 
 impl Shell {
     pub fn new() -> Shell {
-        // let command_history: Vec<String> = Vec::new();
+        let command_history: Vec<String> = Vec::new();
 
         Shell {
             enable_auto_escape: false,
@@ -125,11 +124,11 @@ impl Shell {
 
     pub fn update_app(
         &mut self,
-        app_message: AppMessage,
+        app_inputs: AppInputs,
         virtual_frame_buffer: &mut VirtualFrameBuffer
     ) -> Option<AppResponse> {
 
-        self.last_character_received = app_message.char_received;
+        self.last_character_received = app_inputs.char_received;
 
         if self.clear_text_layer {
             virtual_frame_buffer.get_console_mut().clear();
@@ -179,7 +178,7 @@ impl Shell {
             None => (),
         }
 
-        match app_message.keyboard_input {
+        match app_inputs.keyboard_input {
             Some(k) => {
                 match k.virtual_keycode {
                     Some(code) => {
@@ -200,7 +199,7 @@ impl Shell {
         return None;
     }
 
-    pub fn draw_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    pub fn draw_app(&mut self, app_inputs: AppInputs, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         virtual_frame_buffer.clear_frame_buffer(WHITE);
         virtual_frame_buffer.get_console_mut().display = true;
     }
