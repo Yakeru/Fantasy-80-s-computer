@@ -16,7 +16,7 @@ use clock::Clock;
 mod apps;
 use crate::apps::shell::*;
 use crate::apps::life::*;
-use crate::apps::weather::*;
+use crate::apps::weather_app::*;
 
 //Settings
 //const FRAME_TIME_MS: u128 = 16; //ms per frame : 16 = 60fps, 32 = 30fps, 1000 = 1fps
@@ -122,7 +122,7 @@ fn main() -> Result<(), Error> {
     app_list.push(life);
 
     // CONWAY'S GAME OF LIFE, TEXT MODE
-    let weather = Box::new(Weather::new());
+    let weather = Box::new(WeatherApp::new());
     app_list.push(weather);
     
     // ****************************************************** MAIN WINIT EVENT LOOP ***********************************************

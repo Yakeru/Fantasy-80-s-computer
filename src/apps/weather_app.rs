@@ -1,12 +1,6 @@
-use app_macro::*;
 use app_macro_derive::AppMacro;
 
-use clock::Clock;
-use winit::event::VirtualKeyCode;
-
-use virtual_frame_buffer::{*, color_palettes::*};
 use openweathermap::{Receiver, CurrentWeather};
-use winit_input_helper::WinitInputHelper;
 use std::{time::{Duration, Instant}, f32::consts::PI};
 
 #[derive(AppMacro)]
@@ -59,7 +53,7 @@ impl WeatherApp {
     }
 
     fn update_app(
-        &mut self, inputs: &WinitInputHelper, clock: &Clock, _virtual_frame_buffer: &mut VirtualFrameBuffer
+        &mut self, _inputs: &WinitInputHelper, _clock: &Clock, _virtual_frame_buffer: &mut VirtualFrameBuffer
     ) -> Option<AppResponse> {
         let response = AppResponse::new();
 
@@ -80,7 +74,7 @@ impl WeatherApp {
         return Some(response);
     }
 
-    fn draw_app(&mut self, inputs: &WinitInputHelper, clock: &Clock, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    fn draw_app(&mut self, _inputs: &WinitInputHelper, _clock: &Clock, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         virtual_frame_buffer.get_text_layer_mut().clear();
         virtual_frame_buffer.clear_frame_buffer(DARK_GREY);
         virtual_frame_buffer.get_console_mut().display = false;
