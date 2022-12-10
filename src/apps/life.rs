@@ -1,12 +1,8 @@
 use std::time::Instant;
 
-use app_macro::{AppMacro, AppResponse};
 use app_macro_derive::AppMacro;
-use clock::Clock;
 use rand::Rng;
 use virtual_frame_buffer::{VirtualFrameBuffer, config::{TEXT_COLUMNS, TEXT_ROWS}, color_palettes::*};
-use winit::event::VirtualKeyCode;
-use winit_input_helper::WinitInputHelper;
 
 #[derive(AppMacro)]
 pub struct Life {

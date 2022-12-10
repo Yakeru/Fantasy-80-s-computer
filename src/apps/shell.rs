@@ -1,16 +1,4 @@
-use clock::Clock;
-use virtual_frame_buffer::*;
-use app_macro::*;
 use app_macro_derive::AppMacro;
-use virtual_frame_buffer::color_palettes::*;
-use virtual_frame_buffer::config::{TEXT_COLUMNS, TEXT_ROWS};
-use virtual_frame_buffer::text_layer_char::TextLayerChar;
-
-use winit::{
-    event::VirtualKeyCode,
-    event_loop::ControlFlow,
-};
-use winit_input_helper::{WinitInputHelper, TextChar};
 
 const SPLASH: &str = "\u{000D} Fantasy CPC Microcomputer V(0.1)\u{000D}\u{000D} 2022 Damien Torreilles\u{000D}\u{000D}";
 const SHELL_START_MESSAGE: &str = "SHELL 0.1\u{000D}Ready\u{000D}";

@@ -15,4 +15,3 @@ app_macro_derive = { path = "./app_macro/app_macro_derive" }
 virtual_frame_buffer = { path = "./virtual_frame_buffer" }
 unicode = { path = "./unicode" }
 clock = { path = "./clock" }
-chrono = "0.4.23"

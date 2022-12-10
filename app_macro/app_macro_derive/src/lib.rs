@@ -17,6 +17,17 @@ pub fn app_macro_derive(input: TokenStream) -> TokenStream {
 fn impl_app_macro(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
     let gen = quote! {
+
+        use winit::event::VirtualKeyCode;
+        use winit::event_loop::*;
+        use winit_input_helper::*;
+        use clock::Clock;
+        use virtual_frame_buffer::*;
+        use virtual_frame_buffer::config::*;
+        use virtual_frame_buffer::color_palettes::*;
+        use virtual_frame_buffer::text_layer_char::*;
+        use app_macro::*;
+
         impl AppMacro for #name {
 
             fn get_name(&self) -> &str {

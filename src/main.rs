@@ -2,7 +2,7 @@ use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}, text_layer_char::T
 use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
-use winit_input_helper::{WinitInputHelper, TextChar};
+use winit_input_helper::{WinitInputHelper};
 use std::time::Duration;
 use winit::{
     dpi::{PhysicalSize, Position, PhysicalPosition},
