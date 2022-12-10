@@ -43,26 +43,11 @@ fn impl_app_macro(ast: &syn::DeriveInput) -> TokenStream {
                 }
 
                 // Implementing default behaviour when ESCAPE key is pressed in app
-                // Ignore for shell
+                // Applied only if enable_auto_escape is set to true in app.
                 if self.enable_auto_escape {
-
                     if inputs.key_released(VirtualKeyCode::Escape) {
                         self.set_state(false, false);
                     }
-
-                    // match inputs.keyboard_input {
-                    //     Some(key) => {
-                    //         match(key.virtual_keycode) {
-                    //             Some(keycode) => {
-                    //                 if keycode == VirtualKeyCode::Escape && key.state == ElementState::Released {
-                    //                     self.set_state(false, false)
-                    //                 }
-                    //             },
-                    //             None => ()
-                    //         } 
-                    //     },
-                    //     None => ()
-                    // }
                 }
                 
                 return self.update_app(inputs, system_clock, virtual_frame_buffer);
