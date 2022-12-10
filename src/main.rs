@@ -2,6 +2,7 @@ use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}, text_layer_char::T
 use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
+use winit_input_helper::{WinitInputHelper, TextChar};
 use std::time::Duration;
 use winit::{
     dpi::{PhysicalSize, Position, PhysicalPosition},
@@ -83,8 +84,6 @@ fn main() -> Result<(), Error> {
 
     // The variables passed to the app.update(...) that is in focus
     // or to the shell if no other app is running.
-    let mut keyboard_input: Option<KeyboardInput> = None;
-    let mut char_received: Option<char> = None;
     let mut mouse_move_delta: (f64, f64) = (0.0, 0.0);
 
     // Fantasy CPC graphics engine
@@ -124,6 +123,8 @@ fn main() -> Result<(), Error> {
     
     // ****************************************************** MAIN WINIT EVENT LOOP ***********************************************
     
+    let mut input = WinitInputHelper::new();
+
     //The event loop here can be seen as the "bios + boot rom + console" part of the Fantasy computer.
     //It initialises the virtual_frame_buffer, Console 0 and Shell.
     //If no app is running/rendering, it defaults back to running/rendering the Console 0 and Shell.
@@ -139,123 +140,210 @@ fn main() -> Result<(), Error> {
 
         system_clock.update();
 
-        match event {
-            Event::WindowEvent { event, .. } => match event {
-                WindowEvent::CloseRequested => {
-                    char_received = None;
-                    println!("The close button was pressed; stopping");
-                    *control_flow = ControlFlow::Exit
+        if input.update(&event) {
+            
+            if input.text().len() >= 1 {
+                match input.text().get(0) {
+                    Some(TextChar::Char(c)) => { 
+                        println!("Text : {}", *c);
+                    },
+                    Some(TextChar::Back) => { 
+                        println!("Text : backspace");
+                    },
+                    None => ()
                 }
-                WindowEvent::ReceivedCharacter(c) => {
-                    char_received = Some(c);
-                    // println!("Char received: {:?}", char_received);
-                }
-                _ => {
-                    char_received = None;
-                }
-            },
-            Event::DeviceEvent { event, .. } => match event {
-                DeviceEvent::MouseMotion { delta } => {
-                    mouse_move_delta = delta;
-                }
-                DeviceEvent::Button { button, state } => {
-                    match state {
-                        ElementState::Pressed => (),
-                        ElementState::Released => (),
-                    };
+            }
 
-                    match button {
-                        0 => (),
-                        1 => (),
-                        _ => ()
+            if input.quit() {
+                *control_flow = ControlFlow::Exit
+            }
+
+            // BOOT, play boot animation once before showing the shell or any other app.
+            if booting {
+                booting = boot_animation(&mut virtual_frame_buffer, &mut crt_renderer, &system_clock);
+            } else {
+                //Updating apps
+                let mut show_shell: bool = true;
+                let mut app_response: Option<AppResponse> = None;
+                //let app_inputs: AppInputs = AppInputs { keyboard_input, char_received, mouse_move_delta, system_clock };
+                for app in app_list.chunks_exact_mut(1) {
+                    
+                    // If app is running and drawing (in focus), call update with keyboard inputs and dont render shell.
+                    if app[0].get_state().0 && app[0].get_state().1 {
+                        app_response = app[0].update(&input, &system_clock, &mut virtual_frame_buffer);
+                        app[0].draw(&input, &system_clock, &mut virtual_frame_buffer);
+                        show_shell = false;
                     }
-                },
-                DeviceEvent::Key(k) => {
-                    keyboard_input = Some(k);
-                    let scan_code = k.scancode;
-                    let state = k.state;
-                    let key_code = k.virtual_keycode.unwrap_or(VirtualKeyCode::NoConvert);
-
-                    println!(
-                        "Scan: {}, state: {:?}, virt. key code: {:?}",
-                        scan_code, state, key_code
-                    );
+                    
+                    // If app is running but not drawing (running in the background), call update without keyboard inputs.
+                    // dont draw.
+                    else if app[0].get_state().0 && !app[0].get_state().1 {
+                        app_response = app[0].update(&input, &system_clock, &mut virtual_frame_buffer);
+                    }
                 }
-                _ => (),
-            },
-            Event::MainEventsCleared => {
-                // BOOT, play boot animation once before showing the shell or any other app.
-                if booting {
-                    booting = boot_animation(&mut virtual_frame_buffer, &mut crt_renderer, &system_clock);
-                } else {
-                    //Updating apps
-                    let mut show_shell: bool = true;
-                    let mut app_response: Option<AppResponse> = None;
-                    let app_inputs: AppInputs = AppInputs { keyboard_input, char_received, mouse_move_delta, system_clock };
-                    for app in app_list.chunks_exact_mut(1) {
-                        
-                        // If app is running and drawing (in focus), call update with keyboard inputs and dont render shell.
-                        if app[0].get_state().0 && app[0].get_state().1 {
-                            app_response = app[0].update(app_inputs, &mut virtual_frame_buffer);
-                            app[0].draw(app_inputs, &mut virtual_frame_buffer);
-                            show_shell = false;
+
+                // If no app is in focus, run the shell
+                if show_shell {
+                    app_response = shell.update(&input, &system_clock, &mut virtual_frame_buffer);
+                    shell.draw(&input, &system_clock, &mut virtual_frame_buffer);
+                }
+
+                // Process app response
+                match app_response {
+                    Some(response) => {
+                        match response.event {
+                            Some(event) => *control_flow = event,
+                            None => (),
                         }
-                        
-                        // If app is running but not drawing (running in the background), call update without keyboard inputs.
-                        // dont draw.
-                        else if app[0].get_state().0 && !app[0].get_state().1 {
-                            app_response = app[0].update(app_inputs, &mut virtual_frame_buffer);
-                        }
-                    }
 
-                    // If no app is in focus, run the shell
-                    if show_shell {
-                        app_response = shell.update(app_inputs, &mut virtual_frame_buffer);
-                        shell.draw(app_inputs, &mut virtual_frame_buffer);
-                    }
+                        match response.message {
+                            Some(message) => {
+                                println!("App message: {}", message);
 
-                    // Process app response
-                    match app_response {
-                        Some(response) => {
-                            match response.event {
-                                Some(event) => *control_flow = event,
-                                None => (),
-                            }
-
-                            match response.message {
-                                Some(message) => {
-                                    println!("App message: {}", message);
-
-                                    for app in app_list.chunks_exact_mut(1) {
-                                        if app[0].get_name() == message {
-                                            app[0].set_state(true, true);
-                                        }
+                                for app in app_list.chunks_exact_mut(1) {
+                                    if app[0].get_name() == message {
+                                        app[0].set_state(true, true);
                                     }
                                 }
-                                None => (),
                             }
-                        },
-                        None => ()
-                    }
+                            None => (),
+                        }
+                    },
+                    None => ()
                 }
-
-                // Render virtual frame buffer to pixels frame buffer with upscaling and CRT effect
-                virtual_frame_buffer.render();
-                // let start = Instant::now();
-                crt_renderer.render(&mut virtual_frame_buffer, pixels.get_frame_mut());
-                // println!("Render time: {} micros", start.elapsed().as_micros());
-                pixels.render().expect("Pixels render oups");
-                window.request_redraw();
-                system_clock.count_frame();
-
-                // Reset input buffers for next loop
-                char_received = None;
-                keyboard_input = None;
-                mouse_move_delta.0 = 0.0;
-                mouse_move_delta.1 = 0.0;
             }
-            _ => (),
+
+            // Render virtual frame buffer to pixels frame buffer with upscaling and CRT effect
+            virtual_frame_buffer.render();
+            // let start = Instant::now();
+            crt_renderer.render(&mut virtual_frame_buffer, pixels.get_frame_mut());
+            // println!("Render time: {} micros", start.elapsed().as_micros());
+            pixels.render().expect("Pixels render oups");
+            window.request_redraw();
+            system_clock.count_frame();
+
+            // Reset input buffers for next loop
+            mouse_move_delta.0 = 0.0;
+            mouse_move_delta.1 = 0.0;
         }
+
+        // match event {
+        //     Event::WindowEvent { event, .. } => match event {
+        //         WindowEvent::CloseRequested => {
+        //             char_received = None;
+        //             println!("The close button was pressed; stopping");
+        //             *control_flow = ControlFlow::Exit
+        //         }
+        //         WindowEvent::ReceivedCharacter(c) => {
+        //             char_received = Some(c);
+        //             println!("Char received: {:?}", char_received);
+        //         }
+        //         _ => {
+        //             char_received = None;
+        //         }
+        //     },
+        //     Event::DeviceEvent { event, .. } => match event {
+        //         DeviceEvent::MouseMotion { delta } => {
+        //             mouse_move_delta = delta;
+        //         }
+        //         DeviceEvent::Button { button, state } => {
+        //             match state {
+        //                 ElementState::Pressed => (),
+        //                 ElementState::Released => (),
+        //             };
+
+        //             match button {
+        //                 0 => (),
+        //                 1 => (),
+        //                 _ => ()
+        //             }
+        //         },
+        //         DeviceEvent::Key(k) => {
+        //             keyboard_input = Some(k);
+        //             let scan_code = k.scancode;
+        //             let state = k.state;
+        //             let key_code = k.virtual_keycode.unwrap_or(VirtualKeyCode::NoConvert);
+
+        //             println!(
+        //                 "Keyboard input Scan: {}, state: {:?}, virt. key code: {:?}",
+        //                 scan_code, state, key_code
+        //             );
+        //         }
+        //         _ => (),
+        //     },
+        //     Event::MainEventsCleared => {
+        //         // BOOT, play boot animation once before showing the shell or any other app.
+        //         if booting {
+        //             booting = boot_animation(&mut virtual_frame_buffer, &mut crt_renderer, &system_clock);
+        //         } else {
+        //             //Updating apps
+        //             let mut show_shell: bool = true;
+        //             let mut app_response: Option<AppResponse> = None;
+        //             let app_inputs: AppInputs = AppInputs { keyboard_input, char_received, mouse_move_delta, system_clock };
+        //             for app in app_list.chunks_exact_mut(1) {
+                        
+        //                 // If app is running and drawing (in focus), call update with keyboard inputs and dont render shell.
+        //                 if app[0].get_state().0 && app[0].get_state().1 {
+        //                     app_response = app[0].update(app_inputs, &mut virtual_frame_buffer);
+        //                     app[0].draw(app_inputs, &mut virtual_frame_buffer);
+        //                     show_shell = false;
+        //                 }
+                        
+        //                 // If app is running but not drawing (running in the background), call update without keyboard inputs.
+        //                 // dont draw.
+        //                 else if app[0].get_state().0 && !app[0].get_state().1 {
+        //                     app_response = app[0].update(app_inputs, &mut virtual_frame_buffer);
+        //                 }
+        //             }
+
+        //             // If no app is in focus, run the shell
+        //             if show_shell {
+        //                 app_response = shell.update(app_inputs, &mut virtual_frame_buffer);
+        //                 shell.draw(app_inputs, &mut virtual_frame_buffer);
+        //             }
+
+        //             // Process app response
+        //             match app_response {
+        //                 Some(response) => {
+        //                     match response.event {
+        //                         Some(event) => *control_flow = event,
+        //                         None => (),
+        //                     }
+
+        //                     match response.message {
+        //                         Some(message) => {
+        //                             println!("App message: {}", message);
+
+        //                             for app in app_list.chunks_exact_mut(1) {
+        //                                 if app[0].get_name() == message {
+        //                                     app[0].set_state(true, true);
+        //                                 }
+        //                             }
+        //                         }
+        //                         None => (),
+        //                     }
+        //                 },
+        //                 None => ()
+        //             }
+        //         }
+
+        //         // Render virtual frame buffer to pixels frame buffer with upscaling and CRT effect
+        //         virtual_frame_buffer.render();
+        //         // let start = Instant::now();
+        //         crt_renderer.render(&mut virtual_frame_buffer, pixels.get_frame_mut());
+        //         // println!("Render time: {} micros", start.elapsed().as_micros());
+        //         pixels.render().expect("Pixels render oups");
+        //         window.request_redraw();
+        //         system_clock.count_frame();
+
+        //         // Reset input buffers for next loop
+        //         char_received = None;
+        //         keyboard_input = None;
+        //         mouse_move_delta.0 = 0.0;
+        //         mouse_move_delta.1 = 0.0;
+        //     }
+        //     _ => (),
+        // }
     });
 }
 

@@ -1,10 +1,12 @@
 use std::time::Instant;
 
-use app_macro::{AppMacro, AppResponse, AppInputs};
+use app_macro::{AppMacro, AppResponse};
 use app_macro_derive::AppMacro;
+use clock::Clock;
 use rand::Rng;
 use virtual_frame_buffer::{VirtualFrameBuffer, config::{TEXT_COLUMNS, TEXT_ROWS}, color_palettes::*};
-use winit::event::{VirtualKeyCode, ElementState};
+use winit::event::VirtualKeyCode;
+use winit_input_helper::WinitInputHelper;
 
 #[derive(AppMacro)]
 pub struct Life {
@@ -15,7 +17,6 @@ pub struct Life {
     initialized: bool,
     gen_a: Box<[[u8; TEXT_COLUMNS]; TEXT_ROWS]>,
     gen_b: Box<[[u8; TEXT_COLUMNS]; TEXT_ROWS]>,
-    init: bool,
     toggle_gen: bool,
     last_update: Instant,
     welcome_screen: bool,
@@ -27,14 +28,13 @@ pub struct Life {
 impl Life {
     pub fn new() -> Life {
         Life {
-            enable_auto_escape: true,
+            enable_auto_escape: false,
             name: String::from("life"),
             updating: false,
             drawing: false,
             initialized: false,
             gen_a: Box::new([[0; TEXT_COLUMNS]; TEXT_ROWS]),
             gen_b: Box::new([[0; TEXT_COLUMNS]; TEXT_ROWS]),
-            init: true,
             toggle_gen: true,
             last_update: Instant::now(),
             alive: true,
@@ -55,25 +55,26 @@ impl Life {
 
     pub fn update_app(
         &mut self,
-        app_inputs: AppInputs,
-        _virtual_frame_buffer: &mut VirtualFrameBuffer
+        inputs: &WinitInputHelper,
+        _clock: &Clock,
+        virtual_frame_buffer: &mut VirtualFrameBuffer
     ) -> Option<AppResponse> {
         
         if self.welcome_screen {
-            self.update_welcome_screen(app_inputs);
+            self.update_welcome_screen(inputs, virtual_frame_buffer);
         } else if self.game {
-            self.update_game(app_inputs);
+            self.update_game(inputs, virtual_frame_buffer);
         } else {
-            self.update_menu(app_inputs);
+            self.update_menu(inputs, virtual_frame_buffer);
         }
 
         return None;
     }
 
-    pub fn draw_app(&mut self, app_inputs: AppInputs, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    pub fn draw_app(&mut self, inputs: &WinitInputHelper, clock: &Clock, virtual_frame_buffer: &mut VirtualFrameBuffer) {
 
         if self.welcome_screen {
-            self.draw_welcome_screen(app_inputs, virtual_frame_buffer);
+            self.draw_welcome_screen(inputs, clock, virtual_frame_buffer);
         } else if self.game {
             self.draw_game(virtual_frame_buffer);
         } else if self.menu {
@@ -96,53 +97,35 @@ impl Life {
         self.toggle_gen = true;
     }
 
-    fn draw_welcome_screen(&mut self, app_inputs: AppInputs, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    fn draw_welcome_screen(&mut self, _inputs: &WinitInputHelper, clock: &Clock, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         virtual_frame_buffer.get_text_layer_mut().clear();
         virtual_frame_buffer.get_console_mut().display = false;
         virtual_frame_buffer.clear_frame_buffer(BLACK);
-        if app_inputs.system_clock.second_latch  && app_inputs.system_clock.half_second_latch {
-            virtual_frame_buffer.get_text_layer_mut().insert_string_xy(6, 10, "   C n a '  G m  O  L f    ", Some(TRUE_BLUE), Some(BLACK), false, false, false);
-            virtual_frame_buffer.get_text_layer_mut().insert_string_xy(6, 11, "**  o w y s  a e  f  i e **", Some(TRUE_BLUE), Some(BLACK), false, false, false);
-        } else if app_inputs.system_clock.second_latch  && !app_inputs.system_clock.half_second_latch{
-            virtual_frame_buffer.get_text_layer_mut().insert_string_xy(6, 11, "** Conway's Game Of Life **", Some(TRUE_BLUE), Some(BLACK), false, false, false);
+        if clock.second_latch  && clock.half_second_latch {
+            virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 29)/2, 10, " *  C n a '  G m  O  L f   * ", Some(BLUE), Some(BLACK), false, false, false);
+            virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 29)/2, 11, " *   o w y s  a e  f  i e  * ", Some(BLUE), Some(BLACK), false, false, false);
+            virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 29)/2, 12, " *                         * ", Some(BLUE), Some(BLACK), false, false, false);
+        } else if clock.second_latch  && !clock.half_second_latch {
+            virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 29)/2, 11, "*** Conway's Game Of Life ***", Some(BLUE), Some(BLACK), false, false, false);
+        } else if !clock.second_latch  && clock.half_second_latch {
+            virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 29)/2, 10, " *                         * ", Some(BLUE), Some(BLACK), false, false, false);
+            virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 29)/2, 11, " *  C n a '  G m  O  L f   * ", Some(BLUE), Some(BLACK), false, false, false);
+            virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 29)/2, 12, " *   o w y s  a e  f  i e  * ", Some(BLUE), Some(BLACK), false, false, false);
         } else {
-            virtual_frame_buffer.get_text_layer_mut().insert_string_xy(6, 11, "** C n a '  G m  O  L f  **", Some(TRUE_BLUE), Some(BLACK), false, false, false);
-            virtual_frame_buffer.get_text_layer_mut().insert_string_xy(6, 12, "    o w y s  a e  f  i e   ", Some(TRUE_BLUE), Some(BLACK), false, false, false);
+            virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 29)/2, 11, "*** Conway's Game Of Life ***", Some(BLUE), Some(BLACK), false, false, false);
         }
-        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(8, 20, "Press any key to start", Some(TRUE_BLUE), Some(BLACK), false, true, false);
+        virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 20)/2, 20, "Press SPACE to start", Some(ORANGE), Some(BLACK), false, true, false);
+        virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 24)/2, TEXT_ROWS - 1, "2022 - Damien Torreilles", Some(TRUE_BLUE), Some(BLACK), false, false, false);
     }
 
-    fn update_welcome_screen(&mut self, app_inputs: AppInputs) {
-        match app_inputs.char_received {
-            Some(_c) => {
-                self.welcome_screen = false;
-                self.game = true;
-                self.menu = false;
-            },
-            None => ()
-        }
+    fn update_welcome_screen(&mut self, inputs: &WinitInputHelper, _virtual_frame_buffer: &mut VirtualFrameBuffer) {
 
-        match app_inputs.keyboard_input {
-            Some(input) => {
-                match input.virtual_keycode {
-                    Some(code) => {
-                        match code {
-                            VirtualKeyCode::Escape => {
-                                self.welcome_screen = false;
-                                self.menu = true;
-                                self.game = false;
-                            },
-                            _ => {
-                                self.welcome_screen = false;
-                                self.menu = false;
-                                self.game = true;
-                            }
-                        }
-                    },
-                    None => ()
-                }
-            },
-            None => ()
+        if inputs.key_pressed(VirtualKeyCode::Escape) {
+            self.set_state(false, false);
+        } else if !inputs.text().is_empty() {
+            self.welcome_screen = false;
+            self.menu = false;
+            self.game = true;
         }
     }
 
@@ -181,14 +164,14 @@ impl Life {
         }
     }
 
-    fn update_game(&mut self, app_message: AppInputs) {
-        match app_message.char_received {
-            Some(char) => {
-                if char == 'c' {
-                    self.restart_sim();
-                }
-            },
-            _ => ()
+    fn update_game(&mut self, inputs: &WinitInputHelper, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+
+        if inputs.key_released(VirtualKeyCode::C) {
+            self.restart_sim();
+        }
+
+        if inputs.key_released(VirtualKeyCode::Escape) {
+            self.init_app(virtual_frame_buffer);
         }
 
         let now = Instant::now();
@@ -206,33 +189,21 @@ impl Life {
             self.last_update = Instant::now();
 
             if !self.alive {
-                self.init = true;
+                self.restart_sim();
             }
         }
     }
 
-    fn draw_menu(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    fn draw_menu(&mut self, _virtual_frame_buffer: &mut VirtualFrameBuffer) {
 
     }
 
-    fn update_menu(&mut self, app_message: AppInputs) {
-        match app_message.keyboard_input {
-            Some(input) => {
-                match input.virtual_keycode {
-                    Some(code) => {
-                        match code {
-                            VirtualKeyCode::Escape => {
-                                self.welcome_screen = false;
-                                self.menu = false;
-                                self.game = false;
-                            },
-                            _ => ()
-                        }
-                    },
-                    None => ()
-                }
-            },
-            None => ()
+    fn update_menu(&mut self, inputs: &WinitInputHelper, _virtual_frame_buffer: &mut VirtualFrameBuffer) {
+
+        if inputs.key_released(VirtualKeyCode::Escape) {
+            self.welcome_screen = true;
+            self.menu = false;
+            self.game = false;
         }
     }
 

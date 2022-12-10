@@ -30,21 +30,24 @@ impl Clock {
 
     pub fn update(&mut self) {
         let now = Instant::now();
+        let second = self.previous_second_tick.elapsed();
+        let half_second = self.previous_half_second_tick.elapsed();
+
         self.total_running_time = self.start_time.elapsed();
 
-        if self.previous_second_tick.elapsed() >= Duration::new(1, 0) {
+        if second >= Duration::new(1, 0) {
             self.previous_second_tick = now;
+            self.previous_half_second_tick = now;
             self.second_tick = true;
             self.second_latch = !self.second_latch;
-        } else {
-            self.second_tick = false;
-        }
-
-        if self.previous_half_second_tick.elapsed() >= Duration::new(0, 500000000) {
-            self.previous_half_second_tick = now;
             self.half_second_tick = true;
             self.half_second_latch = !self.half_second_latch;
+        } else if half_second >= Duration::new(0, 500000000) {
+            self.previous_half_second_tick = now;
+            self.half_second_tick = true;
+            self.half_second_latch = !self.half_second_latch; 
         } else {
+            self.second_tick = false;
             self.half_second_tick = false;
         }
     }

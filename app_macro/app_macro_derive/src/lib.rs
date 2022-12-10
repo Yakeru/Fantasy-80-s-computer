@@ -35,7 +35,7 @@ fn impl_app_macro(ast: &syn::DeriveInput) -> TokenStream {
                 (self.updating, self.drawing)
             }
 
-            fn update(&mut self, app_inputs: AppInputs, virtual_frame_buffer: &mut VirtualFrameBuffer) -> Option<AppResponse> {
+            fn update(&mut self, inputs: &WinitInputHelper, system_clock: &Clock, virtual_frame_buffer: &mut VirtualFrameBuffer) -> Option<AppResponse> {
                 
                 if !self.initialized {
                     self.init_app(virtual_frame_buffer);
@@ -45,26 +45,31 @@ fn impl_app_macro(ast: &syn::DeriveInput) -> TokenStream {
                 // Implementing default behaviour when ESCAPE key is pressed in app
                 // Ignore for shell
                 if self.enable_auto_escape {
-                    match app_inputs.keyboard_input {
-                        Some(key) => {
-                            match(key.virtual_keycode) {
-                                Some(keycode) => {
-                                    if keycode == VirtualKeyCode::Escape && key.state == ElementState::Released {
-                                        self.set_state(false, false)
-                                    }
-                                },
-                                None => ()
-                            } 
-                        },
-                        None => ()
+
+                    if inputs.key_released(VirtualKeyCode::Escape) {
+                        self.set_state(false, false);
                     }
+
+                    // match inputs.keyboard_input {
+                    //     Some(key) => {
+                    //         match(key.virtual_keycode) {
+                    //             Some(keycode) => {
+                    //                 if keycode == VirtualKeyCode::Escape && key.state == ElementState::Released {
+                    //                     self.set_state(false, false)
+                    //                 }
+                    //             },
+                    //             None => ()
+                    //         } 
+                    //     },
+                    //     None => ()
+                    // }
                 }
                 
-                return self.update_app(app_inputs, virtual_frame_buffer);
+                return self.update_app(inputs, system_clock, virtual_frame_buffer);
             }
             
-            fn draw(&mut self, app_inputs: AppInputs, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-                self.draw_app(app_inputs, virtual_frame_buffer);
+            fn draw(&mut self, inputs: &WinitInputHelper, system_clock: &Clock, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+                self.draw_app(inputs, system_clock, virtual_frame_buffer);
             }
         }
     };

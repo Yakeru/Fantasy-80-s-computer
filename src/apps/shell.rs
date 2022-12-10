@@ -1,3 +1,4 @@
+use clock::Clock;
 use virtual_frame_buffer::*;
 use app_macro::*;
 use app_macro_derive::AppMacro;
@@ -6,9 +7,10 @@ use virtual_frame_buffer::config::{TEXT_COLUMNS, TEXT_ROWS};
 use virtual_frame_buffer::text_layer_char::TextLayerChar;
 
 use winit::{
-    event::{VirtualKeyCode, ElementState},
+    event::VirtualKeyCode,
     event_loop::ControlFlow,
 };
+use winit_input_helper::{WinitInputHelper, TextChar};
 
 const SPLASH: &str = "\u{000D} Fantasy CPC Microcomputer V(0.1)\u{000D}\u{000D} 2022 Damien Torreilles\u{000D}\u{000D}";
 const SHELL_START_MESSAGE: &str = "SHELL 0.1\u{000D}Ready\u{000D}";
@@ -22,7 +24,7 @@ pub struct Shell {
     name: String,
     color: u8,
     bkg_color: u8,
-    last_character_received: Option<char>,
+    //last_character_received: Option<char>,
     clear_text_layer: bool,
     command: Vec<char>,
     // command_history: Vec<String>,
@@ -49,14 +51,14 @@ enum Style {
 
 impl Shell {
     pub fn new() -> Shell {
-        let command_history: Vec<String> = Vec::new();
+        // let command_history: Vec<String> = Vec::new();
 
         Shell {
             enable_auto_escape: false,
             name: String::from("shell"),
             color: DEFAULT_COLOR,
             bkg_color: DEFAULT_BKG_COLOR,
-            last_character_received: None,
+            //last_character_received: None,
             clear_text_layer: false,
             command: Vec::new(),
             // command_history,
@@ -124,11 +126,10 @@ impl Shell {
 
     pub fn update_app(
         &mut self,
-        app_inputs: AppInputs,
+        inputs: &WinitInputHelper,
+        _clock: &Clock,
         virtual_frame_buffer: &mut VirtualFrameBuffer
     ) -> Option<AppResponse> {
-
-        self.last_character_received = app_inputs.char_received;
 
         if self.clear_text_layer {
             virtual_frame_buffer.get_console_mut().clear();
@@ -136,70 +137,50 @@ impl Shell {
             self.clear_text_layer = false;
         }
 
-        match self.last_character_received {
-            Some(unicode) => {
-                match unicode {
-                    unicode::BACKSPACE => {
-                        if !self.command.is_empty() {
-                            self.command.pop();
-                            virtual_frame_buffer.get_console_mut().push_char(unicode);
-                        }
-                    },
-
-                    unicode::ENTER => {
-                        let response = self.interpret_command(self.command.iter().cloned().collect::<String>());
-                        let message_string = response.get_message().clone();
-                        if message_string.is_some() {
-                            virtual_frame_buffer.get_console_mut().push_char('\u{000D}');
-                            virtual_frame_buffer.get_console_mut().push_string(&message_string.unwrap());
-                            virtual_frame_buffer.get_console_mut().push_char('\u{000D}');
-                            virtual_frame_buffer.get_console_mut().push_char('>');
-                        } else {
-                            virtual_frame_buffer.get_console_mut().push_char('\u{000D}');
-                            virtual_frame_buffer.get_console_mut().push_char('>');
-                        }
-                        self.command.clear();
-                        return Some(response);
-                    }
-
-                    unicode::ESCAPE => {
+        if !inputs.text().is_empty() {
+            match inputs.text().get(0) {
+                Some(TextChar::Char(c)) => { 
+                    if *c == unicode::ESCAPE {
                         virtual_frame_buffer.get_console_mut().push_char('\u{000D}');
                         virtual_frame_buffer.get_console_mut().push_string("Type 'quit' or 'exit' to quit Fantasy CPC.");
                         virtual_frame_buffer.get_console_mut().push_char('\u{000D}');
                         virtual_frame_buffer.get_console_mut().push_char('>');
+                        self.command.clear();
+                    } else {
+                        self.command.push(*c);
+                        virtual_frame_buffer.get_console_mut().push_text_layer_char(self.get_text_layer_char_from_style(self.style_a_char(*c, Style::Default)));   
                     }
-
-                    _ => {
-                        self.command.push(unicode);
-                        virtual_frame_buffer.get_console_mut().push_text_layer_char(self.get_text_layer_char_from_style(self.style_a_char(unicode, Style::Default)));
+                },
+                Some(TextChar::Back) => { 
+                    if !self.command.is_empty() {
+                        self.command.pop();
+                        virtual_frame_buffer.get_console_mut().push_char(unicode::BACKSPACE);
                     }
-                }
+                },
+                None => ()
             }
-            None => (),
         }
 
-        match app_inputs.keyboard_input {
-            Some(k) => {
-                match k.virtual_keycode {
-                    Some(code) => {
-                        match code {
-                            // winit::event::VirtualKeyCode::Left => virtual_frame_buffer.get_console_mut().pos_x = virtual_frame_buffer.get_console_mut().pos_x - 1,
-                            // winit::event::VirtualKeyCode::Right => virtual_frame_buffer.get_console_mut().pos_x = virtual_frame_buffer.get_console_mut().pos_x + 1,
-                            // winit::event::VirtualKeyCode::Up => virtual_frame_buffer.get_console_mut().pos_y = virtual_frame_buffer.get_console_mut().pos_y - 1,
-                            // winit::event::VirtualKeyCode::Down => virtual_frame_buffer.get_console_mut().pos_y = virtual_frame_buffer.get_console_mut().pos_y + 1,
-                            _ => ()
-                        }
-                    },
-                    None => ()
-                } 
-            },
-            None => (),
+        if inputs.key_released(VirtualKeyCode::Return) {
+            let response = self.interpret_command(self.command.iter().cloned().collect::<String>());
+            let message_string = response.get_message().clone();
+            if message_string.is_some() {
+                virtual_frame_buffer.get_console_mut().push_char('\u{000D}');
+                virtual_frame_buffer.get_console_mut().push_string(&message_string.unwrap());
+                virtual_frame_buffer.get_console_mut().push_char('\u{000D}');
+                virtual_frame_buffer.get_console_mut().push_char('>');
+            } else {
+                virtual_frame_buffer.get_console_mut().push_char('\u{000D}');
+                virtual_frame_buffer.get_console_mut().push_char('>');
+            }
+            self.command.clear();
+            return Some(response);
         }
 
         return None;
     }
 
-    pub fn draw_app(&mut self, app_inputs: AppInputs, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    pub fn draw_app(&mut self, _inputs: &WinitInputHelper, _clock: &Clock, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         virtual_frame_buffer.clear_frame_buffer(WHITE);
         virtual_frame_buffer.get_console_mut().display = true;
     }
