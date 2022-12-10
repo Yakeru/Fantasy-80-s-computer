@@ -7,6 +7,8 @@ authors = ["Damien Torreilles <damien.torreilles@gmail.com>"]
 [dependencies]
 rand = "0.8.5"
 winit = "0.27.5"
+rand = "0.8.5"
+winit = "0.27.5"
 winit_input_helper = "0.13.0"
 pixels = "0.10.0"
 openweathermap = "0.2.4"

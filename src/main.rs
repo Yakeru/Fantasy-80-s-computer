@@ -121,9 +121,9 @@ fn main() -> Result<(), Error> {
     let life = Box::new(Life::new());
     app_list.push(life);
 
-    // CONWAY'S GAME OF LIFE, TEXT MODE
-    let weather = Box::new(WeatherApp::new());
-    app_list.push(weather);
+    // WEATHER APP
+    let weather_app = Box::new(WeatherApp::new());
+    app_list.push(weather_app);
     
     // ****************************************************** MAIN WINIT EVENT LOOP ***********************************************
     
