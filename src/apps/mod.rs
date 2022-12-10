@@ -1,3 +1,3 @@
 pub mod shell;
 pub mod life;
-pub mod weather;
+pub mod weather_app;

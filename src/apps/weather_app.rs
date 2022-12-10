@@ -10,7 +10,7 @@ use winit_input_helper::WinitInputHelper;
 use std::{time::{Duration, Instant}, f32::consts::PI};
 
 #[derive(AppMacro)]
-pub struct Weather {
+pub struct WeatherApp {
     enable_auto_escape: bool,
     name: String,
     updating: bool,
@@ -23,8 +23,8 @@ pub struct Weather {
     angle: f32
 }
 
-impl Weather {
-    pub fn new() -> Weather {
+impl WeatherApp {
+    pub fn new() -> WeatherApp {
         // let buffer = Vec::new();
 
         let key_env: Option<&'static str> = option_env!("OWM_KEY");
@@ -40,7 +40,7 @@ impl Weather {
             }
         }
 
-        Weather {
+        WeatherApp {
             enable_auto_escape: true,
             name: String::from("weather"),
             updating: false,
