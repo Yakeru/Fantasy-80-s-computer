@@ -140,7 +140,7 @@ impl Life {
                 for row in 0..TEXT_ROWS {
                     if self.gen_a[row][col] > 0 {
                         let color = Some(colors[(self.gen_a[row][col] % len as u8) as usize ]);
-                        virtual_frame_buffer.get_text_layer_mut().insert_char_xy(col, row, '*', color, bkg_color, false, false, false);
+                        virtual_frame_buffer.get_text_layer_mut().insert_char_xy(col, row, '🯅', color, bkg_color, false, false, false);
                     } else {
                         virtual_frame_buffer.get_text_layer_mut().insert_char_xy(col, row, ' ', bkg_color, bkg_color, false, false, false);
                     }
@@ -151,7 +151,7 @@ impl Life {
                 for row in 0..TEXT_ROWS {
                     if self.gen_b[row][col] > 0 {
                         let color = Some(colors[(self.gen_a[row][col] % len as u8) as usize]);
-                        virtual_frame_buffer.get_text_layer_mut().insert_char_xy(col, row, '*', color, bkg_color, false, false, false);
+                        virtual_frame_buffer.get_text_layer_mut().insert_char_xy(col, row, '🯅', color, bkg_color, false, false, false);
                     } else {
                         virtual_frame_buffer.get_text_layer_mut().insert_char_xy(col, row, ' ', bkg_color, bkg_color, false, false, false);
                     }

@@ -1,6 +1,6 @@
 use std::{ops::Range};
 
-use characters_rom::{rom, CHARACTER_WIDTH, CHARACTER_HEIGHT};
+use characters_rom::*;
 use clock::Clock;
 use color_palettes::*;
 use config::*;
@@ -309,7 +309,7 @@ fn text_layer_char_renderer(text_layer_char: &TextLayerChar, frame_x_pos: usize,
     let text_bkg_color = if swap || (blink && half_second_latch) { char_color } else { bck_color };
 
     //Get char picture from  "character rom"
-    let pic = rom(&char);
+    let pic = rom(char);
 
     //Draw picture pixel by pixel in frame buffer
     for row_count in 0..CHARACTER_HEIGHT {

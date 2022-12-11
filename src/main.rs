@@ -310,8 +310,8 @@ pub fn genrate_random_garbage(virtual_frame_buffer: &mut VirtualFrameBuffer) {
         bkg_color = if bkg_color > 31 { 0 } else { bkg_color };
         
         let mut char_index = random.gen_range(0..100);
-        char_index = if char_index > characters_rom::CHARS.len() - 1 { 0 } else { char_index };
-        let c:char = characters_rom::CHARS[char_index];
+        char_index = if char_index > characters_rom::CHAR_TABLE.len() - 1 { 0 } else { char_index };
+        let c:char = characters_rom::CHAR_TABLE[char_index];
 
         let effect:u8 = random.gen_range(0..10);
         let swap: bool = if effect & 0b00000001 > 0 {true} else {false};

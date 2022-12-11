@@ -212,7 +212,7 @@ function generate() {
 }
 
 function printDrawingMatrixTuRustArray() {
-  let text = "'' => [";
+  let text = "('', [";
 
   for (var y = 0; y < editor_height_px; y++) {
     var byte = "";
@@ -223,7 +223,7 @@ function printDrawingMatrixTuRustArray() {
   }
 
   text = text.slice(0, text.length - 2);
-  text += "],";
+  text += "]),";
 
   if (log) console.log(text);
   return text;

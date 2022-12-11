@@ -1,4 +1,5 @@
 use app_macro_derive::AppMacro;
+use virtual_frame_buffer::characters_rom::CHAR_TABLE;
 
 const SPLASH: &str = "\u{000D} Fantasy CPC Microcomputer V(0.1)\u{000D}\u{000D} 2022 Damien Torreilles\u{000D}\u{000D}";
 const SHELL_START_MESSAGE: &str = "SHELL 0.1\u{000D}Ready\u{000D}";
@@ -86,11 +87,14 @@ impl Shell {
                 self.command.clear();
                 self.clear_text_layer = true;
             } else if command == "ps" {
-                // self.push_string("Name,  Updating,  Drawing\u{000D}", Style::Default);
-                // self.push_string(&format!("{},  {},  {}\u{000D}", self.name, self.updating, self.drawing), Style::Default);
-                // for app in self.apps {
-                //     self.push_string(&format!("{},  {},  {}\u{000D}", *app.get_name() , *app.get_state().0, *app.get_state().1), Style::Default);
-                // }
+                
+            } else if command == "test" {
+                let mut toto = Vec::new();
+                for char in CHAR_TABLE {
+                    toto.push(char);
+                }
+                let titi = toto.iter().cloned().collect::<String>();
+                response.set_message(titi);
             } else if command == "quit" || command == "exit" {
                 response.event = Some(ControlFlow::Exit);
                 response.set_message(String::from("Command 'quit' or 'exit' received; stopping."));
