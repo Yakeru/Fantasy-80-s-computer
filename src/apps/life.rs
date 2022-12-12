@@ -133,14 +133,15 @@ impl Life {
         let bkg_color = Some(BLACK);
 
         let colors = [RED, DARK_ORANGE, ORANGE, YELLOW, LIGHT_YELLOW, WHITE];
-        let len = colors.len() - 1;
+        let chars = ['🯆','🯅','🯇','🯈'];
         //render gen_a else render gen_b
         if self.toggle_gen {
             for col in 0..TEXT_COLUMNS {
                 for row in 0..TEXT_ROWS {
                     if self.gen_a[row][col] > 0 {
-                        let color = Some(colors[(self.gen_a[row][col] % len as u8) as usize ]);
-                        virtual_frame_buffer.get_text_layer_mut().insert_char_xy(col, row, '🯅', color, bkg_color, false, false, false);
+                        let color = Some(colors[(self.gen_a[row][col] % (colors.len() - 1) as u8) as usize ]);
+                        let char = chars[(self.gen_a[row][col] % (chars.len() - 1) as u8) as usize ];
+                        virtual_frame_buffer.get_text_layer_mut().insert_char_xy(col, row, char, color, bkg_color, false, false, false);
                     } else {
                         virtual_frame_buffer.get_text_layer_mut().insert_char_xy(col, row, ' ', bkg_color, bkg_color, false, false, false);
                     }
@@ -150,8 +151,9 @@ impl Life {
             for col in 0..TEXT_COLUMNS {
                 for row in 0..TEXT_ROWS {
                     if self.gen_b[row][col] > 0 {
-                        let color = Some(colors[(self.gen_a[row][col] % len as u8) as usize]);
-                        virtual_frame_buffer.get_text_layer_mut().insert_char_xy(col, row, '🯅', color, bkg_color, false, false, false);
+                        let color = Some(colors[(self.gen_a[row][col] % (colors.len() - 1) as u8) as usize]);
+                        let char = chars[(self.gen_a[row][col] % (chars.len() - 1) as u8) as usize ];
+                        virtual_frame_buffer.get_text_layer_mut().insert_char_xy(col, row, char, color, bkg_color, false, false, false);
                     } else {
                         virtual_frame_buffer.get_text_layer_mut().insert_char_xy(col, row, ' ', bkg_color, bkg_color, false, false, false);
                     }
