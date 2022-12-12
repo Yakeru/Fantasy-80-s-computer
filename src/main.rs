@@ -2,7 +2,7 @@ use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}, text_layer_char::T
 use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
-use winit_input_helper::{WinitInputHelper};
+use winit_input_helper::WinitInputHelper;
 use std::time::Duration;
 use winit::{
     dpi::{PhysicalSize, Position, PhysicalPosition},
@@ -15,7 +15,8 @@ use clock::Clock;
 //Apps
 mod apps;
 use crate::apps::shell::*;
-use crate::apps::life::Life;
+use crate::apps::life::*;
+use crate::apps::weather_app::*;
 
 //Settings
 //const FRAME_TIME_MS: u128 = 16; //ms per frame : 16 = 60fps, 32 = 30fps, 1000 = 1fps
@@ -119,6 +120,10 @@ fn main() -> Result<(), Error> {
     // CONWAY'S GAME OF LIFE, TEXT MODE
     let life = Box::new(Life::new());
     app_list.push(life);
+
+    // WEATHER APP
+    let weather_app = Box::new(WeatherApp::new());
+    app_list.push(weather_app);
     
     // ****************************************************** MAIN WINIT EVENT LOOP ***********************************************
     
