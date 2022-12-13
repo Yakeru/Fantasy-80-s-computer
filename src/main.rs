@@ -1,9 +1,11 @@
+use cpal::{traits::{HostTrait, DeviceTrait, StreamTrait}, SampleFormat, Sample, StreamConfig, Device};
+use fundsp::hacker::*;
 use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}, text_layer_char::TextLayerChar, crt_renderer::CrtEffectRenderer};
 use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
 use winit_input_helper::WinitInputHelper;
-use std::time::Duration;
+use std::{time::Duration, thread, sync::mpsc::channel};
 use winit::{
     dpi::{PhysicalSize, Position, PhysicalPosition},
     event_loop::{ControlFlow, EventLoop},
@@ -23,6 +25,19 @@ use crate::apps::weather_app::*;
 //const FRAMES_PER_SEC: u128 = 60;
 
 fn main() -> Result<(), Error> {
+
+    // ************************************************* SOUND SETUP **********************************************    
+    let pitch = shared(midi_hz(69 as f64));
+    let volume = shared(128 as f64);
+    let pitch_bend = shared(1.0);
+    let control = shared(1.0);
+
+    run_output(
+        pitch.clone(),
+        volume.clone(),
+        pitch_bend.clone(),
+        control.clone(),
+    );
 
     // ************************************************ DISPLAY SETUP *********************************************
     // winit setup
@@ -129,6 +144,24 @@ fn main() -> Result<(), Error> {
     
     let mut input = WinitInputHelper::new();
 
+    // if input.key_pressed_os(winit::event::VirtualKeyCode::A) {
+    //     pitch.set_value(midi_hz(69 as f64));
+    // }
+
+    // if input.key_pressed_os(winit::event::VirtualKeyCode::S) {
+    //     pitch.set_value(midi_hz(60 as f64));
+    // }
+
+    let (tx, rx) = channel();
+
+    thread::spawn(move || {
+        loop {
+            let received = rx.recv().unwrap();
+            println!("Got: {}", received);
+            pitch.set_value(midi_hz(received as f64));
+        }
+    });
+
     //The event loop here can be seen as the "bios + boot rom + console" part of the Fantasy computer.
     //It initialises the virtual_frame_buffer, Console 0 and Shell.
     //If no app is running/rendering, it defaults back to running/rendering the Console 0 and Shell.
@@ -196,8 +229,17 @@ fn main() -> Result<(), Error> {
                                     if app[0].get_name() == message {
                                         app[0].set_state(true, true);
                                     }
+                                };
+
+                                if message == String::from("p+") {
+                                    tx.send(69).unwrap();
+                                }
+
+                                if message == String::from("p-") {
+                                    tx.send(60).unwrap();
                                 }
                             }
+                            
                             None => (),
                         }
                     },
@@ -325,5 +367,94 @@ pub fn genrate_random_garbage(virtual_frame_buffer: &mut VirtualFrameBuffer) {
 
         let text_layer_char: TextLayerChar = TextLayerChar{c, color, bkg_color, swap, blink, shadowed};
         char_map[index] = Some(text_layer_char);
+    }
+}
+
+/// This function figures out the sample format and calls `run_synth()` accordingly.
+fn run_output(
+    pitch: Shared<f64>,
+    volume: Shared<f64>,
+    pitch_bend: Shared<f64>,
+    control: Shared<f64>,
+) {
+    let host = cpal::default_host();
+    let device = host
+        .default_output_device()
+        .expect("failed to find a default output device");
+    let config = device.default_output_config().unwrap();
+    match config.sample_format() {
+        SampleFormat::F32 => {
+            run_synth::<f32>(pitch, volume, pitch_bend, control, device, config.into())
+        }
+        SampleFormat::I16 => {
+            run_synth::<i16>(pitch, volume, pitch_bend, control, device, config.into())
+        }
+        SampleFormat::U16 => {
+            run_synth::<u16>(pitch, volume, pitch_bend, control, device, config.into())
+        }
+    }
+}
+
+fn create_sound(
+    pitch: Shared<f64>,
+    volume: Shared<f64>,
+    pitch_bend: Shared<f64>,
+    control: Shared<f64>,
+) -> Box<dyn AudioUnit64> {
+    Box::new(
+        var(&pitch_bend) * var(&pitch)
+            >> triangle() * (var(&control) >> adsr_live(0.1, 0.2, 0.4, 0.2)) * var(&volume),
+    )
+}
+
+/// This function is where the sound is created and played. Once the sound is playing, it loops
+/// infinitely, allowing the `shared()` objects to shape the sound in response to MIDI events.
+fn run_synth<T: Sample>(
+    pitch: Shared<f64>,
+    volume: Shared<f64>,
+    pitch_bend: Shared<f64>,
+    control: Shared<f64>,
+    device: Device,
+    config: StreamConfig,
+) {
+    std::thread::spawn(move || {
+        let sample_rate = config.sample_rate.0 as f64;
+        let mut sound = create_sound(pitch, volume, pitch_bend, control);
+        sound.reset(Some(sample_rate));
+
+        let mut next_value = move || sound.get_stereo();
+        let channels = config.channels as usize;
+        let err_fn = |err| eprintln!("an error occurred on stream: {err}");
+        let stream = device
+            .build_output_stream(
+                &config,
+                move |data: &mut [T], _: &cpal::OutputCallbackInfo| {
+                    write_data(data, channels, &mut next_value)
+                },
+                err_fn,
+            )
+            .unwrap();
+
+        stream.play().unwrap();
+        loop {
+            std::thread::sleep(std::time::Duration::from_millis(1));
+        }
+    });
+}
+
+/// Callback function to send the current sample to the speakers.
+fn write_data<T: Sample>(
+    output: &mut [T],
+    channels: usize,
+    next_sample: &mut dyn FnMut() -> (f64, f64),
+) {
+    for frame in output.chunks_mut(channels) {
+        let sample = next_sample();
+        let left: T = Sample::from::<f32>(&(sample.0 as f32));
+        let right: T = Sample::from::<f32>(&(sample.1 as f32));
+
+        for (channel, sample) in frame.iter_mut().enumerate() {
+            *sample = if channel & 1 == 0 { left } else { right };
+        }
     }
 }
