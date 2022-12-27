@@ -18,7 +18,10 @@ pub struct Life {
     welcome_screen: bool,
     game: bool,
     menu: bool,
-    alive: bool
+    alive: bool,
+    team_a_color: u8,
+    team_b_color: u8,
+    random_game_mode: bool
 }
 
 impl Life {
@@ -36,7 +39,10 @@ impl Life {
             alive: true,
             welcome_screen: true,
             game: false,
-            menu: false
+            menu: false,
+            team_a_color: 8,
+            team_b_color: 28,
+            random_game_mode: true
         }
     }
 
@@ -98,19 +104,20 @@ impl Life {
         virtual_frame_buffer.get_console_mut().display = false;
         virtual_frame_buffer.clear_frame_buffer(BLACK);
         if clock.second_latch  && clock.half_second_latch {
-            virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 29)/2, 10, " *  C n a '  G m  O  L f   * ", Some(BLUE), Some(BLACK), false, false, false);
-            virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 29)/2, 11, " *   o w y s  a e  f  i e  * ", Some(BLUE), Some(BLACK), false, false, false);
-            virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 29)/2, 12, " *                         * ", Some(BLUE), Some(BLACK), false, false, false);
+            virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 29)/2, 10, " 🯆                         🯆 ", Some(BLUE), Some(BLACK), false, false, false);
+            virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 29)/2, 11, " 🯆  Conway's Game Of Life  🯆 ", Some(BLUE), Some(BLACK), false, false, false);
+            virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 29)/2, 12, " 🯆                         🯆 ", Some(BLUE), Some(BLACK), false, false, false);
         } else if clock.second_latch  && !clock.half_second_latch {
-            virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 29)/2, 11, "*** Conway's Game Of Life ***", Some(BLUE), Some(BLACK), false, false, false);
+            virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 29)/2, 11, "🯆🯆🯆 Conway's Game Of Life 🯆🯆🯆", Some(BLUE), Some(BLACK), false, false, false);
         } else if !clock.second_latch  && clock.half_second_latch {
-            virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 29)/2, 10, " *                         * ", Some(BLUE), Some(BLACK), false, false, false);
-            virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 29)/2, 11, " *  C n a '  G m  O  L f   * ", Some(BLUE), Some(BLACK), false, false, false);
-            virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 29)/2, 12, " *   o w y s  a e  f  i e  * ", Some(BLUE), Some(BLACK), false, false, false);
+            virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 29)/2, 10, " 🯆                         🯆 ", Some(BLUE), Some(BLACK), false, false, false);
+            virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 29)/2, 11, " 🯆  Conway's Game Of Life  🯆 ", Some(BLUE), Some(BLACK), false, false, false);
+            virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 29)/2, 12, " 🯆                         🯆 ", Some(BLUE), Some(BLACK), false, false, false);
         } else {
-            virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 29)/2, 11, "*** Conway's Game Of Life ***", Some(BLUE), Some(BLACK), false, false, false);
+            virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 29)/2, 11, "🯆🯆🯆 Conway's Game Of Life 🯆🯆🯆", Some(BLUE), Some(BLACK), false, false, false);
         }
-        virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 20)/2, 20, "Press SPACE to start", Some(ORANGE), Some(BLACK), false, true, false);
+        virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 20)/2, 20, "1 - Random mode", Some(ORANGE), Some(BLACK), false, false, false);
+        virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 20)/2, 21, "2 - Game mode", Some(ORANGE), Some(BLACK), false, false, false);
         virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 24)/2, TEXT_ROWS - 1, "2022 - Damien Torreilles", Some(TRUE_BLUE), Some(BLACK), false, false, false);
     }
 
@@ -118,10 +125,16 @@ impl Life {
 
         if inputs.key_pressed(VirtualKeyCode::Escape) {
             self.set_state(false, false);
-        } else if !inputs.text().is_empty() {
+        } else if inputs.key_pressed(VirtualKeyCode::Key1) {
             self.welcome_screen = false;
             self.menu = false;
             self.game = true;
+            self.random_game_mode = true;
+        } else if inputs.key_pressed(VirtualKeyCode::Key2) {
+            self.welcome_screen = false;
+            self.menu = true;
+            self.game = false;
+            self.random_game_mode = false;
         }
     }
 
@@ -134,12 +147,20 @@ impl Life {
 
         let colors = [RED, DARK_ORANGE, ORANGE, YELLOW, LIGHT_YELLOW, WHITE];
         let chars = ['🯆','🯅','🯇','🯈'];
+
         //render gen_a else render gen_b
         if self.toggle_gen {
             for col in 0..TEXT_COLUMNS {
                 for row in 0..TEXT_ROWS {
                     if self.gen_a[row][col] > 0 {
-                        let color = Some(colors[(self.gen_a[row][col] % (colors.len() - 1) as u8) as usize ]);
+
+                        let color: Option<u8>;
+                        if self.random_game_mode {
+                            color = Some(colors[(self.gen_a[row][col] % (colors.len() - 1) as u8) as usize ]);
+                        } else {
+                            color = Some(self.team_a_color);
+                        }
+                        
                         let char = chars[(self.gen_a[row][col] % (chars.len() - 1) as u8) as usize ];
                         virtual_frame_buffer.get_text_layer_mut().insert_char_xy(col, row, char, color, bkg_color, false, false, false);
                     } else {
@@ -151,7 +172,14 @@ impl Life {
             for col in 0..TEXT_COLUMNS {
                 for row in 0..TEXT_ROWS {
                     if self.gen_b[row][col] > 0 {
-                        let color = Some(colors[(self.gen_a[row][col] % (colors.len() - 1) as u8) as usize]);
+
+                        let color: Option<u8>;
+                        if self.random_game_mode {
+                            color = Some(colors[(self.gen_a[row][col] % (colors.len() - 1) as u8) as usize ]);
+                        } else {
+                            color = Some(self.team_a_color);
+                        }
+                        
                         let char = chars[(self.gen_a[row][col] % (chars.len() - 1) as u8) as usize ];
                         virtual_frame_buffer.get_text_layer_mut().insert_char_xy(col, row, char, color, bkg_color, false, false, false);
                     } else {
@@ -192,8 +220,13 @@ impl Life {
         }
     }
 
-    fn draw_menu(&mut self, _virtual_frame_buffer: &mut VirtualFrameBuffer) {
-
+    fn draw_menu(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+        virtual_frame_buffer.get_text_layer_mut().clear();
+        virtual_frame_buffer.clear_frame_buffer(BLACK);
+        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(5, 5, "Team A : ", Some(BLUE), Some(BLACK), false, false, false);
+        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(5, 7, "Team B : ", Some(BLUE), Some(BLACK), false, false, false);
+        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(14, 5, "🯆", Some(self.team_a_color), Some(BLACK), false, false, false);
+        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(14, 7, "🯆", Some(self.team_b_color), Some(BLACK), false, false, false);
     }
 
     fn update_menu(&mut self, inputs: &WinitInputHelper, _virtual_frame_buffer: &mut VirtualFrameBuffer) {
@@ -202,7 +235,22 @@ impl Life {
             self.welcome_screen = true;
             self.menu = false;
             self.game = false;
+        } else if inputs.key_released(VirtualKeyCode::Left) {
+            self.team_a_color -= 1;
+        } else if inputs.key_released(VirtualKeyCode::Right) {
+            self.team_a_color += 1;
+        } else if inputs.key_released(VirtualKeyCode::Up) {
+            self.team_b_color += 1;
+        } else if inputs.key_released(VirtualKeyCode::Down) {
+            self.team_b_color -= 1;
+        } else if inputs.key_released(VirtualKeyCode::Return) {
+            self.welcome_screen = false;
+            self.menu = false;
+            self.game = true;
         }
+
+        if self.team_a_color == 0 || self.team_a_color >= 31 { self.team_a_color = 1 }
+        if self.team_b_color == 0 || self.team_b_color >= 31 { self.team_b_color = 1 }
     }
 
 }

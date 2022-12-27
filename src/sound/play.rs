@@ -1,8 +1,8 @@
 use std::time::Duration;
 
-use rodio::{Source, OutputStream, Sink};
+use rodio::{Source, Sink};
 
-use super::{square::SquareWave, notes::*};
+use super::{square::SquareWave};
 
 pub fn play(bpm: f32, track_1: &Vec<Option<(f32, f32)>>, track_2: &Vec<Option<(f32, f32)>>, channel_1: &Sink, channel_2: &Sink) {
 
