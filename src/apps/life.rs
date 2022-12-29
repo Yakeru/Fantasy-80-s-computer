@@ -1,8 +1,9 @@
-use std::time::Instant;
+use std::{time::Instant, f32::consts::E};
 
 use app_macro_derive::AppMacro;
 use rand::Rng;
 use virtual_frame_buffer::{VirtualFrameBuffer, config::{TEXT_COLUMNS, TEXT_ROWS}, color_palettes::*};
+use winit::event::ElementState;
 
 #[derive(AppMacro)]
 pub struct Life {
@@ -11,8 +12,8 @@ pub struct Life {
     updating: bool,
     drawing: bool,
     initialized: bool,
-    gen_a: Box<[[u8; TEXT_COLUMNS]; TEXT_ROWS]>,
-    gen_b: Box<[[u8; TEXT_COLUMNS]; TEXT_ROWS]>,
+    gen_a: Box<[[Cell; TEXT_COLUMNS]; TEXT_ROWS]>,
+    gen_b: Box<[[Cell; TEXT_COLUMNS]; TEXT_ROWS]>,
     toggle_gen: bool,
     last_update: Instant,
     welcome_screen: bool,
@@ -24,6 +25,20 @@ pub struct Life {
     random_game_mode: bool
 }
 
+#[derive(Clone, Copy)]
+struct Cell {
+    alive: bool,
+    age: u8,
+    team: Team,
+}
+
+#[derive(Clone, Copy)]
+enum Team {
+    NA,
+    A,
+    B
+}
+
 impl Life {
     pub fn new() -> Life {
         Life {
@@ -32,8 +47,8 @@ impl Life {
             updating: false,
             drawing: false,
             initialized: false,
-            gen_a: Box::new([[0; TEXT_COLUMNS]; TEXT_ROWS]),
-            gen_b: Box::new([[0; TEXT_COLUMNS]; TEXT_ROWS]),
+            gen_a: Box::new([[Cell{alive: false, age: 0, team: Team::NA}; TEXT_COLUMNS]; TEXT_ROWS]),
+            gen_b: Box::new([[Cell{alive: false, age: 0, team: Team::NA}; TEXT_COLUMNS]; TEXT_ROWS]),
             toggle_gen: true,
             last_update: Instant::now(),
             alive: true,
@@ -52,7 +67,6 @@ impl Life {
         self.welcome_screen = true;
         self.game = false;
         self.menu = false;
-        self.restart_sim();
     }
 
     pub fn update_app(
@@ -74,7 +88,6 @@ impl Life {
     }
 
     pub fn draw_app(&mut self, inputs: &WinitInputHelper, clock: &Clock, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-
         if self.welcome_screen {
             self.draw_welcome_screen(inputs, clock, virtual_frame_buffer);
         } else if self.game {
@@ -85,18 +98,56 @@ impl Life {
     }
 
     fn restart_sim(&mut self) {
-        self.gen_b = Box::new([[0; TEXT_COLUMNS]; TEXT_ROWS]);
+
+        //Init gen_b with dead cells
+        self.gen_b = Box::new([[Cell{alive: false, age: 0, team: Team::NA}; TEXT_COLUMNS]; TEXT_ROWS]);
 
         let mut random = rand::thread_rng();
 
+        //For each cell in gen_a, randomize life.
+        //If game mode, cells on the left will be team A, on the right: team B
         for row in 0..TEXT_ROWS {
             for col in 0..TEXT_COLUMNS {
-                self.gen_a[row][col] = random.gen_range(0..2);
+                if self.random_game_mode {
+                    self.gen_a[row][col] = Cell{alive: random.gen_range(0..2) != 0, age: 0, team: Team::NA};
+                } else {
+                    let cell: Cell;
+                    if col < TEXT_COLUMNS / 2 {
+                        cell = Cell{alive: random.gen_range(0..2) != 0, age: 0, team: Team::A};
+                    } else {
+                        cell = Cell{alive: random.gen_range(0..2) != 0, age: 0, team: Team::B};
+                    }
+                    self.gen_a[row][col] = cell;
+                }
             }
         }
-
         self.alive = true;
         self.toggle_gen = true;
+    }
+
+    /*************************************************************************************************************
+    ************************************************************************************************************** 
+                                                    WELCOME SCREEN
+    *************************************************************************************************************
+    **************************************************************************************************************/
+
+    fn update_welcome_screen(&mut self, inputs: &WinitInputHelper, _virtual_frame_buffer: &mut VirtualFrameBuffer) {
+
+        if inputs.key_pressed(VirtualKeyCode::Escape) {
+            self.set_state(false, false);
+        } else if inputs.key_pressed(VirtualKeyCode::Key1) {
+            self.welcome_screen = false;
+            self.menu = false;
+            self.game = true;
+            self.random_game_mode = true;
+            self.restart_sim();
+        } else if inputs.key_pressed(VirtualKeyCode::Key2) {
+            self.welcome_screen = false;
+            self.menu = true;
+            self.game = false;
+            self.random_game_mode = false;
+            self.restart_sim();
+        }
     }
 
     fn draw_welcome_screen(&mut self, _inputs: &WinitInputHelper, clock: &Clock, virtual_frame_buffer: &mut VirtualFrameBuffer) {
@@ -121,74 +172,11 @@ impl Life {
         virtual_frame_buffer.get_text_layer_mut().insert_string_xy((TEXT_COLUMNS - 24)/2, TEXT_ROWS - 1, "2022 - Damien Torreilles", Some(TRUE_BLUE), Some(BLACK), false, false, false);
     }
 
-    fn update_welcome_screen(&mut self, inputs: &WinitInputHelper, _virtual_frame_buffer: &mut VirtualFrameBuffer) {
-
-        if inputs.key_pressed(VirtualKeyCode::Escape) {
-            self.set_state(false, false);
-        } else if inputs.key_pressed(VirtualKeyCode::Key1) {
-            self.welcome_screen = false;
-            self.menu = false;
-            self.game = true;
-            self.random_game_mode = true;
-        } else if inputs.key_pressed(VirtualKeyCode::Key2) {
-            self.welcome_screen = false;
-            self.menu = true;
-            self.game = false;
-            self.random_game_mode = false;
-        }
-    }
-
-    fn draw_game(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-        virtual_frame_buffer.get_text_layer_mut().clear();
-        virtual_frame_buffer.get_console_mut().display = false;
-        virtual_frame_buffer.clear_frame_buffer(WHITE);
-
-        let bkg_color = Some(BLACK);
-
-        let colors = [RED, DARK_ORANGE, ORANGE, YELLOW, LIGHT_YELLOW, WHITE];
-        let chars = ['🯆','🯅','🯇','🯈'];
-
-        //render gen_a else render gen_b
-        if self.toggle_gen {
-            for col in 0..TEXT_COLUMNS {
-                for row in 0..TEXT_ROWS {
-                    if self.gen_a[row][col] > 0 {
-
-                        let color: Option<u8>;
-                        if self.random_game_mode {
-                            color = Some(colors[(self.gen_a[row][col] % (colors.len() - 1) as u8) as usize ]);
-                        } else {
-                            color = Some(self.team_a_color);
-                        }
-                        
-                        let char = chars[(self.gen_a[row][col] % (chars.len() - 1) as u8) as usize ];
-                        virtual_frame_buffer.get_text_layer_mut().insert_char_xy(col, row, char, color, bkg_color, false, false, false);
-                    } else {
-                        virtual_frame_buffer.get_text_layer_mut().insert_char_xy(col, row, ' ', bkg_color, bkg_color, false, false, false);
-                    }
-                }
-            }
-        } else {
-            for col in 0..TEXT_COLUMNS {
-                for row in 0..TEXT_ROWS {
-                    if self.gen_b[row][col] > 0 {
-
-                        let color: Option<u8>;
-                        if self.random_game_mode {
-                            color = Some(colors[(self.gen_a[row][col] % (colors.len() - 1) as u8) as usize ]);
-                        } else {
-                            color = Some(self.team_a_color);
-                        }
-                        
-                        let char = chars[(self.gen_a[row][col] % (chars.len() - 1) as u8) as usize ];
-                        virtual_frame_buffer.get_text_layer_mut().insert_char_xy(col, row, char, color, bkg_color, false, false, false);
-                    } else {
-                        virtual_frame_buffer.get_text_layer_mut().insert_char_xy(col, row, ' ', bkg_color, bkg_color, false, false, false);
-                    }
-                }
-            }
-        }
-    }
+    /*************************************************************************************************************
+    ************************************************************************************************************** 
+                                                    GAME
+    *************************************************************************************************************
+    **************************************************************************************************************/
 
     fn update_game(&mut self, inputs: &WinitInputHelper, virtual_frame_buffer: &mut VirtualFrameBuffer) {
 
@@ -205,10 +193,10 @@ impl Life {
         if now.duration_since(self.last_update).as_millis() >= 50 {
             // Calculate gen_b from gen_a, else calculate gen_b from gen_a
             if self.toggle_gen {
-                self.alive = calculate_life(&mut self.gen_a, &mut self.gen_b);
+                self.alive = calculate_life(&mut self.gen_a, &mut self.gen_b, self.random_game_mode);
                 self.toggle_gen = !self.toggle_gen;
             } else {
-                self.alive = calculate_life(&mut self.gen_b, &mut self.gen_a);
+                self.alive = calculate_life(&mut self.gen_b, &mut self.gen_a, self.random_game_mode);
                 self.toggle_gen = !self.toggle_gen;
             }
 
@@ -220,14 +208,53 @@ impl Life {
         }
     }
 
-    fn draw_menu(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    fn draw_game(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         virtual_frame_buffer.get_text_layer_mut().clear();
-        virtual_frame_buffer.clear_frame_buffer(BLACK);
-        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(5, 5, "Team A : ", Some(BLUE), Some(BLACK), false, false, false);
-        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(5, 7, "Team B : ", Some(BLUE), Some(BLACK), false, false, false);
-        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(14, 5, "🯆", Some(self.team_a_color), Some(BLACK), false, false, false);
-        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(14, 7, "🯆", Some(self.team_b_color), Some(BLACK), false, false, false);
+        virtual_frame_buffer.get_console_mut().display = false;
+        virtual_frame_buffer.clear_frame_buffer(WHITE);
+
+        let bkg_color = Some(BLACK);
+
+        let colors = [RED, DARK_ORANGE, ORANGE, YELLOW, LIGHT_YELLOW, WHITE];
+        let chars = ['🯆','🯅','🯇','🯈'];
+
+        for col in 0..TEXT_COLUMNS {
+            for row in 0..TEXT_ROWS {
+                let cell: Cell;
+
+                //render gen_a else render gen_b
+                if self.toggle_gen {
+                    cell = self.gen_a[row][col];
+                } else {
+                    cell = self.gen_b[row][col];
+                }
+
+                if cell.alive {
+                    let color: Option<u8>;
+                    if self.random_game_mode {
+                        color = Some(colors[(self.gen_a[row][col].age % (colors.len() - 1) as u8) as usize ]);
+                    } else {
+                        match cell.team {
+                                Team::NA => color = Some(0),
+                                Team::A => color = Some(self.team_a_color),
+                                Team::B => color = Some(self.team_b_color)
+                        }
+                    }
+                    
+                    let char = chars[(self.gen_a[row][col].age % (chars.len() - 1) as u8) as usize ];
+                    virtual_frame_buffer.get_text_layer_mut().insert_char_xy(col, row, char, color, bkg_color, false, false, false);
+                } else {
+                    virtual_frame_buffer.get_text_layer_mut().insert_char_xy(col, row, ' ', bkg_color, bkg_color, false, false, false);
+                }
+            }
+        }
     }
+
+    /*************************************************************************************************************
+    ************************************************************************************************************** 
+                                                    MENU
+    *************************************************************************************************************
+    **************************************************************************************************************/
 
     fn update_menu(&mut self, inputs: &WinitInputHelper, _virtual_frame_buffer: &mut VirtualFrameBuffer) {
 
@@ -253,35 +280,82 @@ impl Life {
         if self.team_b_color == 0 || self.team_b_color >= 31 { self.team_b_color = 1 }
     }
 
+    fn draw_menu(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+        virtual_frame_buffer.get_text_layer_mut().clear();
+        virtual_frame_buffer.clear_frame_buffer(BLACK);
+        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(5, 5, "Team A : ", Some(BLUE), Some(BLACK), false, false, false);
+        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(5, 7, "Team B : ", Some(BLUE), Some(BLACK), false, false, false);
+        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(14, 5, "🯆", Some(self.team_a_color), Some(BLACK), false, false, false);
+        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(14, 7, "🯆", Some(self.team_b_color), Some(BLACK), false, false, false);
+    }
 }
+
+/*************************************************************************************************************
+************************************************************************************************************** 
+                                                VARIOUS FUNCTIONS
+*************************************************************************************************************
+**************************************************************************************************************/
 
 /// Conway's Game of Life
 /// Returns false if stuck in infinite loop, true if things are still dying and birthing
-fn calculate_life(current_gen: &mut [[u8; TEXT_COLUMNS]; TEXT_ROWS], next_gen: &mut [[u8; TEXT_COLUMNS]; TEXT_ROWS]) -> bool {
+fn calculate_life(current_gen: &mut [[Cell; TEXT_COLUMNS]; TEXT_ROWS], next_gen: &mut [[Cell; TEXT_COLUMNS]; TEXT_ROWS], random_game_mode: bool) -> bool {
     let mut death_count = 0;
+    let mut old_age_death_count = 0;
     let mut birth_count = 0;
 
     for row in 0..TEXT_ROWS {
         for col in 0..TEXT_COLUMNS {
-            let mut count = 0;
+            let mut a_team_count = 0;
+            let mut b_team_count = 0;
+            let mut total_count = 0;
+            let current_cell = current_gen[row][col];
+            let dead_cell = Cell{alive: false, team: Team::NA, age: 0};
+            let mut next_gen_cell = current_cell;
+
+            //For each of the 8 cells arround current_gen[row][col]
             for row_test in (if row == 0 {0} else {row-1})..(if row == TEXT_ROWS - 1 {TEXT_ROWS - 1} else {row+2}) {
                 for col_test in (if col == 0 {0} else {col-1})..(if col == TEXT_COLUMNS - 1 {TEXT_COLUMNS - 1} else {col+2}) {
-                    if !(col_test == col && row_test == row) && current_gen[row_test][col_test] > 0 { 
-                        count += 1 
-                    };
+                    if !(col_test == col && row_test == row) /*&& current_gen[row_test][col_test].0 > 0*/ {
+                        let neighbour_cell = current_gen[row_test][col_test];
+                        if neighbour_cell.alive {
+                            total_count += 1;
+                            
+                            match neighbour_cell.team {
+                                Team::NA => (),
+                                Team::A => a_team_count += 1,
+                                Team::B => b_team_count += 1
+                            }
+                        }
+                    }
                 }
             }
-            if count < 2 || count > 3 {
-                next_gen[row][col] = 0;
-                if current_gen[row][col] == 1 {
-                    death_count += 1;
+
+            if current_cell.alive && (total_count < 2 || total_count > 3) {
+                next_gen_cell = dead_cell;
+                death_count += 1;
+            } else if !current_cell.alive && total_count == 3 {
+                next_gen_cell.alive = true;
+                next_gen_cell.age = 0;
+                if random_game_mode {
+                    next_gen_cell.team = Team::NA;    
+                } else {
+                    if a_team_count > b_team_count {
+                        next_gen_cell.team = Team::A;
+                    } else {
+                        next_gen_cell.team = Team::B;
+                    } 
                 }
-            } else if count == 3 && current_gen[row][col] == 0 {
-                next_gen[row][col] = 1;
                 birth_count += 1;
-            } else {
-                next_gen[row][col] = if current_gen[row][col] == 0 {0} else {current_gen[row][col] + 1}
+            } else if current_cell.alive {
+                if current_cell.age == 255 {
+                    next_gen_cell = dead_cell;
+                    old_age_death_count += 1;
+                } else {
+                    next_gen_cell.age += 1;
+                }
             }
+
+            next_gen[row][col] = next_gen_cell;
         }
     }
     //println!("{}, {}", birth_count, death_count);
