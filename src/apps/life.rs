@@ -27,9 +27,7 @@ pub struct Life {
     team_b_color: u8,
     random_game_mode: bool,
     color_themes: Vec<Vec<u8>>,
-    current_theme: usize,
-    previous_death_count: usize,
-    previous_birth_count: usize,
+    current_theme: usize
 }
 
 #[derive(Clone, Copy)]
@@ -85,9 +83,7 @@ impl Life {
             team_b_color: 28,
             random_game_mode: true,
             color_themes: vec![fire, ice, nature, brazil, france, crazy],
-            current_theme: 0,
-            previous_death_count: 0,
-            previous_birth_count: 0,
+            current_theme: 0
         }
     }
 
@@ -517,7 +513,6 @@ fn calculate_life(
     random_game_mode: bool,
 ) -> bool {
     let mut death_count = 0;
-    let mut old_age_death_count = 0;
     let mut birth_count = 0;
     let mut stillborn_count = 0;
 
@@ -583,7 +578,6 @@ fn calculate_life(
             } else if current_cell.alive {
                 if current_cell.age == 255 {
                     next_gen_cell = dead_cell;
-                    old_age_death_count += 1;
                 } else {
                     next_gen_cell.age += 1;
                 }

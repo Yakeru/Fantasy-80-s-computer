@@ -1,4 +1,4 @@
-use rodio::{OutputStream, Sink, source::SineWave, Source};
+use rodio::{OutputStream, Sink, Source};
 use sound::{notes::*, play};
 use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}, text_layer_char::TextLayerChar, crt_renderer::CrtEffectRenderer};
 use app_macro::*;
@@ -22,7 +22,6 @@ use crate::apps::weather_app::*;
 
 //Sound
 mod sound;
-use crate::sound::square::*;
 use crate::play::play;
 
 //Settings
@@ -36,8 +35,8 @@ fn main() -> Result<(), Error> {
     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
     let channel_1 = Sink::try_new(&stream_handle).unwrap();
     let channel_2 = Sink::try_new(&stream_handle).unwrap();
-    let channel_3 = Sink::try_new(&stream_handle).unwrap();
-    let channel_4 = Sink::try_new(&stream_handle).unwrap();
+    let _channel_3 = Sink::try_new(&stream_handle).unwrap();
+    let _channel_4 = Sink::try_new(&stream_handle).unwrap();
 
     let _handle = thread::Builder::new().name("sound".to_string()).spawn(move || {
 

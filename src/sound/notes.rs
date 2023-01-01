@@ -1,3 +1,5 @@
+#[allow(dead_code)]
+
 pub const C0: f32 = 16.35;
 pub const CS0: f32 = 17.32;
 pub const D0: f32 = 18.35;
