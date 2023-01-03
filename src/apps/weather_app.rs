@@ -76,25 +76,25 @@ impl WeatherApp {
 
     fn draw_app(&mut self, _inputs: &WinitInputHelper, _clock: &Clock, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         virtual_frame_buffer.get_text_layer_mut().clear();
-        virtual_frame_buffer.clear_frame_buffer(DARK_GREY);
+        virtual_frame_buffer.clear(DARK_GREY);
         virtual_frame_buffer.get_console_mut().display = false;
 
         let x: usize = 100;
         let y: usize = 150;
         let r: usize = 50;
 
-        draw_a_circle(x+1, y-1, r, WHITE, true, virtual_frame_buffer.get_frame_mut());
-        draw_a_circle(x-1, y+1, r, BLACK, true, virtual_frame_buffer.get_frame_mut());
-        draw_a_circle(x, y, r, YELLOW, true, virtual_frame_buffer.get_frame_mut());
-        draw_a_circle(x+1, y-1, r-10, BLACK, true, virtual_frame_buffer.get_frame_mut());
-        draw_a_circle(x-1, y+1, r-10, WHITE, true, virtual_frame_buffer.get_frame_mut());
-        draw_a_circle(x, y, r-10, LIGHT_GREY, true, virtual_frame_buffer.get_frame_mut());
-        draw_a_line(x, y, x, y-r+14, RED, virtual_frame_buffer.get_frame_mut());
-        draw_a_line(x+1, y-r+15, x+1, y-r+17, RED, virtual_frame_buffer.get_frame_mut());
-        draw_a_line(x-1, y-r+15, x-1, y-r+17, RED, virtual_frame_buffer.get_frame_mut());
-        draw_a_circle(x, y, 4, RED, true, virtual_frame_buffer.get_frame_mut());
+        circle(x+1, y-1, r, WHITE, true, virtual_frame_buffer.get_frame_mut());
+        circle(x-1, y+1, r, BLACK, true, virtual_frame_buffer.get_frame_mut());
+        circle(x, y, r, YELLOW, true, virtual_frame_buffer.get_frame_mut());
+        circle(x+1, y-1, r-10, BLACK, true, virtual_frame_buffer.get_frame_mut());
+        circle(x-1, y+1, r-10, WHITE, true, virtual_frame_buffer.get_frame_mut());
+        circle(x, y, r-10, LIGHT_GREY, true, virtual_frame_buffer.get_frame_mut());
+        line(x, y, x, y-r+14, RED, virtual_frame_buffer.get_frame_mut());
+        line(x+1, y-r+15, x+1, y-r+17, RED, virtual_frame_buffer.get_frame_mut());
+        line(x-1, y-r+15, x-1, y-r+17, RED, virtual_frame_buffer.get_frame_mut());
+        circle(x, y, 4, RED, true, virtual_frame_buffer.get_frame_mut());
 
-        draw_a_line_differently(x, y, 30, RED, self.angle, virtual_frame_buffer.get_frame_mut());
+        vector(x, y, 30, RED, self.angle, virtual_frame_buffer.get_frame_mut());
         
         match &self.current_weather {
             Some(result) => match result {

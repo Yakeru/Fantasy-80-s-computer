@@ -331,7 +331,7 @@ fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &
     //Clear garbage and display Loading...
     if clock.total_running_time >= Duration::new(3, 0) {
         virtual_frame_buffer.get_text_layer_mut().clear();
-        virtual_frame_buffer.clear_frame_buffer(0);
+        virtual_frame_buffer.clear(0);
         virtual_frame_buffer.get_text_layer_mut().insert_string_xy(0, 0, "Loading..." , Some(WHITE), Some(BLACK), false, false, false);
     }
 
@@ -342,7 +342,7 @@ fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &
     
     if clock.total_running_time >= Duration::new(6, 0) {
         virtual_frame_buffer.get_text_layer_mut().clear();
-        virtual_frame_buffer.clear_frame_buffer(0);
+        virtual_frame_buffer.clear(0);
         return false;
     }
     else {
@@ -355,7 +355,7 @@ pub fn genrate_random_garbage(virtual_frame_buffer: &mut VirtualFrameBuffer) {
     let mut random = rand::thread_rng();
         
     let frame: u8 = random.gen_range(0..32);
-    virtual_frame_buffer.clear_frame_buffer(frame);
+    virtual_frame_buffer.clear(frame);
     virtual_frame_buffer.get_text_layer_mut().clear();
 
     let char_map = virtual_frame_buffer.get_text_layer_mut().get_char_map_mut();

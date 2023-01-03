@@ -173,7 +173,7 @@ impl Shell {
     }
 
     pub fn draw_app(&mut self, _inputs: &WinitInputHelper, _clock: &Clock, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-        virtual_frame_buffer.clear_frame_buffer(WHITE);
+        virtual_frame_buffer.clear(WHITE);
         virtual_frame_buffer.get_console_mut().display = true;
     }
 }

@@ -137,7 +137,7 @@ impl VirtualFrameBuffer {
     /// Sets all the pixels to the specified color of the color palette
     /// Used to clear the screen between frames or set the background when
     /// redering only the text layer
-    pub fn clear_frame_buffer(&mut self, color: u8) {
+    pub fn clear(&mut self, color: u8) {
         //let clear_frame: [u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT] = [color; VIRTUAL_WIDTH * VIRTUAL_HEIGHT];
         self.frame
             .copy_from_slice(&[color; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]);
@@ -346,22 +346,22 @@ fn text_layer_char_renderer(text_layer_char: &TextLayerChar, frame_x_pos: usize,
 
 }
 
-pub fn draw_line(line: Line, frame: &mut [u8]) {
-    let dx: isize = (line.x2 as isize - line.x1 as isize).abs();
-    let dy: isize = -(line.y2 as isize - line.y1 as isize).abs();
-    let sx: isize = if line.x1 < line.x2 { 1 } else { -1 };
-    let sy: isize = if line.y1 < line.y2 { 1 } else { -1 };
+pub fn line(x1: usize, y1: usize, x2: usize, y2: usize, color: u8, frame: &mut [u8]) {
+    let dx: isize = (x2 as isize - x1 as isize).abs();
+    let dy: isize = -(y2 as isize - y1 as isize).abs();
+    let sx: isize = if x1 < x2 { 1 } else { -1 };
+    let sy: isize = if y1 < y2 { 1 } else { -1 };
     let mut error = dx + dy;
 
-    let mut x0 = line.x1 as isize;
-    let mut y0 = line.y1 as isize;
-    let x1 = line.x2 as isize;
-    let y1 = line.y2 as isize;
+    let mut x0 = x1 as isize;
+    let mut y0 = y1 as isize;
+    let x1 = x2 as isize;
+    let y1 = y2 as isize;
 
     loop {
         let index = frame_coord_to_index(x0 as usize, y0 as usize);
         if index.is_some() {
-            frame[index.unwrap()] = line.color;
+            frame[index.unwrap()] = color;
         }
 
         if x0 == x1 && y0 == y1 {
@@ -387,12 +387,7 @@ pub fn draw_line(line: Line, frame: &mut [u8]) {
     }
 }
 
-pub fn draw_a_line(x1: usize, y1: usize, x2: usize, y2: usize, color: u8, frame: &mut [u8]) {
-    let line: Line = Line { x1, y1, x2, y2, color };
-    draw_line(line, frame);
-}
-
-pub fn draw_a_line_differently(x: usize, y: usize, l: usize, color: u8, a:f32, frame: &mut [u8]) {
+pub fn vector(x: usize, y: usize, l: usize, color: u8, a:f32, frame: &mut [u8]) {
 
     let x1 = x;
     let y1 = y;
@@ -416,107 +411,96 @@ pub fn draw_a_line_differently(x: usize, y: usize, l: usize, color: u8, a:f32, f
         y2 = y1 + y_move.round() as usize;
     }
 
-    draw_a_line(x1, y1, x2, y2, color, frame);
+    line(x1, y1, x2, y2, color, frame);
 
 }
 
-pub fn draw_square(square: Square, frame: &mut [u8]) {
+pub fn square(x: usize, y: usize, width: usize, height: usize, color: u8, fill: bool, frame: &mut [u8]) {
     let mut current_line: usize = 0;
-    let line_range: Range<usize> = square.y..(square.y + square.height + 1);
+    let line_range: Range<usize> = y..(y + height + 1);
 
     for virtual_frame_row in frame.chunks_exact_mut(VIRTUAL_WIDTH) { // TODO use advance_by once it's stable
         if line_range.contains(&current_line) {
-            if current_line == square.y || current_line == square.y + square.height {
-                for pixel_index in square.x..(square.x + square.width + 1) {
+            if current_line == y || current_line == y + height {
+                for pixel_index in x..(x + width + 1) {
                     if pixel_index < VIRTUAL_WIDTH {
-                        virtual_frame_row[pixel_index] = square.color;
+                        virtual_frame_row[pixel_index] = color;
                     }
                 }
             } else {
-                if square.fill {
-                    for pixel_index in square.x..(square.x + square.width + 1) {
+                if fill {
+                    for pixel_index in x..(x + width + 1) {
                         if pixel_index < VIRTUAL_WIDTH {
-                            virtual_frame_row[pixel_index] = square.color;
+                            virtual_frame_row[pixel_index] = color;
                         }
                     }
                 } else {
-                    if square.x < VIRTUAL_WIDTH {
-                        virtual_frame_row[square.x] = square.color;
+                    if x < VIRTUAL_WIDTH {
+                        virtual_frame_row[x] = color;
                     }
 
-                    if square.x + square.width < VIRTUAL_WIDTH {
-                        virtual_frame_row[square.x + square.width] = square.color;
+                    if x + width < VIRTUAL_WIDTH {
+                        virtual_frame_row[x + width] = color;
                     }
                 }
             }
         }
         current_line += 1;
-        if current_line == square.y + square.height + 1 { break };
+        if current_line == y + height + 1 { break };
     }
 }
 
-pub fn draw_a_square(x: usize, y: usize, width: usize, height: usize, color: u8, fill: bool, frame: &mut [u8]) {
-    let square: Square = Square { x, y, width, height, color, fill };
-    draw_square(square, frame);  
-}
+pub fn circle(x: usize, y: usize, r: usize, color: u8, fill: bool, frame: &mut [u8]) {
 
-pub fn draw_circle(circle: Circle, frame: &mut [u8]) {
+    for b in 0..(r * 3/4  + 1) {
+        let a: f64 = (((r * r) - (b * b)) as f64).sqrt();
 
-    for b in 0..(circle.r * 3/4  + 1) {
-        let a: f64 = (((circle.r * circle.r) - (b * b)) as f64).sqrt();
+        let point1 = (x + b, y + a.round() as usize);
+        let point2 = (x + b, y - a.round() as usize);
+        let point3 = (x - b, y + a.round() as usize);
+        let point4 = (x - b, y - a.round() as usize);
 
-        let point1 = (circle.x + b, circle.y + a.round() as usize);
-        let point2 = (circle.x + b, circle.y - a.round() as usize);
-        let point3 = (circle.x - b, circle.y + a.round() as usize);
-        let point4 = (circle.x - b, circle.y - a.round() as usize);
-
-        if !circle.fill {
+        if !fill {
             let point = frame_coord_to_index(point1.0, point1.1);
-            if point.is_some() {frame[point.unwrap()] = circle.color};
+            if point.is_some() {frame[point.unwrap()] = color};
     
             let point = frame_coord_to_index(point2.0, point2.1);
-            if point.is_some() {frame[point.unwrap()] = circle.color};
+            if point.is_some() {frame[point.unwrap()] = color};
     
             let point = frame_coord_to_index(point3.0, point4.1);
-            if point.is_some() {frame[point.unwrap()] = circle.color};
+            if point.is_some() {frame[point.unwrap()] = color};
     
             let point = frame_coord_to_index(point4.0, point4.1);
-            if point.is_some() {frame[point.unwrap()] = circle.color};
+            if point.is_some() {frame[point.unwrap()] = color};
         } else {
-            draw_a_line(point1.0, point1.1, point3.0, point3.1, circle.color, frame);
-            draw_a_line(point2.0, point2.1, point4.0, point4.1, circle.color, frame);
+            line(point1.0, point1.1, point3.0, point3.1, color, frame);
+            line(point2.0, point2.1, point4.0, point4.1, color, frame);
         }
-        
     }
 
-    for a in 0..(circle.r * 3/4 + 1) {
-        let b: f64 = (((circle.r * circle.r) - (a * a)) as f64).sqrt();
+    for a in 0..(r * 3/4 + 1) {
+        let b: f64 = (((r * r) - (a * a)) as f64).sqrt();
 
-        let point1 = (circle.x + b.round() as usize, circle.y + a);
-        let point2 = (circle.x + b.round() as usize, circle.y - a);
-        let point3 = (circle.x - b.round() as usize, circle.y + a);
-        let point4 = (circle.x - b.round() as usize, circle.y - a);
+        let point1 = (x + b.round() as usize, y + a);
+        let point2 = (x + b.round() as usize, y - a);
+        let point3 = (x - b.round() as usize, y + a);
+        let point4 = (x - b.round() as usize, y - a);
         
-        if !circle.fill {
+        if !fill {
             let point = frame_coord_to_index(point1.0, point1.1);
-            if point.is_some() {frame[point.unwrap()] = circle.color};
+            if point.is_some() {frame[point.unwrap()] = color};
 
             let point = frame_coord_to_index(point2.0, point2.1);
-            if point.is_some() {frame[point.unwrap()] = circle.color};
+            if point.is_some() {frame[point.unwrap()] = color};
 
             let point = frame_coord_to_index(point3.0, point4.1);
-            if point.is_some() {frame[point.unwrap()] = circle.color};
+            if point.is_some() {frame[point.unwrap()] = color};
 
             let point = frame_coord_to_index(point4.0, point4.1);
-            if point.is_some() {frame[point.unwrap()] = circle.color};
+            if point.is_some() {frame[point.unwrap()] = color};
         } else {
-            draw_a_line(point1.0, point1.1, point3.0, point3.1, circle.color, frame);
-            draw_a_line(point2.0, point2.1, point4.0, point4.1, circle.color, frame);
+            line(point1.0, point1.1, point3.0, point3.1, color, frame);
+            line(point2.0, point2.1, point4.0, point4.1, color, frame);
         }
     }
-}
-
-pub fn draw_a_circle(x: usize, y: usize, r: usize, color: u8, fill: bool, frame: &mut [u8]) {
-    let circle: Circle = Circle { x, y, r, color, fill };
-    draw_circle(circle, frame);
 }

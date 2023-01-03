@@ -210,7 +210,7 @@ impl Life {
     ) {
         virtual_frame_buffer.get_text_layer_mut().clear();
         virtual_frame_buffer.get_console_mut().display = false;
-        virtual_frame_buffer.clear_frame_buffer(BLACK);
+        virtual_frame_buffer.clear(BLACK);
         if clock.second_latch && clock.half_second_latch {
             virtual_frame_buffer.get_text_layer_mut().insert_string_xy(
                 (TEXT_COLUMNS - 29) / 2,
@@ -372,7 +372,7 @@ impl Life {
     fn draw_game(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         virtual_frame_buffer.get_text_layer_mut().clear();
         virtual_frame_buffer.get_console_mut().display = false;
-        virtual_frame_buffer.clear_frame_buffer(WHITE);
+        virtual_frame_buffer.clear(WHITE);
 
         let bkg_color = Some(BLACK);
 
@@ -455,7 +455,7 @@ impl Life {
 
     fn draw_menu(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
         virtual_frame_buffer.get_text_layer_mut().clear();
-        virtual_frame_buffer.clear_frame_buffer(BLACK);
+        virtual_frame_buffer.clear(BLACK);
         virtual_frame_buffer.get_text_layer_mut().insert_string_xy(
             5,
             5,
