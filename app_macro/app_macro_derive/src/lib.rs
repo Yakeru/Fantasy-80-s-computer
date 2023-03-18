@@ -25,7 +25,7 @@ fn impl_app_macro(ast: &syn::DeriveInput) -> TokenStream {
         use virtual_frame_buffer::*;
         use virtual_frame_buffer::config::*;
         use virtual_frame_buffer::color_palettes::*;
-        use virtual_frame_buffer::text_layer_char::*;
+        use virtual_frame_buffer::text_layer::*;
         use app_macro::*;
 
         impl AppMacro for #name {

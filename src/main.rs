@@ -1,6 +1,6 @@
 use rodio::{OutputStream, Sink, Source};
 use sound::{notes::*, play};
-use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}, text_layer_char::TextLayerChar, crt_renderer::CrtEffectRenderer};
+use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}, text_layer::TextLayerChar, crt_renderer::CrtEffectRenderer};
 use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
@@ -35,8 +35,8 @@ fn main() -> Result<(), Error> {
     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
     let channel_1 = Sink::try_new(&stream_handle).unwrap();
     let channel_2 = Sink::try_new(&stream_handle).unwrap();
-    let _channel_3 = Sink::try_new(&stream_handle).unwrap();
-    let _channel_4 = Sink::try_new(&stream_handle).unwrap();
+    //let channel_3 = Sink::try_new(&stream_handle).unwrap();
+    //let channel_4 = Sink::try_new(&stream_handle).unwrap();
 
     let _handle = thread::Builder::new().name("sound".to_string()).spawn(move || {
 

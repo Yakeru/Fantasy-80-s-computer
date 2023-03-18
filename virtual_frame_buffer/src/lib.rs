@@ -6,12 +6,10 @@ use color_palettes::*;
 use config::*;
 use console::Console;
 use sprite::Sprite;
-use text_layer::{TextLayer, text_index_to_frame_coord, text_coord_to_frame_coord};
-use text_layer_char::TextLayerChar;
+use text_layer::{TextLayer, text_index_to_frame_coord, text_coord_to_frame_coord, TextLayerChar};
 
 pub mod config;
 pub mod characters_rom;
-pub mod text_layer_char;
 pub mod color_palettes;
 pub mod sprite;
 pub mod text_layer;
@@ -23,6 +21,7 @@ pub mod crt_renderer;
 /// This frame buffer is meant to contain a low resolution low color picure that
 /// will be upscaled into the final pixel 2D frame buffer.
 pub struct VirtualFrameBuffer {
+    
     frame: Box<[u8]>,
     color_palette: ColorPalette,
     line_scroll_list: Box<[i8]>,
@@ -234,7 +233,7 @@ fn sprite_layer_renderer(sprites: &Vec<Sprite>, frame: &mut [u8]) {
                 }
     
                 pixel_count += 1;
-                if pixel_count == sprite.value_in_physical_size().0 {
+                if pixel_count == sprite.size.size().0 as usize {
                     pixel_count = 0;
                     sprite_line_count += 1;
                 }

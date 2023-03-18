@@ -1,4 +1,4 @@
-use crate::text_layer_char::TextLayerChar;
+use crate::text_layer::TextLayerChar;
 
 pub struct Console {
     pub display: bool,

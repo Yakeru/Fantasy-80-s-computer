@@ -13,24 +13,17 @@ pub struct Sprite {
 
 pub enum SpriteSize {
     _8x8,
-    _8x16,
-    _16x8,
     _16x16,
-    _16x32,
-    _32x16,
-    _32x32,
+    _32x32
 }
 
-pub fn value_from_physical_size(x: usize, y: usize) -> SpriteSize {
-    match (x, y) {
-        (8, 8) => SpriteSize::_8x8,
-        (8, 16) => SpriteSize::_8x16,
-        (16, 8) => SpriteSize::_16x8,
-        (16, 16) => SpriteSize::_16x16,
-        (16, 32) => SpriteSize::_16x32,
-        (32, 16) => SpriteSize::_32x16,
-        (32, 32) => SpriteSize::_32x32,
-        _ => SpriteSize::_16x16,
+impl SpriteSize {
+    pub fn size(&self) -> (u8, u8) {
+        match *self {
+            SpriteSize::_8x8 => (8, 8),
+            SpriteSize::_16x16 => (16, 16),
+            SpriteSize::_32x32 => (32, 32),
+        }
     }
 }
 
@@ -46,24 +39,12 @@ impl Sprite {
         Sprite {
             pos_x: 0,
             pos_y: 0,
-            size: SpriteSize::_16x16,
+            size: SpriteSize::_8x8,
             visible: true,
             h_flipp: false,
             v_flipp: false,
             image,
             id,
-        }
-    }
-
-    pub fn value_in_physical_size(&self) -> (usize, usize) {
-        match self.size {
-            SpriteSize::_8x8 => (8 as usize, 8 as usize),
-            SpriteSize::_8x16 => (8 as usize, 16 as usize),
-            SpriteSize::_16x8 => (16 as usize, 8 as usize),
-            SpriteSize::_16x16 => (16 as usize, 16 as usize),
-            SpriteSize::_16x32 => (16 as usize, 32 as usize),
-            SpriteSize::_32x16 => (32 as usize, 16 as usize),
-            SpriteSize::_32x32 => (32 as usize, 23 as usize),
         }
     }
 
@@ -83,7 +64,7 @@ impl Sprite {
         Sprite {
             pos_x: 0,
             pos_y: 0,
-            size: value_from_physical_size(size_x, size_y),
+            size: SpriteSize::_8x8,
             visible: true,
             h_flipp: false,
             v_flipp: false,
