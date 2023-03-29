@@ -15,6 +15,7 @@ pub struct Life {
     updating: bool,
     drawing: bool,
     initialized: bool,
+    gen_past: [[bool; TEXT_COLUMNS]; TEXT_ROWS],
     gen_a: Box<[[Cell; TEXT_COLUMNS]; TEXT_ROWS]>,
     gen_b: Box<[[Cell; TEXT_COLUMNS]; TEXT_ROWS]>,
     toggle_gen: bool,
@@ -59,6 +60,7 @@ impl Life {
             updating: false,
             drawing: false,
             initialized: false,
+            gen_past: [[false; TEXT_COLUMNS]; TEXT_ROWS],
             gen_a: Box::new(
                 [[Cell {
                     alive: false,
@@ -353,11 +355,11 @@ impl Life {
             // Calculate gen_b from gen_a, else calculate gen_b from gen_a
             if self.toggle_gen {
                 self.alive =
-                    calculate_life(&mut self.gen_a, &mut self.gen_b, self.random_game_mode);
+                    calculate_life(&mut self.gen_past, &mut self.gen_a, &mut self.gen_b, self.random_game_mode);
                 self.toggle_gen = !self.toggle_gen;
             } else {
                 self.alive =
-                    calculate_life(&mut self.gen_b, &mut self.gen_a, self.random_game_mode);
+                    calculate_life(&mut self.gen_past, &mut self.gen_b, &mut self.gen_a, self.random_game_mode);
                 self.toggle_gen = !self.toggle_gen;
             }
 
@@ -508,6 +510,7 @@ impl Life {
 /// Conway's Game of Life
 /// Returns false if stuck in infinite loop, true if things are still dying and birthing
 fn calculate_life(
+    previous_gen: &mut [[bool; TEXT_COLUMNS]; TEXT_ROWS], 
     current_gen: &mut [[Cell; TEXT_COLUMNS]; TEXT_ROWS],
     next_gen: &mut [[Cell; TEXT_COLUMNS]; TEXT_ROWS],
     random_game_mode: bool,
@@ -587,11 +590,24 @@ fn calculate_life(
         }
     }
 
+    //Compare previous gen with nextgen. If identical, simulation has arrived to a final state
     //Return false if simulation arrived to a final state
-    if (death_count == stillborn_count) && (death_count == birth_count) {
-        //println!("D: {} B: {} StB: {} O: {}", death_count, birth_count, stillborn_count, old_age_death_count);
-        false
-    } else {
-        true
+    let mut continue_game: bool = false;
+
+    for row in 0..TEXT_ROWS {
+        for col in 0..TEXT_COLUMNS {
+            if previous_gen[row][col] != next_gen[row][col].alive {
+                continue_game = true;
+            }
+        }
     }
+
+    //Set previous generation from current gen for next update
+    for row in 0..TEXT_ROWS {
+        for col in 0..TEXT_COLUMNS {
+            previous_gen[row][col] = current_gen[row][col].alive;
+        }
+    }
+
+    return continue_game;
 }
