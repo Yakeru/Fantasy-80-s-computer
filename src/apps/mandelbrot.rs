@@ -2,10 +2,17 @@ use app_macro_derive::AppMacro;
 
 const MIN_ITER: usize = 100;
 const MAX_X_RANGE: f64 = 2.47;
-const MAX_y_RANGE: f64 = 1.8976471;
+const MAX_Y_RANGE: f64 = 1.8976471;
 const MIN_RANGE: f64 = 0.0000000000000007;
 const X_COORD: f64 = -1.0126192432058039;
 const Y_COORD: f64 = -0.32202936226897944;
+const EMPTY_RATIO_TRIGGER: f64 = 0.1;
+const EMPTY_RATIO_DELTA_TRIGGER: f64 = 0.0025;
+const RANGE_DIVIDER_AKA_SPEED: f64 = 70.0;
+
+const WARM_PALETTE: [u8;10] = [BROWNISH_BLACK, DARK_BROWN, BROWN, DARK_RED, RED, DARK_ORANGE, ORANGE, YELLOW, LIGHT_PEACH, WHITE];
+const COOL_PALETTE: [u8;9] = [DARK_PURPLE, DARKER_PURPLE, DARKER_BLUE, DARK_BLUE, TRUE_BLUE, BLUE, WHITE, LAVENDER, MAUVE];
+const TREE_PALETTE: [u8;14] = [DARK_BROWN, BROWN, DARK_BROWN, BROWN, DARK_BROWN, BROWN, DARK_BROWN, BROWN, DARK_BROWN, BROWN, DARK_GREEN, MEDIUM_GREEN, GREEN, LIME_GREEN];
 
 
 #[derive(AppMacro)]
@@ -15,7 +22,7 @@ pub struct Mandelbrot {
     updating: bool,
     drawing: bool,
     initialized: bool,
-    welcome_screen: bool,
+    welcome_screen: bool, 
     game: bool,
     menu: bool,
     mandel_x_range: f64,
@@ -23,7 +30,8 @@ pub struct Mandelbrot {
     mandel_x_center: f64,
     mandel_y_center: f64,
     max_iteration: usize,
-    old_black_ratio: f64,
+    previous_empty_ratio: f64,
+    previous_empty_ratio_delta: f64,
     pause: bool,
     reverse: bool,
 }
@@ -42,9 +50,10 @@ impl Mandelbrot {
             mandel_x_center: X_COORD,
             mandel_y_center: Y_COORD,
             mandel_x_range: MAX_X_RANGE,
-            mandel_y_range: MAX_y_RANGE,
+            mandel_y_range: MAX_Y_RANGE,
             max_iteration: MIN_ITER,
-            old_black_ratio: 0.0,
+            previous_empty_ratio: 0.0,
+            previous_empty_ratio_delta: 0.0,
             pause: true,
             reverse: false,
         }
@@ -94,6 +103,11 @@ impl Mandelbrot {
         inputs: &WinitInputHelper,
         _virtual_frame_buffer: &mut VirtualFrameBuffer,
     ) {
+
+        /*---------------------------------------------------------- */
+        //                 choosing default scenarios
+        /*---------------------------------------------------------- */
+
         if inputs.key_pressed(VirtualKeyCode::Escape) {
             self.reset();
             self.set_state(false, false);
@@ -106,8 +120,8 @@ impl Mandelbrot {
             self.mandel_y_center = Y_COORD;
         } else if inputs.key_pressed(VirtualKeyCode::Key2) {
             self.reset();
-            self.mandel_x_center = -0.7490892271560119;
-            self.mandel_y_center = 0.045752739245415106;
+            self.mandel_x_center = -0.749089134879074;
+            self.mandel_y_center = 0.04575273713964573;
         } else if inputs.key_pressed(VirtualKeyCode::Key3) {
             self.reset();
             self.mandel_x_center = -1.254716173206939;
@@ -118,8 +132,8 @@ impl Mandelbrot {
             self.mandel_y_center = -0.003918849643395729;
         } else if inputs.key_pressed(VirtualKeyCode::Key5) {
             self.reset();
-            self.mandel_x_center = -0.10966894938864712;
-            self.mandel_y_center = 0.894382420724595;
+            self.mandel_x_center = -0.10971550489778131;
+            self.mandel_y_center = 0.8945121343911098;
         } else if inputs.key_pressed(VirtualKeyCode::Key6) {
             self.reset();
             self.mandel_x_center = -1.403277422173161;
@@ -137,6 +151,11 @@ impl Mandelbrot {
             self.mandel_x_center = 0.3514237590616519;
             self.mandel_y_center = -0.06386655970753488;
         }
+
+    	/*---------------------------------------------------------- */
+        //                      Rendering controls 
+        /*---------------------------------------------------------- */
+
         else if inputs.key_pressed(VirtualKeyCode::Slash) {
             self.reverse = !self.reverse;
         } else if inputs.key_pressed(VirtualKeyCode::R) {
@@ -150,6 +169,9 @@ impl Mandelbrot {
             println!("max_iteration: {}", self.max_iteration);
         }
 
+        /*---------------------------------------------------------- */
+        //                      Movement controls 
+        /*---------------------------------------------------------- */
         if inputs.key_pressed_os(VirtualKeyCode::Up) {
             self.mandel_y_center -= self.mandel_y_range/50.0;
             println!("x: {}, y: {}", self.mandel_x_center, self.mandel_y_center);
@@ -195,6 +217,7 @@ impl Mandelbrot {
         let mut y2: f64;
         let mut iteration: usize;
 
+        // Mandelbrot algorithm from Wikipedia : https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set
         for py in 0..VIRTUAL_HEIGHT {
             for px in 0..VIRTUAL_WIDTH {
 
@@ -213,51 +236,69 @@ impl Mandelbrot {
                     iteration += 1;
                 }
 
-                let color: u8 = if iteration == self.max_iteration {max_iteration_count += 1; 0} else {(iteration % 32) as u8};
+                let color: u8 = if iteration == self.max_iteration {
+                    max_iteration_count += 1;
+                    BLACK
+                } else {
+                    TREE_PALETTE[(iteration % TREE_PALETTE.len()) as usize]
+                };
+                
                 virtual_frame_buffer.set_pixel(px, py, color);
             }
         }
 
-        let black_ratio: f64 = max_iteration_count as f64 / (VIRTUAL_WIDTH * VIRTUAL_HEIGHT) as f64;
-        //println!("black_ratio: {}, old {}", black_ratio, self.old_black_ratio);
-        if black_ratio >= 0.3 && (black_ratio - self.old_black_ratio) >= 0.001 {
+        // Increasing the amount of details the deeper we get, to keep the screen filled
+        let empty_ratio: f64 = max_iteration_count as f64 / (VIRTUAL_WIDTH * VIRTUAL_HEIGHT) as f64;
+        let empty_ratio_delta: f64 = empty_ratio - self.previous_empty_ratio;
+
+        // If the proportion of empty pixels reaches a certain threashold, 
+        // and the delta between that render and the previous one increases,
+        // then increase numer of iterations by 1, to draw more.
+        if empty_ratio >= EMPTY_RATIO_TRIGGER && empty_ratio_delta >= EMPTY_RATIO_DELTA_TRIGGER {
             self.max_iteration += 1;
 
-            if black_ratio >= 0.6 {self.max_iteration += 1;}
-
-            if black_ratio >= 0.9 {self.max_iteration += 3;}
-
-            println!("max_iteration: {}", self.max_iteration);
+            // If one more iteration is not enough to reduce the delta, add one more iteration
+            if empty_ratio_delta - self.previous_empty_ratio_delta >= EMPTY_RATIO_DELTA_TRIGGER {
+                self.max_iteration += 1;
+            }
         } 
 
-        if self.reverse && black_ratio < 0.1 {
+        // If to many pixels are drawn, reduce detail
+        // Useful when zooming out, or when going from an empty region to a dense one.
+        // multpiplied by 1.1 to avoid flickering
+        if empty_ratio < EMPTY_RATIO_TRIGGER * 1.1 {
             self.max_iteration -= 1;
             if self.max_iteration < MIN_ITER {self.max_iteration = MIN_ITER};
-            println!("max_iteration: {}", self.max_iteration);
+            //println!("max_iteration: {}", self.max_iteration);
         }
 
+        // Go deeper, or zoom out, by reducing or increasing the range of values rendered
+        // by a fraction of the current range, to maintain constant speed
         if !self.pause {
 
             if !self.reverse {
-                self.mandel_x_range -= self.mandel_x_range / 70.0;
-                self.mandel_y_range -= self.mandel_y_range / 70.0;
+                self.mandel_x_range -= self.mandel_x_range / RANGE_DIVIDER_AKA_SPEED;
+                self.mandel_y_range -= self.mandel_y_range / RANGE_DIVIDER_AKA_SPEED;
             } else {
-                self.mandel_x_range += self.mandel_x_range / 70.0;
-                self.mandel_y_range += self.mandel_y_range / 70.0;
+                self.mandel_x_range += self.mandel_x_range / RANGE_DIVIDER_AKA_SPEED;
+                self.mandel_y_range += self.mandel_y_range / RANGE_DIVIDER_AKA_SPEED;
 
                 if self.mandel_x_range >= MAX_X_RANGE {
                     self.mandel_x_range = MAX_X_RANGE;
-                    self.mandel_y_range = MAX_y_RANGE;
+                    self.mandel_y_range = MAX_Y_RANGE;
                     self.pause = true;
                     self.reverse = false;
                 }
             }
         }
         
-        self.old_black_ratio = black_ratio;
+        self.previous_empty_ratio = empty_ratio;
+        self.previous_empty_ratio_delta = empty_ratio_delta;
 
-        if black_ratio == 1.0 {self.reset()};
+        // If screen gets completely black, reset animation
+        if empty_ratio == 1.0 {self.reset()};
 
+        // If minimum range is reached, reset animation
         if self.mandel_y_range <= MIN_RANGE {
             self.reset();
         }
@@ -266,9 +307,9 @@ impl Mandelbrot {
 
     fn reset(&mut self) {
         self.mandel_x_range = MAX_X_RANGE;
-        self.mandel_y_range = MAX_y_RANGE;
+        self.mandel_y_range = MAX_Y_RANGE;
         self.max_iteration = MIN_ITER;
-        self.old_black_ratio = 0.0;
+        self.previous_empty_ratio = 0.0;
     }
 }
 
