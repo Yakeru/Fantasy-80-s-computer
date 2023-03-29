@@ -6,14 +6,20 @@ const MAX_Y_RANGE: f64 = 1.8976471;
 const MIN_RANGE: f64 = 0.0000000000000007;
 const X_COORD: f64 = -1.0126192432058039;
 const Y_COORD: f64 = -0.32202936226897944;
-const EMPTY_RATIO_TRIGGER: f64 = 0.1;
-const EMPTY_RATIO_DELTA_TRIGGER: f64 = 0.0025;
+const EMPTY_RATIO_TRIGGER: f64 = 0.15;
+const ANTI_EMPTY_RATIO_TRIGGER: f64 = EMPTY_RATIO_TRIGGER * 0.65;
+const EMPTY_RATIO_DELTA_TRIGGER: f64 = 0.001;
 const RANGE_DIVIDER_AKA_SPEED: f64 = 70.0;
 
-const WARM_PALETTE: [u8;10] = [BROWNISH_BLACK, DARK_BROWN, BROWN, DARK_RED, RED, DARK_ORANGE, ORANGE, YELLOW, LIGHT_PEACH, WHITE];
-const COOL_PALETTE: [u8;9] = [DARK_PURPLE, DARKER_PURPLE, DARKER_BLUE, DARK_BLUE, TRUE_BLUE, BLUE, WHITE, LAVENDER, MAUVE];
-const TREE_PALETTE: [u8;14] = [DARK_BROWN, BROWN, DARK_BROWN, BROWN, DARK_BROWN, BROWN, DARK_BROWN, BROWN, DARK_BROWN, BROWN, DARK_GREEN, MEDIUM_GREEN, GREEN, LIME_GREEN];
+// const WARM_PALETTE: Vec<u8> = 
+// const COOL_PALETTE: Vec<u8> = ;
+// const TREE_PALETTE: Vec<u8> = ;
+// const CANYON_PALETTE: Vec<u8> = ;
 
+struct ColorTheme {
+    palette: Vec<u8>,
+    empty_color: u8
+}
 
 #[derive(AppMacro)]
 pub struct Mandelbrot {
@@ -34,10 +40,39 @@ pub struct Mandelbrot {
     previous_empty_ratio_delta: f64,
     pause: bool,
     reverse: bool,
+    themes: Vec<ColorTheme>,
+    current_theme: usize
 }
 
 impl Mandelbrot {
     pub fn new() -> Mandelbrot {
+
+        let mut themes: Vec<ColorTheme> = Vec::new();
+
+        // Warm theme
+        themes.push(ColorTheme {
+            palette: [BROWNISH_BLACK, DARK_BROWN, BROWN, DARK_RED, RED, DARK_ORANGE, ORANGE, YELLOW, LIGHT_PEACH, WHITE].to_vec(),
+            empty_color: BLACK
+        });
+
+        // Cool theme
+        themes.push(ColorTheme {
+            palette: [DARK_PURPLE, DARKER_PURPLE, DARKER_BLUE, DARK_BLUE, TRUE_BLUE, BLUE, WHITE, LAVENDER, MAUVE].to_vec(),
+            empty_color: WHITE
+        });
+
+        // Tree theme
+        themes.push(ColorTheme {
+            palette: [DARK_BROWN, BROWN, DARK_BROWN, BROWN, DARK_BROWN, BROWN, DARK_BROWN, BROWN, DARK_BROWN, BROWN, DARK_GREEN, MEDIUM_GREEN, GREEN, LIME_GREEN].to_vec(),
+            empty_color: TRUE_BLUE
+        });
+
+        // Canyon theme
+        themes.push(ColorTheme {
+            palette: [DARK_BROWN, BROWN, DARK_ORANGE, ORANGE, DARK_ORANGE, BROWN, DARK_BROWN, BROWN, DARK_ORANGE, ORANGE, DARK_ORANGE, BROWN, DARK_BROWN, BLACK].to_vec(),
+            empty_color: TRUE_BLUE
+        });
+
         Mandelbrot {
             enable_auto_escape: false,
             name: String::from("mandelbrot"),
@@ -56,6 +91,8 @@ impl Mandelbrot {
             previous_empty_ratio_delta: 0.0,
             pause: true,
             reverse: false,
+            themes: themes,
+            current_theme: 0
         }
     }
 
@@ -167,6 +204,8 @@ impl Mandelbrot {
         } else if inputs.key_pressed(VirtualKeyCode::Period) {
             self.max_iteration += 10;
             println!("max_iteration: {}", self.max_iteration);
+        } else if inputs.key_pressed(VirtualKeyCode::P) {
+            self.swap_palette();
         }
 
         /*---------------------------------------------------------- */
@@ -236,11 +275,13 @@ impl Mandelbrot {
                     iteration += 1;
                 }
 
+                // Set pixel color according to iteration nb and palette index
+                // if max iteration reached, set to black
                 let color: u8 = if iteration == self.max_iteration {
                     max_iteration_count += 1;
-                    BLACK
+                    self.themes[self.current_theme].empty_color
                 } else {
-                    TREE_PALETTE[(iteration % TREE_PALETTE.len()) as usize]
+                    self.themes[self.current_theme].palette[(iteration % self.themes[self.current_theme].palette.len()) as usize]
                 };
                 
                 virtual_frame_buffer.set_pixel(px, py, color);
@@ -265,8 +306,8 @@ impl Mandelbrot {
 
         // If to many pixels are drawn, reduce detail
         // Useful when zooming out, or when going from an empty region to a dense one.
-        // multpiplied by 1.1 to avoid flickering
-        if empty_ratio < EMPTY_RATIO_TRIGGER * 1.1 {
+        // different value than EMPTY_RATIO_TRIGGER to avoid +/- EMPTY_RATIO_TRIGGER between two consecutive frames (flickering)
+        if empty_ratio < ANTI_EMPTY_RATIO_TRIGGER {
             self.max_iteration -= 1;
             if self.max_iteration < MIN_ITER {self.max_iteration = MIN_ITER};
             //println!("max_iteration: {}", self.max_iteration);
@@ -310,6 +351,14 @@ impl Mandelbrot {
         self.mandel_y_range = MAX_Y_RANGE;
         self.max_iteration = MIN_ITER;
         self.previous_empty_ratio = 0.0;
+    }
+
+    fn swap_palette(&mut self) {
+
+        self.current_theme += 1;
+        if self.current_theme >= self.themes.len() {
+            self.current_theme = 0;
+        }
     }
 }
 
