@@ -1,4 +1,5 @@
 use app_macro_derive::AppMacro;
+use rand::Rng;
 
 const MIN_ITER: usize = 100;
 const MAX_X_RANGE: f64 = 2.47;
@@ -17,8 +18,12 @@ const RANGE_DIVIDER_AKA_SPEED: f64 = 70.0;
 // const CANYON_PALETTE: Vec<u8> = ;
 
 struct ColorTheme {
-    palette: Vec<u8>,
-    empty_color: u8
+    palette1: Vec<u8>,
+    palette2: Vec<u8>,
+    palette_swap: bool,
+    empty_color: u8,
+    empty_ratio: f64,
+    fuzzyness: f64,
 }
 
 #[derive(AppMacro)]
@@ -40,6 +45,7 @@ pub struct Mandelbrot {
     previous_empty_ratio_delta: f64,
     pause: bool,
     reverse: bool,
+    fuzzy: bool,
     themes: Vec<ColorTheme>,
     current_theme: usize
 }
@@ -51,26 +57,42 @@ impl Mandelbrot {
 
         // Warm theme
         themes.push(ColorTheme {
-            palette: [BROWNISH_BLACK, DARK_BROWN, BROWN, DARK_RED, RED, DARK_ORANGE, ORANGE, YELLOW, LIGHT_PEACH, WHITE].to_vec(),
-            empty_color: BLACK
+            palette1: [BROWNISH_BLACK, DARK_BROWN, BROWN, DARK_RED, RED, DARK_ORANGE, ORANGE, YELLOW, LIGHT_PEACH, WHITE].to_vec(),
+            palette2: Vec::new(),
+            palette_swap: false,
+            empty_color: BLACK,
+            empty_ratio: EMPTY_RATIO_TRIGGER,
+            fuzzyness: 250.0
         });
 
         // Cool theme
         themes.push(ColorTheme {
-            palette: [DARK_PURPLE, DARKER_PURPLE, DARKER_BLUE, DARK_BLUE, TRUE_BLUE, BLUE, WHITE, LAVENDER, MAUVE].to_vec(),
-            empty_color: WHITE
+            palette1: [DARK_PURPLE, DARKER_PURPLE, DARKER_BLUE, DARK_BLUE, TRUE_BLUE, BLUE, WHITE, LAVENDER, MAUVE].to_vec(),
+            palette2: Vec::new(),
+            palette_swap: false,
+            empty_color: WHITE,
+            empty_ratio: EMPTY_RATIO_TRIGGER,
+            fuzzyness: 0.0
         });
 
         // Tree theme
         themes.push(ColorTheme {
-            palette: [DARK_BROWN, BROWN, DARK_BROWN, BROWN, DARK_BROWN, BROWN, DARK_BROWN, BROWN, DARK_BROWN, BROWN, DARK_GREEN, MEDIUM_GREEN, GREEN, LIME_GREEN].to_vec(),
-            empty_color: TRUE_BLUE
+            palette1: [DARK_BROWN, BROWN, DARK_BROWN, BROWN, DARK_BROWN, BROWN, DARK_BROWN, BROWN, DARK_BROWN, BROWN, DARK_GREEN, MEDIUM_GREEN, GREEN, LIME_GREEN].to_vec(),
+            palette2: [DARK_BROWN, BROWN, DARK_BROWN, BROWN, DARK_BROWN, BROWN, DARK_BROWN, BROWN, DARK_BROWN, BROWN, MEDIUM_GREEN, GREEN, LIME_GREEN, GREEN].to_vec(),
+            palette_swap: true,
+            empty_color: TRUE_BLUE,
+            empty_ratio: EMPTY_RATIO_TRIGGER * 2.0,
+            fuzzyness: 0.0
         });
 
         // Canyon theme
         themes.push(ColorTheme {
-            palette: [DARK_BROWN, BROWN, DARK_ORANGE, ORANGE, DARK_ORANGE, BROWN, DARK_BROWN, BROWN, DARK_ORANGE, ORANGE, DARK_ORANGE, BROWN, DARK_BROWN, BLACK].to_vec(),
-            empty_color: TRUE_BLUE
+            palette1: [DARK_BROWN, BROWN, DARK_ORANGE, ORANGE, DARK_ORANGE, BROWN, DARK_BROWN, BROWN, DARK_ORANGE, ORANGE, DARK_ORANGE, BROWN, DARK_BROWN, BLACK].to_vec(),
+            palette2: Vec::new(),
+            palette_swap: false,
+            empty_color: TRUE_BLUE,
+            empty_ratio: EMPTY_RATIO_TRIGGER,
+            fuzzyness: 0.0
         });
 
         Mandelbrot {
@@ -91,6 +113,7 @@ impl Mandelbrot {
             previous_empty_ratio_delta: 0.0,
             pause: true,
             reverse: false,
+            fuzzy: true,
             themes: themes,
             current_theme: 0
         }
@@ -155,38 +178,47 @@ impl Mandelbrot {
             self.reset();
             self.mandel_x_center = X_COORD;
             self.mandel_y_center = Y_COORD;
+            self.current_theme = 2; //tree
         } else if inputs.key_pressed(VirtualKeyCode::Key2) {
             self.reset();
             self.mandel_x_center = -0.749089134879074;
             self.mandel_y_center = 0.04575273713964573;
+            self.current_theme = 1; //cool
         } else if inputs.key_pressed(VirtualKeyCode::Key3) {
             self.reset();
             self.mandel_x_center = -1.254716173206939;
             self.mandel_y_center = -0.03269356495238624;
+            self.current_theme = 3; //canyon
         } else if inputs.key_pressed(VirtualKeyCode::Key4) {
             self.reset();
             self.mandel_x_center = 0.26781837605081366;
             self.mandel_y_center = -0.003918849643395729;
+            self.current_theme = 0; //warm
         } else if inputs.key_pressed(VirtualKeyCode::Key5) {
             self.reset();
             self.mandel_x_center = -0.10971550489778131;
             self.mandel_y_center = 0.8945121343911098;
+            self.current_theme = 2; //tree
         } else if inputs.key_pressed(VirtualKeyCode::Key6) {
             self.reset();
             self.mandel_x_center = -1.403277422173161;
             self.mandel_y_center = -0.00022314715329581908;
+            self.current_theme = 2; //tree
         } else if inputs.key_pressed(VirtualKeyCode::Key7) {
             self.reset();
             self.mandel_x_center = -0.19827338980477996;
             self.mandel_y_center = -1.100975539162933;
+            self.current_theme = 3; //canyon
         } else if inputs.key_pressed(VirtualKeyCode::Key8) {
             self.reset();
             self.mandel_x_center = -1.9425557680573255;
             self.mandel_y_center = 0.0; 
+            self.current_theme = 1; //cool
         } else if inputs.key_pressed(VirtualKeyCode::Key9) {
             self.reset();
             self.mandel_x_center = 0.3514237590616519;
             self.mandel_y_center = -0.06386655970753488;
+            self.current_theme = 1; //cool
         }
 
     	/*---------------------------------------------------------- */
@@ -206,6 +238,8 @@ impl Mandelbrot {
             println!("max_iteration: {}", self.max_iteration);
         } else if inputs.key_pressed(VirtualKeyCode::P) {
             self.swap_palette();
+        } else if inputs.key_pressed(VirtualKeyCode::F) {
+            self.fuzzy = !self.fuzzy;
         }
 
         /*---------------------------------------------------------- */
@@ -255,6 +289,7 @@ impl Mandelbrot {
         let mut x2: f64;
         let mut y2: f64;
         let mut iteration: usize;
+        let mut random = rand::thread_rng();
 
         // Mandelbrot algorithm from Wikipedia : https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set
         for py in 0..VIRTUAL_HEIGHT {
@@ -262,6 +297,14 @@ impl Mandelbrot {
 
                 x0 = ((px as f64 * self.mandel_x_range) / VIRTUAL_WIDTH as f64) + mandel_x_min;
                 y0 = ((py as f64 * self.mandel_y_range) / VIRTUAL_HEIGHT as f64) + mandel_y_min;
+
+                // Add a bit of noise to x0 and y0 to make picture fuzzy
+                let fuzziness = self.themes[self.current_theme].fuzzyness;
+                if fuzziness > 0.0 && self.fuzzy {
+                    x0 += random.gen_range(-self.mandel_x_range/250.0..self.mandel_x_range/fuzziness);
+                    y0 += random.gen_range(-self.mandel_y_range/250.0..self.mandel_y_range/fuzziness);
+                }
+
                 x = 0.0;
                 y = 0.0;
                 iteration = 0;
@@ -277,13 +320,26 @@ impl Mandelbrot {
 
                 // Set pixel color according to iteration nb and palette index
                 // if max iteration reached, set to black
+                let empty_color = self.themes[self.current_theme].empty_color;
+                let temp_color_1 = self.themes[self.current_theme].palette1[(iteration % self.themes[self.current_theme].palette1.len()) as usize];
+                let mut temp_color_2 = 0;
+                let color_swap = self.themes[self.current_theme].palette_swap;
+                
+                if color_swap {
+                    temp_color_2 = self.themes[self.current_theme].palette2[(iteration % self.themes[self.current_theme].palette2.len()) as usize];
+                }
+
                 let color: u8 = if iteration == self.max_iteration {
                     max_iteration_count += 1;
-                    self.themes[self.current_theme].empty_color
+                    empty_color
                 } else {
-                    self.themes[self.current_theme].palette[(iteration % self.themes[self.current_theme].palette.len()) as usize]
+                    if color_swap && random.gen_bool(0.5) {
+                        temp_color_2
+                    } else {
+                        temp_color_1
+                    }
                 };
-                
+
                 virtual_frame_buffer.set_pixel(px, py, color);
             }
         }
@@ -295,7 +351,7 @@ impl Mandelbrot {
         // If the proportion of empty pixels reaches a certain threashold, 
         // and the delta between that render and the previous one increases,
         // then increase numer of iterations by 1, to draw more.
-        if empty_ratio >= EMPTY_RATIO_TRIGGER && empty_ratio_delta >= EMPTY_RATIO_DELTA_TRIGGER {
+        if empty_ratio >= self.themes[self.current_theme].empty_ratio && empty_ratio_delta >= EMPTY_RATIO_DELTA_TRIGGER {
             self.max_iteration += 1;
 
             // If one more iteration is not enough to reduce the delta, add one more iteration
