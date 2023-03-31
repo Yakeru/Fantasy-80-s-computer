@@ -1,16 +1,16 @@
 use app_macro_derive::AppMacro;
 use rand::Rng;
 
-const MIN_ITER: usize = 100;
+const MIN_ITER: usize = 50;
 const MAX_X_RANGE: f64 = 2.47;
 const MAX_Y_RANGE: f64 = 1.8976471;
 const MIN_RANGE: f64 = 0.0000000000000007;
-const X_COORD: f64 = -1.0126192432058039;
-const Y_COORD: f64 = -0.32202936226897944;
+const X_COORD: f64 = -1.1933507301923187;
+const Y_COORD: f64 = -0.1590146002746485;
 const EMPTY_RATIO_TRIGGER: f64 = 0.15;
 const ANTI_EMPTY_RATIO_TRIGGER: f64 = EMPTY_RATIO_TRIGGER * 0.65;
 const EMPTY_RATIO_DELTA_TRIGGER: f64 = 0.001;
-const RANGE_DIVIDER_AKA_SPEED: f64 = 70.0;
+const RANGE_DIVIDER_AKA_SPEED: f64 = 100.0;
 
 // const WARM_PALETTE: Vec<u8> = 
 // const COOL_PALETTE: Vec<u8> = ;
@@ -95,6 +95,36 @@ impl Mandelbrot {
             fuzzyness: 0.0
         });
 
+        // ??
+        themes.push(ColorTheme {
+            palette1: [BLACK, BLACK, BLACK, BLACK, RED, BLACK, BLACK, BLACK, BLACK, WHITE].to_vec(),
+            palette2: [BLACK, BLACK, BLACK, BLACK, DARK_RED, BLACK, BLACK, BLACK, BLACK, LIGHT_GREY].to_vec(),
+            palette_swap: true,
+            empty_color: BLACK,
+            empty_ratio: EMPTY_RATIO_TRIGGER* 2.0,
+            fuzzyness: 0.0
+        });
+
+        //B&W
+        themes.push(ColorTheme {
+            palette1: [BLACK, DARKER_GREY, DARK_GREY, MEDIUM_GREY, LIGHT_GREY, WHITE, LIGHT_GREY, MEDIUM_GREY, DARK_GREY, DARKER_GREY].to_vec(),
+            palette2: [BLACK, BLACK, BLACK, BLACK, DARK_RED, BLACK, BLACK, BLACK, BLACK, LIGHT_GREY].to_vec(),
+            palette_swap: false,
+            empty_color: DARK_PURPLE,
+            empty_ratio: EMPTY_RATIO_TRIGGER,
+            fuzzyness: 0.0
+        });
+
+        //pouf
+        themes.push(ColorTheme {
+            palette1: [RED, WHITE, GREEN, WHITE, TRUE_BLUE, WHITE].to_vec(),
+            palette2: Vec::new(),
+            palette_swap: false,
+            empty_color: BLACK,
+            empty_ratio: EMPTY_RATIO_TRIGGER,
+            fuzzyness: 0.0
+        });
+
         Mandelbrot {
             enable_auto_escape: false,
             name: String::from("mandelbrot"),
@@ -115,7 +145,7 @@ impl Mandelbrot {
             reverse: false,
             fuzzy: true,
             themes: themes,
-            current_theme: 0
+            current_theme: 2
         }
     }
 
@@ -218,7 +248,7 @@ impl Mandelbrot {
             self.reset();
             self.mandel_x_center = 0.3514237590616519;
             self.mandel_y_center = -0.06386655970753488;
-            self.current_theme = 1; //cool
+            self.current_theme = 4; //?
         }
 
     	/*---------------------------------------------------------- */
@@ -231,7 +261,7 @@ impl Mandelbrot {
             self.reset();
         } else if inputs.key_pressed(VirtualKeyCode::Comma) {
             self.max_iteration -= 10;
-            if self.max_iteration < MIN_ITER {self.max_iteration = MIN_ITER};
+            if self.max_iteration <= MIN_ITER {self.max_iteration = MIN_ITER};
             println!("max_iteration: {}", self.max_iteration);
         } else if inputs.key_pressed(VirtualKeyCode::Period) {
             self.max_iteration += 10;
@@ -297,7 +327,9 @@ impl Mandelbrot {
 
                 x0 = ((px as f64 * self.mandel_x_range) / VIRTUAL_WIDTH as f64) + mandel_x_min;
                 y0 = ((py as f64 * self.mandel_y_range) / VIRTUAL_HEIGHT as f64) + mandel_y_min;
-
+                x2 = 0.0;
+                y2 = 0.0;
+                
                 // Add a bit of noise to x0 and y0 to make picture fuzzy
                 let fuzziness = self.themes[self.current_theme].fuzzyness;
                 if fuzziness > 0.0 && self.fuzzy {
@@ -309,10 +341,9 @@ impl Mandelbrot {
                 y = 0.0;
                 iteration = 0;
 
-                while iteration < self.max_iteration {
+                while iteration < self.max_iteration && (x2 + y2) <= 4.0 {
                     x2 = x*x;
                     y2 = y*y;
-                    if x2 + y2 > 4.0 {break}
                     y = (x + x) * y + y0;
                     x = x2 - y2 + x0;
                     iteration += 1;
@@ -321,14 +352,10 @@ impl Mandelbrot {
                 // Set pixel color according to iteration nb and palette index
                 // if max iteration reached, set to black
                 let empty_color = self.themes[self.current_theme].empty_color;
-                let temp_color_1 = self.themes[self.current_theme].palette1[(iteration % self.themes[self.current_theme].palette1.len()) as usize];
-                let mut temp_color_2 = 0;
                 let color_swap = self.themes[self.current_theme].palette_swap;
-                
-                if color_swap {
-                    temp_color_2 = self.themes[self.current_theme].palette2[(iteration % self.themes[self.current_theme].palette2.len()) as usize];
-                }
-
+                let color_index = (iteration % self.themes[self.current_theme].palette1.len()) as usize;
+                let temp_color_1 = self.themes[self.current_theme].palette1[color_index];
+                let temp_color_2 = if color_swap {self.themes[self.current_theme].palette2[color_index]} else {temp_color_1};
                 let color: u8 = if iteration == self.max_iteration {
                     max_iteration_count += 1;
                     empty_color
@@ -351,7 +378,7 @@ impl Mandelbrot {
         // If the proportion of empty pixels reaches a certain threashold, 
         // and the delta between that render and the previous one increases,
         // then increase numer of iterations by 1, to draw more.
-        if empty_ratio >= self.themes[self.current_theme].empty_ratio && empty_ratio_delta >= EMPTY_RATIO_DELTA_TRIGGER {
+        if !self.pause && empty_ratio >= self.themes[self.current_theme].empty_ratio && empty_ratio_delta >= EMPTY_RATIO_DELTA_TRIGGER {
             self.max_iteration += 1;
 
             // If one more iteration is not enough to reduce the delta, add one more iteration
@@ -363,7 +390,7 @@ impl Mandelbrot {
         // If to many pixels are drawn, reduce detail
         // Useful when zooming out, or when going from an empty region to a dense one.
         // different value than EMPTY_RATIO_TRIGGER to avoid +/- EMPTY_RATIO_TRIGGER between two consecutive frames (flickering)
-        if empty_ratio < ANTI_EMPTY_RATIO_TRIGGER {
+        if !self.pause && empty_ratio < ANTI_EMPTY_RATIO_TRIGGER {
             self.max_iteration -= 1;
             if self.max_iteration < MIN_ITER {self.max_iteration = MIN_ITER};
             //println!("max_iteration: {}", self.max_iteration);
