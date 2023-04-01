@@ -62,7 +62,7 @@ pub struct Circle {
 }
 
 impl VirtualFrameBuffer {
-    pub fn new() -> VirtualFrameBuffer {
+    pub fn new(display_config: DisplayConfig) -> VirtualFrameBuffer {
         let virtual_frame_buffer: Box<[u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]> =
             Box::new([0; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]);
         let text_layer: TextLayer = TextLayer::new();

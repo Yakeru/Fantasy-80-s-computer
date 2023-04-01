@@ -16,25 +16,55 @@ pub struct TextLayerChar {
 pub struct TextLayer {
     pub default_color: u8,
     pub default_bkg_color: u8,
-    char_map: [Option<TextLayerChar>; TEXT_COLUMNS * TEXT_ROWS],
+    display_mode: u8,
+    rows: u8,
+    columns: u8,
+    char_map: [Option<TextLayerChar>],
 }
 
 impl TextLayer {
-    pub const fn new() -> TextLayer {
+    pub const fn new(display_mode: u8) -> TextLayer {
         TextLayer {
             default_color: DEFAULT_COLOR,
             default_bkg_color: DEFAULT_BKG_COLOR,
-            char_map: [None; TEXT_COLUMNS * TEXT_ROWS]
+            display_mode,
+            char_map: match display_mode {
+                0 => [None; TEXT_COLUMNS * TEXT_ROWS],
+                1 => [None; FHD_TEXT_COLUMNS * FHD_TEXT_ROWS],
+                2 => [None; QHD_TEXT_COLUMNS * QHD_TEXT_ROWS],
+                3 => [None; FOUR_K_TEXT_COLUMNS * FOUR_K_TEXT_ROWS],
+                _ => [None; TEXT_COLUMNS * TEXT_ROWS]
+            },
+            rows: match display_mode {
+                0 => TEXT_ROWS,
+                1 => FHD_TEXT_ROWS,
+                2 => QHD_TEXT_ROWS,
+                3 => FOUR_K_TEXT_ROWS,
+                _ => TEXT_ROWS
+            },
+            columns: match display_mode {
+                0 => TEXT_COLUMNS,
+                1 => FHD_TEXT_COLUMNS,
+                2 => QHD_TEXT_COLUMNS,
+                3 => FOUR_K_TEXT_COLUMNS,
+                _ => TEXT_COLUMNS
+            },
         }
     }
 
     pub fn clear(&mut self) {
-        self.char_map = [None; TEXT_COLUMNS * TEXT_ROWS];
+        self.char_map = match self.display_mode {
+            0 => [None; TEXT_COLUMNS * TEXT_ROWS],
+            1 => [None; FHD_TEXT_COLUMNS * FHD_TEXT_ROWS],
+            2 => [None; QHD_TEXT_COLUMNS * QHD_TEXT_ROWS],
+            3 => [None; FOUR_K_TEXT_COLUMNS * FOUR_K_TEXT_ROWS],
+            _ => [None; TEXT_COLUMNS * TEXT_ROWS]
+        }
     }
 
     /// Returns the dimensions in columns and rowns of the text layer map.
     pub fn get_dimensions_xy(&self) -> (usize, usize) {
-        return (TEXT_COLUMNS, TEXT_ROWS);
+        return (self.columns, self.rows);
     }
 
     /// Returns the lenght of the char_map array.
