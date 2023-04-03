@@ -15,8 +15,8 @@ pub const UPSCALE: usize = 6;
 pub const SCAN_LINE_STRENGTH: u8 = 100;
 pub const VIRTUAL_WIDTH: usize = 340;
 pub const VIRTUAL_HEIGHT: usize = 256;
-pub const TEXT_COLUMNS: usize = 40;
-pub const TEXT_ROWS: usize = 30;
+pub const TEXT_COLUMNS: usize = 40; //320px
+pub const TEXT_ROWS: usize = 30; //240px
 
 // 1080p
 // pub const WIDTH: usize = 1280;
@@ -37,6 +37,11 @@ pub const TEXT_ROWS: usize = 30;
 // pub const VIRTUAL_HEIGHT: usize = 320;
 // pub const TEXT_COLUMNS: usize = 44;
 // pub const TEXT_ROWS: usize = 32;
+
+/* The following code is an experiment to generate a config struct, automatically selected
+according to the resolution of the screen, but since I'm using arrays all over the place
+and Rust doesnt allow non const values to initialize arrays, the refactoring to implement
+the auto-config was a bit to much work for now. Will get back to it later */
 
 // // 4K
 // pub const FOUR_K_WIDTH: usize = 2560;

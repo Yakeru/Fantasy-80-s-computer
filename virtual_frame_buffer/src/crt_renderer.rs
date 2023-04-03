@@ -30,7 +30,8 @@ impl CrtEffectRenderer {
 
     pub fn render(&self, virtual_frame_buffer: &VirtualFrameBuffer, output_frame: &mut [u8]) {
         //list of values to draw rounded corners (nb of pixels to turn of per line in corner)
-        let circle_list: [usize; 17] = [17, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 3, 2, 2, 1, 1, 1];
+        //I drew a circle with a 27 px diam. in pain and counted...
+        let circle_list: [usize; 10] = [10, 8, 6, 5, 4, 3, 2, 2, 1, 1];
 
         let mut rendered_scanline: [u8; RENDERED_LINE_LENGTH] = [0; RENDERED_LINE_LENGTH];
         let mut rendered_line: [u8; RENDERED_LINE_LENGTH] = if self.filter {
