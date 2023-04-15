@@ -1,5 +1,4 @@
-use std::{ops::Range};
-
+use std::ops::{Range, RangeBounds, Bound};
 use characters_rom::*;
 use clock::Clock;
 use color_palettes::*;
@@ -24,6 +23,7 @@ pub struct VirtualFrameBuffer {
     
     frame: Box<[u8]>,
     color_palette: ColorPalette,
+    overscan: [u8; VIRTUAL_HEIGHT],
     line_scroll_list: Box<[i8]>,
     text_layer: TextLayer,
     sprites: Vec<Sprite>,
@@ -73,6 +73,7 @@ impl VirtualFrameBuffer {
         VirtualFrameBuffer {
             frame: virtual_frame_buffer,
             color_palette: ColorPalette::new(),
+            overscan: [WHITE; VIRTUAL_HEIGHT],
             line_scroll_list: Box::new([0; VIRTUAL_HEIGHT]),
             text_layer,
             console: Console::new(10, 10, 30, 10, 
@@ -133,9 +134,34 @@ impl VirtualFrameBuffer {
         }
     }
 
+    pub fn set_overscan(&mut self, color: u8) {
+        self.set_overscan_range(color, 0..VIRTUAL_HEIGHT)
+    }
+
+    pub fn set_overscan_range<R: RangeBounds<usize>>(&mut self, color: u8, range: R) {
+
+        let start = match range.start_bound() {
+            Bound::Unbounded => 0,
+            Bound::Excluded(&s) => s + 1,
+            Bound::Included(&s) => s,
+        };
+
+        let end = match range.end_bound() {
+            Bound::Unbounded => VIRTUAL_HEIGHT,
+            Bound::Excluded(&t) => t.min(VIRTUAL_HEIGHT),
+            Bound::Included(&t) => (t + 1).min(VIRTUAL_HEIGHT),
+        };
+        
+        assert!(start <= end);
+        
+        for overscan_index in start..end {
+            self.overscan[overscan_index] = color
+        }
+    }
+
     /// Sets all the pixels to the specified color of the color palette
     /// Used to clear the screen between frames or set the background when
-    /// redering only the text layer
+    /// redering only the text layer. Doesn't include the overscan.
     pub fn clear(&mut self, color: u8) {
         //let clear_frame: [u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT] = [color; VIRTUAL_WIDTH * VIRTUAL_HEIGHT];
         self.frame

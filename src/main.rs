@@ -5,7 +5,7 @@ use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
 use winit_input_helper::WinitInputHelper;
-use std::{time::Duration, thread};
+use std::{time::{Duration, Instant}, thread};
 use winit::{
     dpi::{PhysicalSize, Position, PhysicalPosition},
     event_loop::{ControlFlow, EventLoop},
@@ -161,10 +161,12 @@ fn main() -> Result<(), Error> {
     let mandelbrot = Box::new(Mandelbrot::new());
     app_list.push(mandelbrot);
     
+    let mut frame_time_100: Vec<u128> = Vec::new();
+
     // ****************************************************** MAIN WINIT EVENT LOOP ***********************************************
     
     let mut input = WinitInputHelper::new();
-
+    
     //The event loop here can be seen as the "bios + boot rom + console" part of the Fantasy computer.
     //It initialises the virtual_frame_buffer, Console 0 and Shell.
     //If no app is running/rendering, it defaults back to running/rendering the Console 0 and Shell.
@@ -172,6 +174,8 @@ fn main() -> Result<(), Error> {
     //It goes through app_list and renders the appa that have their render flag and focus flag to true. Should be just one, so it stops at the first one it finds.
     //It reads the messages returned by the apps and displays them to Console 0.
     event_loop.run(move |event, _, control_flow| {
+
+        
 
         // let now = Instant::now();
         // let plop = Duration::from_millis(2);
@@ -235,7 +239,9 @@ fn main() -> Result<(), Error> {
                                     }
                                 };
 
-                                if message == String::from("c") {
+                                if message == String::from("crt") {
+                                    crt_renderer.toggle_filter();
+                                    crt_renderer.toggle_round_corners();
                                 }
 
                                 if message == String::from("d") {
@@ -266,9 +272,28 @@ fn main() -> Result<(), Error> {
 
             // Render virtual frame buffer to pixels frame buffer with upscaling and CRT effect
             virtual_frame_buffer.render();
-            // let start = Instant::now();
+            
+            let start = Instant::now();
+            
             crt_renderer.render(&mut virtual_frame_buffer, pixels.get_frame_mut());
-            // println!("Render time: {} micros", start.elapsed().as_micros());
+            
+            frame_time_100.push(start.elapsed().as_micros());
+            
+            if frame_time_100.len() == 100 {
+                
+                let mut total_time: u128 = 0;
+                
+                for time in &frame_time_100 {
+                    total_time += time;
+                }
+
+                let avg = total_time/100;
+
+                println!("Render time: {} micros", avg);
+                frame_time_100.clear();
+            }
+            
+            
             pixels.render().expect("Pixels render oups");
             window.request_redraw();
             system_clock.count_frame();

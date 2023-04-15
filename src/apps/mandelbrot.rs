@@ -390,7 +390,7 @@ impl Mandelbrot {
         // If to many pixels are drawn, reduce detail
         // Useful when zooming out, or when going from an empty region to a dense one.
         // different value than EMPTY_RATIO_TRIGGER to avoid +/- EMPTY_RATIO_TRIGGER between two consecutive frames (flickering)
-        if !self.pause && empty_ratio < ANTI_EMPTY_RATIO_TRIGGER {
+        if !self.pause && self.reverse && empty_ratio < ANTI_EMPTY_RATIO_TRIGGER {
             self.max_iteration -= 1;
             if self.max_iteration < MIN_ITER {self.max_iteration = MIN_ITER};
             //println!("max_iteration: {}", self.max_iteration);
