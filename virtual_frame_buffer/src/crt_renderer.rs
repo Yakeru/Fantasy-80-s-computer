@@ -1,4 +1,4 @@
-use crate::{config::*, VirtualFrameBuffer};
+use crate::{config::*, VirtualFrameBuffer, color_palettes::DEFAULT_PALETTE};
 
 const SUB_PIXEL_COUNT: usize = 4;
 const RENDERED_LINE_LENGTH: usize = WIDTH * SUB_PIXEL_COUNT;
@@ -97,17 +97,13 @@ impl CrtEffectRenderer {
                 let screen_pixel_index = SUB_PIXEL_COUNT * UPSCALE * pixel_index + self.picture_offset;
 
                 let rgb = if (render_range_start..render_range_end).contains(&pixel_index) {
-                    virtual_frame_buffer
-                        .color_palette
-                        .get_rgb(virt_line[pixel_index])
+                    DEFAULT_PALETTE.get_rgb(virt_line[pixel_index])
                 } else {
                     (0, 0, 0)
                 };
 
                 let rgb_after: (u8, u8, u8) = if (render_range_start..render_range_end).contains(&(pixel_index + 1)) {
-                    virtual_frame_buffer
-                        .color_palette
-                        .get_rgb(virt_line[pixel_index + 1])
+                    DEFAULT_PALETTE.get_rgb(virt_line[pixel_index + 1])
                 } else {
                     (0, 0, 0)
                 };

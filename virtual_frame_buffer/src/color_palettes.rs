@@ -75,13 +75,6 @@ pub struct ColorPalette {
 }
 
 impl ColorPalette {
-    pub fn new() -> ColorPalette {
-        ColorPalette {
-            custom: DEFAULT_COLOR_PALETTE,
-            toggle_custom: false,
-        }
-    }
-
     pub fn toggle_custom(&mut self) {
         self.toggle_custom = !self.toggle_custom
     }
@@ -102,3 +95,5 @@ impl ColorPalette {
         }
     }
 }
+
+pub const DEFAULT_PALETTE: ColorPalette = ColorPalette{custom: DEFAULT_COLOR_PALETTE, toggle_custom: false};

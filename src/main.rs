@@ -33,28 +33,28 @@ fn main() -> Result<(), Error> {
 
     // ************************************************* SOUND TEST **********************************************    
 
-    // let (_stream, stream_handle) = OutputStream::try_default().unwrap();
-    // let channel_1 = Sink::try_new(&stream_handle).unwrap();
-    // let channel_2 = Sink::try_new(&stream_handle).unwrap();
-    // //let channel_3 = Sink::try_new(&stream_handle).unwrap();
-    // //let channel_4 = Sink::try_new(&stream_handle).unwrap();
+    let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+    let channel_1 = Sink::try_new(&stream_handle).unwrap();
+    let channel_2 = Sink::try_new(&stream_handle).unwrap();
+    //let channel_3 = Sink::try_new(&stream_handle).unwrap();
+    //let channel_4 = Sink::try_new(&stream_handle).unwrap();
 
-    // let _handle = thread::Builder::new().name("sound".to_string()).spawn(move || {
+    let _handle = thread::Builder::new().name("sound".to_string()).spawn(move || {
 
-    //     let mut melody_1: Vec<Option<(f32, f32)>> = Vec::new();
-    //     melody_1.push(Some((0.0, 10.0)));
-    //     melody_1.push(Some((C5, 1.0)));
-    //     melody_1.push(None);
-    //     melody_1.push(Some((C5, 1.0)));
-    //     melody_1.push(Some((F5, 2.0)));
+        let mut melody_1: Vec<Option<(f32, f32)>> = Vec::new();
+        melody_1.push(Some((0.0, 10.0)));
+        melody_1.push(Some((C5, 1.0)));
+        melody_1.push(None);
+        melody_1.push(Some((C5, 1.0)));
+        melody_1.push(Some((F5, 2.0)));
 
-    //     let mut melody_2: Vec<Option<(f32, f32)>> = Vec::new();
-    //     melody_2.push(Some((0.0, 10.0)));
-    //     melody_2.push(Some((0.0, 3.0)));
-    //     melody_2.push(Some((A5, 2.0)));
+        let mut melody_2: Vec<Option<(f32, f32)>> = Vec::new();
+        melody_2.push(Some((0.0, 10.0)));
+        melody_2.push(Some((0.0, 3.0)));
+        melody_2.push(Some((A5, 2.0)));
 
-    //     play(480.0, &melody_1, &melody_2, &channel_1, &channel_2);
-    // });
+        play(480.0, &melody_1, &melody_2, &channel_1, &channel_2);
+    });
     
     // ************************************************ DISPLAY SETUP *********************************************
     // winit setup
@@ -175,8 +175,6 @@ fn main() -> Result<(), Error> {
     //It reads the messages returned by the apps and displays them to Console 0.
     event_loop.run(move |event, _, control_flow| {
 
-        
-
         // let now = Instant::now();
         // let plop = Duration::from_millis(2);
         //*control_flow = ControlFlow::WaitUntil(now.checked_add(plop).unwrap());
@@ -191,9 +189,8 @@ fn main() -> Result<(), Error> {
             }
 
             // BOOT, play boot animation once before showing the shell or any other app.
-            booting = false;
             if booting {
-                //booting = boot_animation(&mut virtual_frame_buffer, &mut crt_renderer, &system_clock);
+                booting = boot_animation(&mut virtual_frame_buffer, &mut crt_renderer, &system_clock);
             } else {
                 //Updating apps
                 let mut show_shell: bool = true;

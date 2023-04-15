@@ -22,7 +22,6 @@ pub mod crt_renderer;
 pub struct VirtualFrameBuffer {
     
     frame: Box<[u8]>,
-    color_palette: ColorPalette,
     overscan: [u8; VIRTUAL_HEIGHT],
     line_scroll_list: Box<[i8]>,
     text_layer: TextLayer,
@@ -72,7 +71,6 @@ impl VirtualFrameBuffer {
 
         VirtualFrameBuffer {
             frame: virtual_frame_buffer,
-            color_palette: ColorPalette::new(),
             overscan: [WHITE; VIRTUAL_HEIGHT],
             line_scroll_list: Box::new([0; VIRTUAL_HEIGHT]),
             text_layer,
