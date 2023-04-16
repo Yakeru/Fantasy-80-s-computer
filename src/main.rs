@@ -274,10 +274,10 @@ fn main() -> Result<(), Error> {
             }
 
             // Render virtual frame buffer to pixels frame buffer with upscaling and CRT effect
-            virtual_frame_buffer.render();
-            
             let start = Instant::now();
 
+            virtual_frame_buffer.render();
+            
             thread::scope(|s| {
 
                 let mut pix_iter = pixels.get_frame_mut().chunks_exact_mut((WIDTH * HEIGHT / 4) * 4).into_iter();
@@ -344,39 +344,15 @@ fn main() -> Result<(), Error> {
 fn draw_loading_border(virtual_frame_buffer: &mut VirtualFrameBuffer) {
     let mut random = rand::thread_rng();
     let mut rgb_color: u8 = random.gen_range(0..32);
-
-    let mut line_pixel_count: usize = 0;
     let mut line_count: usize = 0;
-    let mut band_count: u8 = 0;
-    let mut band: u8 = random.gen_range(0..20) + 4;
+    let mut band_height: usize = random.gen_range(4..20);
 
-    let width = virtual_frame_buffer.get_width();
-    let height = virtual_frame_buffer.get_height();
-    let horiz_size = (virtual_frame_buffer.get_width() - virtual_frame_buffer.get_text_layer_size_xy().0 * 8)/2;
-    let vert_size = (virtual_frame_buffer.get_height() - virtual_frame_buffer.get_text_layer_size_xy().1 * 8)/2;
-
-    for pixel in virtual_frame_buffer.get_frame_mut().chunks_exact_mut(1) {
-        if line_pixel_count < horiz_size
-            || line_pixel_count > width - horiz_size
-            || line_count < vert_size
-            || line_count > height - vert_size
-        {
-            if band_count >= band {
-                rgb_color = random.gen_range(0..32);
-                band_count = 0;
-                band = random.gen_range(0..20) + 4;
-            }
-
-            pixel[0] = rgb_color;
-        }
-
-        line_pixel_count += 1;
-
-        if line_pixel_count == width {
-            band_count += 1;
-            line_count += 1;
-            line_pixel_count = 0;
-        }
+    while line_count <= VIRTUAL_HEIGHT {
+        let range_max = if line_count + band_height > VIRTUAL_HEIGHT {VIRTUAL_HEIGHT } else { line_count + band_height };
+        virtual_frame_buffer.set_overscan_color_range(rgb_color, line_count..range_max);
+        line_count += band_height;
+        rgb_color = random.gen_range(0..32);
+        band_height = random.gen_range(4..20);
     }
 }
 

@@ -15,6 +15,8 @@ pub mod text_layer;
 pub mod console;
 pub mod crt_renderer;
 
+const ROUNDED_CORNER: [usize;10] = [10, 8, 6, 5, 4, 3, 2, 2, 1, 1];
+
 /// Contains a list of u8 values corresponding to values from a color palette.
 /// So just one u8 per pixel, R G and B values are retrieved from the palette, No Alpha.
 /// This frame buffer is meant to contain a low resolution low color picure that
@@ -23,7 +25,6 @@ pub struct VirtualFrameBuffer {
     
     frame: Box<[u8]>,
     overscan: [u8; VIRTUAL_HEIGHT],
-    rounded_corner_drawing: [usize; 10],
     rounded_corner: bool,
     line_scroll_list: Box<[i8]>,
     text_layer: TextLayer,
@@ -74,7 +75,6 @@ impl VirtualFrameBuffer {
         VirtualFrameBuffer {
             frame: virtual_frame_buffer,
             overscan: [WHITE; VIRTUAL_HEIGHT],
-            rounded_corner_drawing: [10, 8, 6, 5, 4, 3, 2, 2, 1, 1],
             rounded_corner: true,
             line_scroll_list: Box::new([0; VIRTUAL_HEIGHT]),
             text_layer,
@@ -178,6 +178,39 @@ impl VirtualFrameBuffer {
         }
     }
 
+    pub fn rounded_corners_renderer(&mut self) {
+        let mut line_count: usize = 0;
+
+        for line in self.frame.chunks_exact_mut(VIRTUAL_WIDTH) {
+
+            if line_count < ROUNDED_CORNER.len() {
+                //top left
+                for pixel_index in 0..ROUNDED_CORNER[line_count] {
+                    line[pixel_index] = 0;
+                }
+
+                //top right
+                for pixel_index in (VIRTUAL_WIDTH - ROUNDED_CORNER[line_count])..VIRTUAL_WIDTH {
+                    line[pixel_index] = 0;
+                }
+            }
+
+            if line_count >= VIRTUAL_HEIGHT - ROUNDED_CORNER.len() {
+                //bottom left
+                for pixel_index in 0..ROUNDED_CORNER[VIRTUAL_HEIGHT - line_count - 1] {
+                    line[pixel_index] = 0;
+                }
+
+                //bottom rigt
+                for pixel_index in (VIRTUAL_WIDTH - ROUNDED_CORNER[VIRTUAL_HEIGHT - line_count - 1])..VIRTUAL_WIDTH {
+                    line[pixel_index] = 0;
+                }
+            }
+
+            line_count += 1;
+        }
+    }
+
     /// Sets all the pixels to the specified color of the color palette
     /// Used to clear the screen between frames or set the background when
     /// redering only the text layer. Doesn't include the overscan.
@@ -219,49 +252,21 @@ impl VirtualFrameBuffer {
     pub fn render(&mut self) {
         self.clock.update();
 
-        self.overscan_renderer();
-
-        //Round corners
-        if self.rounded_corner {
-            let mut line_count: usize = 0;
-
-            for line in self.frame.chunks_exact_mut(VIRTUAL_WIDTH) {
-
-                if line_count < self.rounded_corner_drawing.len() {
-                    //top left
-                    for pixel_index in 0..self.rounded_corner_drawing[line_count] {
-                        line[pixel_index] = 0;
-                    }
-
-                    //top right
-                    for pixel_index in (VIRTUAL_WIDTH - self.rounded_corner_drawing[line_count])..VIRTUAL_WIDTH {
-                        line[pixel_index] = 0;
-                    }
-                }
-
-                if line_count >= VIRTUAL_HEIGHT - self.rounded_corner_drawing.len() {
-                    //bottom left
-                    for pixel_index in 0..self.rounded_corner_drawing[VIRTUAL_HEIGHT - line_count - 1] {
-                        line[pixel_index] = 0;
-                    }
-
-                    //bottom rigt
-                    for pixel_index in (VIRTUAL_WIDTH - self.rounded_corner_drawing[VIRTUAL_HEIGHT - line_count - 1])..VIRTUAL_WIDTH {
-                        line[pixel_index] = 0;
-                    }
-                }
-
-                line_count += 1;
-            }
-            
-        }
-        
         sprite_layer_renderer(&self.sprites, &mut self.frame);
         text_layer_renderer(&self.text_layer, &mut self.frame, self.clock.half_second_latch);
         if self.console.display {
             console_renderer(&self.console, &mut self.frame, self.clock.half_second_latch);
         }
         apply_line_scroll_effect(&self.line_scroll_list, &mut self.frame);
+
+        //Overscan
+        self.overscan_renderer();
+
+        //Round corners
+        if self.rounded_corner {
+            self.rounded_corners_renderer();
+        }
+        
         self.clock.count_frame();
     }
 }
