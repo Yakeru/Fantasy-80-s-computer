@@ -163,6 +163,19 @@ impl VirtualFrameBuffer {
 
     pub fn overscan_renderer(&mut self) {
         
+        let mut line_count: usize = 0;
+        
+        for line in self.frame.chunks_exact_mut(VIRTUAL_WIDTH) {
+
+            if line_count < OVERSCAN_V || line_count >= VIRTUAL_HEIGHT - OVERSCAN_V {
+                line.copy_from_slice(&[self.overscan[line_count]; VIRTUAL_WIDTH]);
+            } else {
+                line.chunks_exact_mut(OVERSCAN_H).next().unwrap().copy_from_slice(&[self.overscan[line_count]; OVERSCAN_H]);
+                line.chunks_exact_mut(OVERSCAN_H).last().unwrap().copy_from_slice(&[self.overscan[line_count]; OVERSCAN_H]);
+            }
+
+            line_count += 1;
+        }
     }
 
     /// Sets all the pixels to the specified color of the color palette
@@ -205,6 +218,8 @@ impl VirtualFrameBuffer {
 
     pub fn render(&mut self) {
         self.clock.update();
+
+        self.overscan_renderer();
 
         //Round corners
         if self.rounded_corner {
