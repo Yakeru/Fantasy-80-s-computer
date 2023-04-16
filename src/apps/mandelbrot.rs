@@ -322,8 +322,8 @@ impl Mandelbrot {
         let mut random = rand::thread_rng();
 
         // Mandelbrot algorithm from Wikipedia : https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set
-        for py in 0..VIRTUAL_HEIGHT {
-            for px in 0..VIRTUAL_WIDTH {
+        for py in OVERSCAN_V..VIRTUAL_HEIGHT - OVERSCAN_V {
+            for px in OVERSCAN_H..VIRTUAL_WIDTH - OVERSCAN_H {
 
                 x0 = ((px as f64 * self.mandel_x_range) / VIRTUAL_WIDTH as f64) + mandel_x_min;
                 y0 = ((py as f64 * self.mandel_y_range) / VIRTUAL_HEIGHT as f64) + mandel_y_min;
