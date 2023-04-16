@@ -1,7 +1,17 @@
-use crate::{config::*, color_palettes::*, text_layer_char::{TextLayerChar}, characters_rom::*};
+use crate::{config::*, color_palettes::*, characters_rom::*};
 
 const DEFAULT_COLOR: u8 = WHITE;
 const DEFAULT_BKG_COLOR: u8 = BLACK;
+
+#[derive(Clone, Copy)]
+pub struct TextLayerChar {
+    pub c: char,
+    pub color: u8,
+    pub bkg_color: u8,
+    pub swap: bool,
+    pub blink: bool,
+    pub shadowed: bool
+}
 
 pub struct TextLayer {
     pub default_color: u8,

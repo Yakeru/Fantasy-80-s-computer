@@ -1,44 +1,44 @@
-use characters_rom::{rom, CHARACTER_WIDTH, CHARACTER_HEIGHT};
+use std::ops::{Range, RangeBounds, Bound};
+use characters_rom::*;
+use clock::Clock;
 use color_palettes::*;
 use config::*;
 use console::Console;
 use sprite::Sprite;
-use text_layer::{TextLayer, text_index_to_frame_coord, text_coord_to_frame_coord};
-use text_layer_char::TextLayerChar;
+use text_layer::{TextLayer, text_index_to_frame_coord, text_coord_to_frame_coord, TextLayerChar};
 
 pub mod config;
 pub mod characters_rom;
-pub mod text_layer_char;
 pub mod color_palettes;
 pub mod sprite;
 pub mod text_layer;
 pub mod console;
 pub mod crt_renderer;
 
+const ROUNDED_CORNER: [usize;10] = [10, 8, 6, 5, 4, 3, 2, 2, 1, 1];
+
 /// Contains a list of u8 values corresponding to values from a color palette.
 /// So just one u8 per pixel, R G and B values are retrieved from the palette, No Alpha.
 /// This frame buffer is meant to contain a low resolution low color picure that
 /// will be upscaled into the final pixel 2D frame buffer.
 pub struct VirtualFrameBuffer {
-    frame_time_ms: u128,
+    
     frame: Box<[u8]>,
-    color_palette: ColorPalette,
+    overscan: [u8; VIRTUAL_HEIGHT],
+    rounded_corner: bool,
     line_scroll_list: Box<[i8]>,
     text_layer: TextLayer,
     sprites: Vec<Sprite>,
     console: Console,
     //background_layer
     //tiles_layer
-    frame_counter: usize,
-    second_tick: bool,
-    half_second_tick: bool,
-    half_second_latch: bool,
+    clock: Clock
 }
 
 #[derive(Copy, Clone)]
 pub struct Square {
-    pub pos_x: usize,
-    pub pos_y: usize,
+    pub x: usize,
+    pub y: usize,
     pub width: usize,
     pub height: usize,
     pub color: u8,
@@ -47,15 +47,24 @@ pub struct Square {
 
 #[derive(Copy, Clone)]
 pub struct Line {
-    pub start_x: usize,
-    pub start_y: usize,
-    pub end_x: usize,
-    pub end_y: usize,
+    pub x1: usize,
+    pub y1: usize,
+    pub x2: usize,
+    pub y2: usize,
+    pub color: u8
+}
+
+#[derive(Copy, Clone)]
+pub struct Circle {
+    pub x: usize,
+    pub y: usize,
+    pub r: usize,
     pub color: u8,
+    pub fill: bool
 }
 
 impl VirtualFrameBuffer {
-    pub fn new(frame_time_ms: u128) -> VirtualFrameBuffer {
+    pub fn new() -> VirtualFrameBuffer {
         let virtual_frame_buffer: Box<[u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]> =
             Box::new([0; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]);
         let text_layer: TextLayer = TextLayer::new();
@@ -64,24 +73,17 @@ impl VirtualFrameBuffer {
         //TODO init background_layers, tiles_layers, sprites_layers... and correesponding renderes
 
         VirtualFrameBuffer {
-            frame_time_ms,
             frame: virtual_frame_buffer,
-            color_palette: ColorPalette::new(),
+            overscan: [WHITE; VIRTUAL_HEIGHT],
+            rounded_corner: true,
             line_scroll_list: Box::new([0; VIRTUAL_HEIGHT]),
             text_layer,
             console: Console::new(10, 10, 30, 10, 
                 YELLOW, TRUE_BLUE, TextLayerChar { c: '\u{25AE}', color: YELLOW, bkg_color: TRUE_BLUE, 
                 swap: false, blink: true, shadowed: false }, false, false),
             sprites,
-            frame_counter: 0,
-            second_tick: false,
-            half_second_tick: false,
-            half_second_latch: false,
+            clock: Clock::new()
         }
-    }
-
-    pub fn get_clock(&self) -> (bool, bool, bool) {
-        (self.second_tick, self.half_second_tick, self.half_second_latch)
     }
 
     pub fn get_window_size(&self) -> (usize, usize) {
@@ -108,14 +110,20 @@ impl VirtualFrameBuffer {
         &self.frame
     }
 
-    pub fn get_pixel(&mut self, x: usize, y: usize) -> u8 {
+    pub fn get_pixel(&mut self, x: usize, y: usize) -> Option<u8> {
         let index = frame_coord_to_index(x, y);
-        self.frame[index]
+        if index.is_some() {
+            return Some(self.frame[index.unwrap()])
+        } else {
+            None
+        }
     }
 
     pub fn set_pixel(&mut self, x: usize, y: usize, color: u8) {
         let index = frame_coord_to_index(x, y);
-        self.frame[index] = color
+        if index.is_some() {
+            self.frame[index.unwrap()] = color
+        }
     }
 
     pub fn get_line_scroll_list(&mut self) -> &mut Box<[i8]> {
@@ -128,13 +136,89 @@ impl VirtualFrameBuffer {
         }
     }
 
+    pub fn set_overscan_color(&mut self, color: u8) {
+        self.set_overscan_color_range(color, 0..VIRTUAL_HEIGHT)
+    }
+
+    pub fn set_overscan_color_range<R: RangeBounds<usize>>(&mut self, color: u8, range: R) {
+
+        let start = match range.start_bound() {
+            Bound::Unbounded => 0,
+            Bound::Excluded(&s) => s + 1,
+            Bound::Included(&s) => s,
+        };
+
+        let end = match range.end_bound() {
+            Bound::Unbounded => VIRTUAL_HEIGHT,
+            Bound::Excluded(&t) => t.min(VIRTUAL_HEIGHT),
+            Bound::Included(&t) => (t + 1).min(VIRTUAL_HEIGHT),
+        };
+        
+        assert!(start <= end);
+        
+        for overscan_index in start..end {
+            self.overscan[overscan_index] = color
+        }
+    }
+
+    pub fn overscan_renderer(&mut self) {
+        
+        let mut line_count: usize = 0;
+        
+        for line in self.frame.chunks_exact_mut(VIRTUAL_WIDTH) {
+
+            if line_count < OVERSCAN_V || line_count >= VIRTUAL_HEIGHT - OVERSCAN_V {
+                line.copy_from_slice(&[self.overscan[line_count]; VIRTUAL_WIDTH]);
+            } else {
+                line.chunks_exact_mut(OVERSCAN_H).next().unwrap().copy_from_slice(&[self.overscan[line_count]; OVERSCAN_H]);
+                line.chunks_exact_mut(OVERSCAN_H).last().unwrap().copy_from_slice(&[self.overscan[line_count]; OVERSCAN_H]);
+            }
+
+            line_count += 1;
+        }
+    }
+
+    pub fn rounded_corners_renderer(&mut self) {
+        let mut line_count: usize = 0;
+
+        for line in self.frame.chunks_exact_mut(VIRTUAL_WIDTH) {
+
+            if line_count < ROUNDED_CORNER.len() {
+                //top left
+                for pixel_index in 0..ROUNDED_CORNER[line_count] {
+                    line[pixel_index] = 0;
+                }
+
+                //top right
+                for pixel_index in (VIRTUAL_WIDTH - ROUNDED_CORNER[line_count])..VIRTUAL_WIDTH {
+                    line[pixel_index] = 0;
+                }
+            }
+
+            if line_count >= VIRTUAL_HEIGHT - ROUNDED_CORNER.len() {
+                //bottom left
+                for pixel_index in 0..ROUNDED_CORNER[VIRTUAL_HEIGHT - line_count - 1] {
+                    line[pixel_index] = 0;
+                }
+
+                //bottom rigt
+                for pixel_index in (VIRTUAL_WIDTH - ROUNDED_CORNER[VIRTUAL_HEIGHT - line_count - 1])..VIRTUAL_WIDTH {
+                    line[pixel_index] = 0;
+                }
+            }
+
+            line_count += 1;
+        }
+    }
+
     /// Sets all the pixels to the specified color of the color palette
     /// Used to clear the screen between frames or set the background when
-    /// redering only the text layer
-    pub fn clear_frame_buffer(&mut self, color: u8) {
+    /// redering only the text layer. Doesn't include the overscan.
+    pub fn clear(&mut self, color: u8) {
         //let clear_frame: [u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT] = [color; VIRTUAL_WIDTH * VIRTUAL_HEIGHT];
         self.frame
             .copy_from_slice(&[color; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]);
+        self.overscan.copy_from_slice(&[color; VIRTUAL_HEIGHT]);
     }
 
     //Removes all chars, colors and effects from the text_layer
@@ -167,36 +251,37 @@ impl VirtualFrameBuffer {
     }
 
     pub fn render(&mut self) {
-        self.second_tick = false;
-        self.half_second_tick = false;
-
-        if self.frame_counter == (1000 / self.frame_time_ms as usize) / 2 - 1 {
-            self.half_second_tick = true;
-            self.half_second_latch = !self.half_second_latch;
-        }
-
-        if self.frame_counter == (1000 / self.frame_time_ms as usize) - 1 {
-            self.frame_counter = 0;
-            self.second_tick = true;
-            self.half_second_tick = true;
-            self.half_second_latch = !self.half_second_latch;
-        } else {
-            self.frame_counter += 1;
-        }
+        self.clock.update();
 
         sprite_layer_renderer(&self.sprites, &mut self.frame);
-        text_layer_renderer(&self.text_layer, &mut self.frame, self.half_second_latch);
+        text_layer_renderer(&self.text_layer, &mut self.frame, self.clock.half_second_latch);
         if self.console.display {
-            console_renderer(&self.console, &mut self.frame, self.half_second_latch);
+            console_renderer(&self.console, &mut self.frame, self.clock.half_second_latch);
         }
         apply_line_scroll_effect(&self.line_scroll_list, &mut self.frame);
+
+        //Overscan
+        self.overscan_renderer();
+
+        //Round corners
+        if self.rounded_corner {
+            self.rounded_corners_renderer();
+        }
+
+        self.clock.count_frame();
     }
 }
 
-pub const fn frame_coord_to_index(x: usize, y: usize) -> usize {
-    let safe_x = x % VIRTUAL_WIDTH;
-    let safe_y = y % VIRTUAL_HEIGHT;
-    safe_y * VIRTUAL_WIDTH + safe_x
+pub const fn frame_coord_to_index(x: usize, y: usize) -> Option<usize> {
+    // let safe_x = x % VIRTUAL_WIDTH;
+    // let safe_y = y % VIRTUAL_HEIGHT;
+    // safe_y * VIRTUAL_WIDTH + safe_x
+
+    if x < VIRTUAL_WIDTH && y < VIRTUAL_HEIGHT {
+        Some(y * VIRTUAL_WIDTH + x)
+    } else {
+        None
+    }
 }
 
 fn apply_line_scroll_effect(line_scroll_list: &[i8], frame: &mut [u8]) {
@@ -226,19 +311,21 @@ fn sprite_layer_renderer(sprites: &Vec<Sprite>, frame: &mut [u8]) {
 
         let global_offset = frame_coord_to_index(sprite.pos_x, sprite.pos_y);
 
-        for pixel in &sprite.image {
-            let virtual_fb_offset =
-                (global_offset + VIRTUAL_WIDTH * sprite_line_count + pixel_count)
-                    % (VIRTUAL_WIDTH * VIRTUAL_HEIGHT);
-
-            if *pixel != 0 {
-                frame[virtual_fb_offset] = *pixel;
-            }
-
-            pixel_count += 1;
-            if pixel_count == sprite.value_in_physical_size().0 {
-                pixel_count = 0;
-                sprite_line_count += 1;
+        if global_offset.is_some() {
+            for pixel in &sprite.image {
+                let virtual_fb_offset =
+                    (global_offset.unwrap() + VIRTUAL_WIDTH * sprite_line_count + pixel_count)
+                        % (VIRTUAL_WIDTH * VIRTUAL_HEIGHT);
+    
+                if *pixel != 0 {
+                    frame[virtual_fb_offset] = *pixel;
+                }
+    
+                pixel_count += 1;
+                if pixel_count == sprite.size.size().0 as usize {
+                    pixel_count = 0;
+                    sprite_line_count += 1;
+                }
             }
         }
     }
@@ -310,7 +397,7 @@ fn text_layer_char_renderer(text_layer_char: &TextLayerChar, frame_x_pos: usize,
     let text_bkg_color = if swap || (blink && half_second_latch) { char_color } else { bck_color };
 
     //Get char picture from  "character rom"
-    let pic = rom(&char);
+    let pic = rom(char);
 
     //Draw picture pixel by pixel in frame buffer
     for row_count in 0..CHARACTER_HEIGHT {
@@ -347,20 +434,23 @@ fn text_layer_char_renderer(text_layer_char: &TextLayerChar, frame_x_pos: usize,
 
 }
 
-pub fn draw_line(line: Line, frame: &mut [u8]) {
-    let dx: isize = (line.end_x as isize - line.start_x as isize).abs();
-    let dy: isize = -(line.end_y as isize - line.start_y as isize).abs();
-    let sx: isize = if line.start_x < line.end_x { 1 } else { -1 };
-    let sy: isize = if line.start_y < line.end_y { 1 } else { -1 };
+pub fn line(x1: usize, y1: usize, x2: usize, y2: usize, color: u8, frame: &mut [u8]) {
+    let dx: isize = (x2 as isize - x1 as isize).abs();
+    let dy: isize = -(y2 as isize - y1 as isize).abs();
+    let sx: isize = if x1 < x2 { 1 } else { -1 };
+    let sy: isize = if y1 < y2 { 1 } else { -1 };
     let mut error = dx + dy;
 
-    let mut x0 = line.start_x as isize;
-    let mut y0 = line.start_y as isize;
-    let x1 = line.end_x as isize;
-    let y1 = line.end_y as isize;
+    let mut x0 = x1 as isize;
+    let mut y0 = y1 as isize;
+    let x1 = x2 as isize;
+    let y1 = y2 as isize;
 
     loop {
-        frame[frame_coord_to_index(x0 as usize, y0 as usize)] = line.color;
+        let index = frame_coord_to_index(x0 as usize, y0 as usize);
+        if index.is_some() {
+            frame[index.unwrap()] = color;
+        }
 
         if x0 == x1 && y0 == y1 {
             break;
@@ -385,26 +475,120 @@ pub fn draw_line(line: Line, frame: &mut [u8]) {
     }
 }
 
-pub fn draw_square(square: Square, frame: &mut [u8]) {
-    let start_offset: usize = frame_coord_to_index(square.pos_x, square.pos_y);
+pub fn vector(x: usize, y: usize, l: usize, color: u8, a:f32, frame: &mut [u8]) {
 
-    for row in 0..square.width {
-        for column in 0..square.height {
-            if square.fill {
-                let offset = (start_offset + column + VIRTUAL_WIDTH * row)
-                    % (VIRTUAL_WIDTH * VIRTUAL_HEIGHT);
-                frame[offset] = square.color;
+    let x1 = x;
+    let y1 = y;
+
+    let x_move = a.cos() * l as f32;
+    let y_move = a.sin() * l as f32;
+
+    let x2: usize;
+    
+    if x_move < 0.0 {
+        x2 = x1 - (-x_move).round() as usize;
+    } else {
+        x2 = x1 + x_move.round() as usize;
+    }
+
+    let y2: usize;
+   
+    if y_move < 0.0 {
+        y2 = y1 - (-y_move).round() as usize;
+    } else {
+        y2 = y1 + y_move.round() as usize;
+    }
+
+    line(x1, y1, x2, y2, color, frame);
+
+}
+
+pub fn square(x: usize, y: usize, width: usize, height: usize, color: u8, fill: bool, frame: &mut [u8]) {
+    let mut current_line: usize = 0;
+    let line_range: Range<usize> = y..(y + height + 1);
+
+    for virtual_frame_row in frame.chunks_exact_mut(VIRTUAL_WIDTH) { // TODO use advance_by once it's stable
+        if line_range.contains(&current_line) {
+            if current_line == y || current_line == y + height {
+                for pixel_index in x..(x + width + 1) {
+                    if pixel_index < VIRTUAL_WIDTH {
+                        virtual_frame_row[pixel_index] = color;
+                    }
+                }
             } else {
-                if row == 0
-                    || row == square.width - 1
-                    || column == 0
-                    || column == square.height - 1
-                {
-                    let offset = (start_offset + column + VIRTUAL_WIDTH * row)
-                        % (VIRTUAL_WIDTH * VIRTUAL_HEIGHT);
-                    frame[offset] = square.color;
+                if fill {
+                    for pixel_index in x..(x + width + 1) {
+                        if pixel_index < VIRTUAL_WIDTH {
+                            virtual_frame_row[pixel_index] = color;
+                        }
+                    }
+                } else {
+                    if x < VIRTUAL_WIDTH {
+                        virtual_frame_row[x] = color;
+                    }
+
+                    if x + width < VIRTUAL_WIDTH {
+                        virtual_frame_row[x + width] = color;
+                    }
                 }
             }
+        }
+        current_line += 1;
+        if current_line == y + height + 1 { break };
+    }
+}
+
+pub fn circle(x: usize, y: usize, r: usize, color: u8, fill: bool, frame: &mut [u8]) {
+
+    for b in 0..(r * 3/4  + 1) {
+        let a: f64 = (((r * r) - (b * b)) as f64).sqrt();
+
+        let point1 = (x + b, y + a.round() as usize);
+        let point2 = (x + b, y - a.round() as usize);
+        let point3 = (x - b, y + a.round() as usize);
+        let point4 = (x - b, y - a.round() as usize);
+
+        if !fill {
+            let point = frame_coord_to_index(point1.0, point1.1);
+            if point.is_some() {frame[point.unwrap()] = color};
+    
+            let point = frame_coord_to_index(point2.0, point2.1);
+            if point.is_some() {frame[point.unwrap()] = color};
+    
+            let point = frame_coord_to_index(point3.0, point4.1);
+            if point.is_some() {frame[point.unwrap()] = color};
+    
+            let point = frame_coord_to_index(point4.0, point4.1);
+            if point.is_some() {frame[point.unwrap()] = color};
+        } else {
+            line(point1.0, point1.1, point3.0, point3.1, color, frame);
+            line(point2.0, point2.1, point4.0, point4.1, color, frame);
+        }
+    }
+
+    for a in 0..(r * 3/4 + 1) {
+        let b: f64 = (((r * r) - (a * a)) as f64).sqrt();
+
+        let point1 = (x + b.round() as usize, y + a);
+        let point2 = (x + b.round() as usize, y - a);
+        let point3 = (x - b.round() as usize, y + a);
+        let point4 = (x - b.round() as usize, y - a);
+        
+        if !fill {
+            let point = frame_coord_to_index(point1.0, point1.1);
+            if point.is_some() {frame[point.unwrap()] = color};
+
+            let point = frame_coord_to_index(point2.0, point2.1);
+            if point.is_some() {frame[point.unwrap()] = color};
+
+            let point = frame_coord_to_index(point3.0, point4.1);
+            if point.is_some() {frame[point.unwrap()] = color};
+
+            let point = frame_coord_to_index(point4.0, point4.1);
+            if point.is_some() {frame[point.unwrap()] = color};
+        } else {
+            line(point1.0, point1.1, point3.0, point3.1, color, frame);
+            line(point2.0, point2.1, point4.0, point4.1, color, frame);
         }
     }
 }

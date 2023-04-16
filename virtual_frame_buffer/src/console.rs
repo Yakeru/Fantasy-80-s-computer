@@ -1,4 +1,4 @@
-use crate::text_layer_char::TextLayerChar;
+use crate::text_layer::TextLayerChar;
 
 pub struct Console {
     pub display: bool,
@@ -83,7 +83,9 @@ impl Console {
                     self.content.push(None);    
                 }
             },
-            unicode::BACKSPACE => (),
+            unicode::BACKSPACE => {
+                self.pop_char();
+            },
             _ => {
                 self.content.push(Some(text_layer_char));
             }

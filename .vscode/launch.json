@@ -15,6 +15,41 @@
             "cwd": "${fileDirname}",
             "environment": [],
             "console": "externalTerminal"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'windows_project'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=windows_project",
+                    "--package=windows_project"
+                ],
+                "filter": {
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'windows_project'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=windows_project",
+                    "--package=windows_project"
+                ],
+                "filter": {
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
         }
     ]
 }

@@ -17,21 +17,18 @@ pub fn app_macro_derive(input: TokenStream) -> TokenStream {
 fn impl_app_macro(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
     let gen = quote! {
+
+        use winit::event::VirtualKeyCode;
+        use winit::event_loop::*;
+        use winit_input_helper::*;
+        use clock::Clock;
+        use virtual_frame_buffer::*;
+        use virtual_frame_buffer::config::*;
+        use virtual_frame_buffer::color_palettes::*;
+        use virtual_frame_buffer::text_layer::*;
+        use app_macro::*;
+
         impl AppMacro for #name {
-
-            fn start(&mut self) {
-                self.started = true;
-                self.drawing = true;
-                self.updating = true;
-                self.ended = false;
-            }
-
-            fn end(&mut self) {
-                self.started = false;
-                self.drawing = false;
-                self.updating = false;
-                self.ended = true;
-            }
 
             fn get_name(&self) -> &str {
                 &self.name
@@ -49,31 +46,26 @@ fn impl_app_macro(ast: &syn::DeriveInput) -> TokenStream {
                 (self.updating, self.drawing)
             }
 
-            fn update(&mut self, keybord_input: Option<KeyboardInput>, char_received: Option<char>, virtual_frame_buffer: &mut VirtualFrameBuffer) -> Option<AppResponse> {
+            fn update(&mut self, inputs: &WinitInputHelper, system_clock: &Clock, virtual_frame_buffer: &mut VirtualFrameBuffer) -> Option<AppResponse> {
                 
+                if !self.initialized {
+                    self.init_app(virtual_frame_buffer);
+                    self.initialized = true;
+                }
+
                 // Implementing default behaviour when ESCAPE key is pressed in app
-                // Ignore for shell
-                if !self.is_shell {
-                    match keybord_input {
-                        Some(key) => {
-                            match(key.virtual_keycode) {
-                                Some(keycode) => {
-                                    if keycode == VirtualKeyCode::Escape && key.state == ElementState::Released {
-                                        self.end()
-                                    }
-                                },
-                                None => ()
-                            } 
-                        },
-                        None => ()
+                // Applied only if enable_auto_escape is set to true in app.
+                if self.enable_auto_escape {
+                    if inputs.key_released(VirtualKeyCode::Escape) {
+                        self.set_state(false, false);
                     }
                 }
                 
-                return self.update_app(keybord_input, char_received, virtual_frame_buffer);
+                return self.update_app(inputs, system_clock, virtual_frame_buffer);
             }
             
-            fn draw(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-                self.draw_app(virtual_frame_buffer);
+            fn draw(&mut self, inputs: &WinitInputHelper, system_clock: &Clock, virtual_frame_buffer: &mut VirtualFrameBuffer) {
+                self.draw_app(inputs, system_clock, virtual_frame_buffer);
             }
         }
     };

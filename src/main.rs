@@ -1,33 +1,61 @@
-use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}, text_layer_char::TextLayerChar, crt_renderer::CrtEffectRenderer};
+use rodio::{OutputStream, Sink, Source};
+use sound::{notes::*, play};
+use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}, text_layer::TextLayerChar, crt_renderer::CrtEffectRenderer, config::{HEIGHT, WIDTH, VIRTUAL_HEIGHT, VIRTUAL_WIDTH, FULLSCREEN}};
 use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
-use std::time::Instant;
+use winit_input_helper::WinitInputHelper;
+use std::{time::{Duration, Instant}, thread};
 use winit::{
     dpi::{PhysicalSize, Position, PhysicalPosition},
-    event::{DeviceEvent, ElementState, Event, KeyboardInput, WindowEvent, VirtualKeyCode},
     event_loop::{ControlFlow, EventLoop},
     window::{WindowBuilder, Fullscreen}
 };
 
-use unicode;
+use clock::Clock;
 
 //Apps
 mod apps;
-use crate::apps::lines::*;
 use crate::apps::shell::*;
-use crate::apps::sprite_editor::*;
-use crate::apps::squares::*;
-use crate::apps::text_edit::*;
+use crate::apps::life::*;
 use crate::apps::weather_app::*;
-use crate::apps::life::Life;
+use crate::apps::mandelbrot::*;
+
+//Sound
+mod sound;
+use crate::play::play;
 
 //Settings
-const FRAME_TIME_MS: u128 = 16; //ms per frame : 16 = 60fps, 32 = 30fps, 1000 = 1fps
-const FRAMES_PER_SEC: u128 = 60;
+//const FRAME_TIME_MS: u128 = 16; //ms per frame : 16 = 60fps, 32 = 30fps, 1000 = 1fps
+//const FRAMES_PER_SEC: u128 = 60;
 
 fn main() -> Result<(), Error> {
 
+    // ************************************************* SOUND TEST **********************************************    
+
+    let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+    let channel_1 = Sink::try_new(&stream_handle).unwrap();
+    let channel_2 = Sink::try_new(&stream_handle).unwrap();
+    //let channel_3 = Sink::try_new(&stream_handle).unwrap();
+    //let channel_4 = Sink::try_new(&stream_handle).unwrap();
+
+    let _handle = thread::Builder::new().name("sound".to_string()).spawn(move || {
+
+        let mut melody_1: Vec<Option<(f32, f32)>> = Vec::new();
+        melody_1.push(Some((0.0, 10.0)));
+        melody_1.push(Some((C5, 1.0)));
+        melody_1.push(None);
+        melody_1.push(Some((C5, 1.0)));
+        melody_1.push(Some((F5, 2.0)));
+
+        let mut melody_2: Vec<Option<(f32, f32)>> = Vec::new();
+        melody_2.push(Some((0.0, 10.0)));
+        melody_2.push(Some((0.0, 3.0)));
+        melody_2.push(Some((A5, 2.0)));
+
+        play(480.0, &melody_1, &melody_2, &channel_1, &channel_2);
+    });
+    
     // ************************************************ DISPLAY SETUP *********************************************
     // winit setup
     // For best effect, should display in border-less full-screen and native resolution on high DPI screen
@@ -51,11 +79,18 @@ fn main() -> Result<(), Error> {
         .set_cursor_grab(winit::window::CursorGrabMode::None)
         .unwrap();
 
+    if FULLSCREEN { 
+        window.set_decorations(false);
+        window.set_fullscreen(Some(Fullscreen::Borderless(None)));
+    }
+
     for monitor in window.available_monitors() {
         if monitor.name().is_some() {
             if monitor.name().unwrap().contains("DISPLAY2") {
-                window.set_decorations(false);
-                window.set_fullscreen(Some(Fullscreen::Borderless(Some(monitor))));
+                if FULLSCREEN { 
+                    window.set_decorations(false);
+                    window.set_fullscreen(Some(Fullscreen::Borderless(Some(monitor))));
+                }
                 break;
             }
         }
@@ -73,35 +108,29 @@ fn main() -> Result<(), Error> {
             config::HEIGHT as u32,
             surface_texture,
         )
-        .enable_vsync(false)
+        .enable_vsync(true)
         .build()
         .expect("Pixels : Failed to setup rendering")
     };
 
     // **************************************************** GRAPHICS ENGINE SETUP **********************************************
 
+    // The "system clock"
+    let mut system_clock: Clock = Clock::new();
+
     // Boolean used to play boot animation once.
     let mut booting = true;
 
     // The variables passed to the app.update(...) that is in focus
     // or to the shell if no other app is running.
-    let mut keyboard_input: Option<KeyboardInput> = None;
-    let mut char_received: Option<char> = None;
     let mut mouse_move_delta: (f64, f64) = (0.0, 0.0);
-    let mut frame_counter:  u128 = 0;
 
-    // Instant used to time the frame refresh rate
-    // Apps are updated and drawn as frequently as possible, independently from that frame_interval
-    // but the graphics engine (virtual_frame_buffer + crt_renderer + pixels) renders
-    // the final on screen picture at this frame interval.
-    let mut frame_interval = Instant::now();
-
-    // My graphics engine
+    // Fantasy CPC graphics engine
     // Offers a text layer, console, sprite layer, background layers and tiles layers that can be accessed
     // by Processes (structs implemeting "process") to build their image.
     // Its render combines all the layers in its frame, applies the crt filter and sends it to
     // pixels to display the final image in the window.
-    let mut virtual_frame_buffer: VirtualFrameBuffer = VirtualFrameBuffer::new(FRAME_TIME_MS);
+    let mut virtual_frame_buffer: VirtualFrameBuffer = VirtualFrameBuffer::new();
 
     // The crt renderer takes the virtual frame buffers's frame, upscales it to match pixel's frame and winit window size,
     // then applies a filter evoking CRT sub-pixels and scanlines.
@@ -127,31 +156,23 @@ fn main() -> Result<(), Error> {
     // The apps  //
     // ********* //
 
-    // LINES DEMO
-    let lines = Box::new(Lines::new());
-    app_list.push(lines);
-
-    // SQUARES DEMO
-    let squares = Box::new(Squares::new());
-    app_list.push(squares);
-
-    // TEXT EDITOR
-    let text_edit = Box::new(TextEdit::new());
-    app_list.push(text_edit);
-
-    // SPRITE EDITOR
-    let sprite_edit = Box::new(SpriteEditor::new());
-    app_list.push(sprite_edit);
+    // CONWAY'S GAME OF LIFE, TEXT MODE
+    let life = Box::new(Life::new());
+    app_list.push(life);
 
     // WEATHER APP
     let weather_app = Box::new(WeatherApp::new());
     app_list.push(weather_app);
 
-    // CONWAY'S GAME OF LIFE
-    let life = Box::new(Life::new());
-    app_list.push(life);
+    // MANDELBROT
+    let mandelbrot = Box::new(Mandelbrot::new());
+    app_list.push(mandelbrot);
     
+    let mut frame_time_100: Vec<u128> = Vec::new();
+
     // ****************************************************** MAIN WINIT EVENT LOOP ***********************************************
+    
+    let mut input = WinitInputHelper::new();
     
     //The event loop here can be seen as the "bios + boot rom + console" part of the Fantasy computer.
     //It initialises the virtual_frame_buffer, Console 0 and Shell.
@@ -161,128 +182,163 @@ fn main() -> Result<(), Error> {
     //It reads the messages returned by the apps and displays them to Console 0.
     event_loop.run(move |event, _, control_flow| {
 
-        *control_flow = ControlFlow::Poll;
+        // let now = Instant::now();
+        // let plop = Duration::from_millis(2);
+        //*control_flow = ControlFlow::WaitUntil(now.checked_add(plop).unwrap());
+        *control_flow = ControlFlow::Poll; //Poll is synchronized with V-Sync
 
-        match event {
-            Event::WindowEvent { event, .. } => match event {
-                WindowEvent::CloseRequested => {
-                    char_received = None;
-                    println!("The close button was pressed; stopping");
-                    *control_flow = ControlFlow::Exit
-                }
-                WindowEvent::ReceivedCharacter(c) => {
-                    char_received = Some(c);
-                    // println!("Char received: {:?}", char_received);
-                }
-                _ => {
-                    char_received = None;
-                }
-            },
-            Event::DeviceEvent { event, .. } => match event {
-                DeviceEvent::MouseMotion { delta } => {
-                    mouse_move_delta = delta;
-                }
-                DeviceEvent::Button { button, state } => {
-                    match state {
-                        ElementState::Pressed => (),
-                        ElementState::Released => (),
-                    };
+        system_clock.update();
 
-                    match button {
-                        0 => (),
-                        1 => (),
-                        _ => ()
-                    }
-                },
-                DeviceEvent::Key(k) => {
-                    keyboard_input = Some(k);
-                    let scan_code = k.scancode;
-                    let state = k.state;
-                    let key_code = k.virtual_keycode.unwrap_or(VirtualKeyCode::NoConvert);
+        if input.update(&event) {
 
-                    println!(
-                        "Scan: {}, state: {:?}, virt. key code: {:?}",
-                        scan_code, state, key_code
-                    );
-                }
-                _ => (),
-            },
-            Event::MainEventsCleared => {
-                // BOOT, play boot animation once before showing the shell or any other app.
-                if booting {
-                    booting = boot_animation(&mut virtual_frame_buffer, &mut crt_renderer, frame_counter);
-                } else {
-                    //Updating apps
-                    let mut show_shell: bool = true;
-                    let mut app_response: Option<AppResponse> = None;
-                    for app in app_list.chunks_exact_mut(1) {
-                        
-                        // If app is running and drawing (in focus), call update with keyboard inputs and dont render shell.
-                        if app[0].get_state().0 && app[0].get_state().1 {
-                            app_response = app[0].update(keyboard_input, char_received, &mut virtual_frame_buffer);
-                            app[0].draw(&mut virtual_frame_buffer);
-                            show_shell = false;
-                        }
-                        
-                        // If app is running but not drawing (running in the background), call update without keyboard inputs.
-                        // dont draw.
-                        else if app[0].get_state().0 && !app[0].get_state().1 {
-                            app_response = app[0].update(None, None, &mut virtual_frame_buffer);
-                        }
-                    }
-
-                    // If no app is in focus, run the shell
-                    if show_shell {
-                        app_response = shell.update(keyboard_input, char_received, &mut virtual_frame_buffer);
-                        shell.draw(&mut virtual_frame_buffer);
-                    }
-
-                    // Process app response
-                    match app_response {
-                        Some(response) => {
-                            match response.event {
-                                Some(event) => *control_flow = event,
-                                None => (),
-                            }
-
-                            match response.message {
-                                Some(message) => {
-                                    println!("App message: {}", message);
-
-                                    for app in app_list.chunks_exact_mut(1) {
-                                        if app[0].get_name() == message {
-                                            app[0].set_state(true, true);
-                                        }
-                                    }
-                                }
-                                None => (),
-                            }
-                        },
-                        None => ()
-                    }
-                }
-
-                // Render virtual frame buffer to pixels frame buffer with upscaling and CRT effect
-                if frame_interval.elapsed().as_micros() >= FRAME_TIME_MS * 1000 {
-                    frame_interval = Instant::now();
-                    virtual_frame_buffer.render();
-
-                    // let start = Instant::now();
-                    crt_renderer.render(&mut virtual_frame_buffer, pixels.get_frame_mut());
-                    // println!("Render time: {} micros", start.elapsed().as_micros());
-                    pixels.render().expect("Pixels render oups");
-                    frame_counter = frame_counter + 1;
-                }
-
-                window.request_redraw();
-
-                // Reset input buffers for next loop
-                char_received = None;
-                keyboard_input = None;
-                mouse_move_delta.0 = 0.0;
-                mouse_move_delta.1 = 0.0;
+            if input.quit() {
+                *control_flow = ControlFlow::Exit
             }
-            _ => (),
+
+            // BOOT, play boot animation once before showing the shell or any other app.
+            if booting {
+                booting = boot_animation(&mut virtual_frame_buffer, &mut crt_renderer, &system_clock);
+            } else {
+                //Updating apps
+                let mut show_shell: bool = true;
+                let mut app_response: Option<AppResponse> = None;
+                //let app_inputs: AppInputs = AppInputs { keyboard_input, char_received, mouse_move_delta, system_clock };
+                for app in app_list.chunks_exact_mut(1) {
+                    
+                    // If app is running and drawing (in focus), call update with keyboard inputs and dont render shell.
+                    if app[0].get_state().0 && app[0].get_state().1 {
+                        app_response = app[0].update(&input, &system_clock, &mut virtual_frame_buffer);
+                        app[0].draw(&input, &system_clock, &mut virtual_frame_buffer);
+                        show_shell = false;
+                    }
+                    
+                    // If app is running but not drawing (running in the background), call update without keyboard inputs.
+                    // dont draw.
+                    else if app[0].get_state().0 && !app[0].get_state().1 {
+                        app_response = app[0].update(&input, &system_clock, &mut virtual_frame_buffer);
+                    }
+                }
+
+                // If no app is in focus, run the shell
+                if show_shell {
+                    app_response = shell.update(&input, &system_clock, &mut virtual_frame_buffer);
+                    shell.draw(&input, &system_clock, &mut virtual_frame_buffer);
+                }
+
+                // Process app response
+                match app_response {
+                    Some(response) => {
+                        match response.event {
+                            Some(event) => *control_flow = event,
+                            None => (),
+                        }
+
+                        match response.message {
+                            Some(message) => {
+                                println!("App message: {}", message);
+
+                                for app in app_list.chunks_exact_mut(1) {
+                                    if app[0].get_name() == message {
+                                        app[0].set_state(true, true);
+                                    }
+                                };
+
+                                if message == String::from("crt") {
+                                    crt_renderer.toggle_filter();
+                                }
+
+                                if message == String::from("d") {
+                                }
+
+                                if message == String::from("e") {
+                                }
+
+                                if message == String::from("f") {
+                                }
+
+                                if message == String::from("g") {
+                                }
+
+                                if message == String::from("a") {
+                                }
+
+                                if message == String::from("b") {
+                                }
+                            }
+                            
+                            None => (),
+                        }
+                    },
+                    None => ()
+                }
+            }
+
+            // Render virtual frame buffer to pixels frame buffer with upscaling and CRT effect
+            let start = Instant::now();
+
+            virtual_frame_buffer.render();
+            
+            //Split virtual frame buffer and pixel's frame in 4 chunks, and send each chunk to a separate thread for CRT rendering.
+            //4 threads is 30% fastert than one in my case. No benefits in using 8 or 2.
+            thread::scope(|s| {
+
+                let mut pix_iter = pixels.get_frame_mut().chunks_exact_mut((WIDTH * HEIGHT / 4) * 4).into_iter();
+                let mut virt_iter = virtual_frame_buffer.get_frame().chunks_exact(VIRTUAL_WIDTH * VIRTUAL_HEIGHT / 4).into_iter();
+ 
+                let virt_chunk_1 = virt_iter.next().unwrap();
+                let virt_chunk_2 = virt_iter.next().unwrap();
+                let virt_chunk_3 = virt_iter.next().unwrap();
+                let virt_chunk_4 = virt_iter.next().unwrap();
+
+                let pix_chunk_1 = pix_iter.next().unwrap();
+                let pix_chunk_2 = pix_iter.next().unwrap();
+                let pix_chunk_3 = pix_iter.next().unwrap();
+                let pix_chunk_4 = pix_iter.next().unwrap();
+
+                s.spawn(|| {
+                    crt_renderer.render(virt_chunk_1, pix_chunk_1);
+                });
+
+                s.spawn(|| {
+                    crt_renderer.render(virt_chunk_2, pix_chunk_2);
+                });
+
+                s.spawn(|| {
+                    crt_renderer.render(virt_chunk_3, pix_chunk_3);
+                });
+
+                s.spawn(|| {
+                    crt_renderer.render(virt_chunk_4, pix_chunk_4);
+                });
+            });
+            
+            // Render everything in a single thread
+            //crt_renderer.render(&mut virtual_frame_buffer.get_frame(), pixels.get_frame_mut());
+            
+            frame_time_100.push(start.elapsed().as_micros());
+            
+            if frame_time_100.len() == 100 {
+                
+                let mut total_time: u128 = 0;
+                
+                for time in &frame_time_100 {
+                    total_time += time;
+                }
+
+                let avg = total_time/100;
+
+                println!("Render time: {} micros", avg);
+                frame_time_100.clear();
+            }
+            
+            
+            pixels.render().expect("Pixels render oups");
+            window.request_redraw();
+            system_clock.count_frame();
+
+            // Reset input buffers for next loop
+            mouse_move_delta.0 = 0.0;
+            mouse_move_delta.1 = 0.0;
         }
     });
 }
@@ -291,87 +347,47 @@ fn main() -> Result<(), Error> {
 fn draw_loading_border(virtual_frame_buffer: &mut VirtualFrameBuffer) {
     let mut random = rand::thread_rng();
     let mut rgb_color: u8 = random.gen_range(0..32);
-
-    let mut line_pixel_count: usize = 0;
     let mut line_count: usize = 0;
-    let mut band_count: u8 = 0;
-    let mut band: u8 = random.gen_range(0..20) + 4;
+    let mut band_height: usize = random.gen_range(4..20);
 
-    let width = virtual_frame_buffer.get_width();
-    let height = virtual_frame_buffer.get_height();
-    let horiz_size = (virtual_frame_buffer.get_width() - virtual_frame_buffer.get_text_layer_size_xy().0 * 8)/2;
-    let vert_size = (virtual_frame_buffer.get_height() - virtual_frame_buffer.get_text_layer_size_xy().1 * 8)/2;
-
-    for pixel in virtual_frame_buffer.get_frame_mut().chunks_exact_mut(1) {
-        if line_pixel_count < horiz_size
-            || line_pixel_count > width - horiz_size
-            || line_count < vert_size
-            || line_count > height - vert_size
-        {
-            if band_count >= band {
-                rgb_color = random.gen_range(0..32);
-                band_count = 0;
-                band = random.gen_range(0..20) + 4;
-            }
-
-            pixel[0] = rgb_color;
-        }
-
-        line_pixel_count += 1;
-
-        if line_pixel_count == width {
-            band_count += 1;
-            line_count += 1;
-            line_pixel_count = 0;
-        }
+    while line_count <= VIRTUAL_HEIGHT {
+        let range_max = if line_count + band_height > VIRTUAL_HEIGHT {VIRTUAL_HEIGHT } else { line_count + band_height };
+        virtual_frame_buffer.set_overscan_color_range(rgb_color, line_count..range_max);
+        line_count += band_height;
+        rgb_color = random.gen_range(0..32);
+        band_height = random.gen_range(4..20);
     }
 }
 
 ///Boot animation
-fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &mut CrtEffectRenderer, frame_counter: u128) -> bool {
+fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &mut CrtEffectRenderer, clock: &Clock) -> bool {
     
     virtual_frame_buffer.get_console_mut().display = false;
 
-    //CRT warm up
-    let br = if frame_counter > 255 {255} else {frame_counter as u8};
-    crt_renderer.set_brightness(br);
+    //CRT warm up, brightness increases from 0 to 255 in 2 seconds
+    let brigthness = if clock.total_running_time >= Duration::new(2, 0) {255} else {(clock.total_running_time.as_millis() * 255 / 2000) as u8};
+    crt_renderer.set_brightness(brigthness);
 
     //Fill text layer with random garbage
-    if frame_counter == 0 {
+    if clock.get_frame_count() == 0 {
         genrate_random_garbage(virtual_frame_buffer);
     }
 
-    //Clear garbage and display char and color test after 2 seconds
-    if frame_counter == FRAMES_PER_SEC * 3 {
-
-        //Clear text layer
+    //Clear garbage and display Loading...
+    if clock.total_running_time >= Duration::new(3, 0) {
         virtual_frame_buffer.get_text_layer_mut().clear();
-
-        //Clear frame buffer
-        virtual_frame_buffer.clear_frame_buffer(0);
-
-        //Display all possible colors on first row
-        // for i in 0..32_u8 {
-        //     virtual_frame_buffer.get_text_layer_mut().insert_char(i as usize, ' ', Some(BLACK), Some(i), false, false, false);
-        // }
-
-        //Display all chars starting on second row
-        // let width = virtual_frame_buffer.get_text_layer_size_xy().0;
-        // for i in 0..characters_rom::ROM.len() {
-        //     virtual_frame_buffer.get_text_layer_mut().insert_char(width + i as usize, characters_rom::CHARS[i], Some(WHITE), Some(BLACK), false, false, false);
-        // }
-
+        virtual_frame_buffer.clear(0);
         virtual_frame_buffer.get_text_layer_mut().insert_string_xy(0, 0, "Loading..." , Some(WHITE), Some(BLACK), false, false, false);
     }
 
     //Display loading overscan while "loading"
-    if frame_counter >= FRAMES_PER_SEC * 3 && frame_counter <= FRAMES_PER_SEC * 6 {
+    if clock.total_running_time >= Duration::new(3, 0) && clock.total_running_time < Duration::new(6, 0) {
         draw_loading_border(virtual_frame_buffer);
     }
     
-    if frame_counter >= 6 * FRAMES_PER_SEC {
+    if clock.total_running_time >= Duration::new(6, 0) {
         virtual_frame_buffer.get_text_layer_mut().clear();
-        virtual_frame_buffer.clear_frame_buffer(0);
+        virtual_frame_buffer.clear(0);
         return false;
     }
     else {
@@ -384,7 +400,7 @@ pub fn genrate_random_garbage(virtual_frame_buffer: &mut VirtualFrameBuffer) {
     let mut random = rand::thread_rng();
         
     let frame: u8 = random.gen_range(0..32);
-    virtual_frame_buffer.clear_frame_buffer(frame);
+    virtual_frame_buffer.clear(frame);
     virtual_frame_buffer.get_text_layer_mut().clear();
 
     let char_map = virtual_frame_buffer.get_text_layer_mut().get_char_map_mut();
@@ -397,8 +413,8 @@ pub fn genrate_random_garbage(virtual_frame_buffer: &mut VirtualFrameBuffer) {
         bkg_color = if bkg_color > 31 { 0 } else { bkg_color };
         
         let mut char_index = random.gen_range(0..100);
-        char_index = if char_index > characters_rom::CHARS.len() - 1 { 0 } else { char_index };
-        let c:char = characters_rom::CHARS[char_index];
+        char_index = if char_index > characters_rom::CHAR_TABLE.len() - 1 { 0 } else { char_index };
+        let c:char = characters_rom::CHAR_TABLE[char_index];
 
         let effect:u8 = random.gen_range(0..10);
         let swap: bool = if effect & 0b00000001 > 0 {true} else {false};
