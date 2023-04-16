@@ -1,6 +1,6 @@
 use rodio::{OutputStream, Sink, Source};
 use sound::{notes::*, play};
-use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}, text_layer::TextLayerChar, crt_renderer::CrtEffectRenderer};
+use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}, text_layer::TextLayerChar, crt_renderer::CrtEffectRenderer, config::{HEIGHT, WIDTH, VIRTUAL_HEIGHT, VIRTUAL_WIDTH}};
 use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
@@ -238,7 +238,6 @@ fn main() -> Result<(), Error> {
 
                                 if message == String::from("crt") {
                                     crt_renderer.toggle_filter();
-                                    crt_renderer.toggle_round_corners();
                                 }
 
                                 if message == String::from("d") {
@@ -271,8 +270,40 @@ fn main() -> Result<(), Error> {
             virtual_frame_buffer.render();
             
             let start = Instant::now();
+
+            thread::scope(|s| {
+
+                let mut pix_iter = pixels.get_frame_mut().chunks_exact_mut((WIDTH * HEIGHT / 4) * 4).into_iter();
+                let mut virt_iter = virtual_frame_buffer.get_frame().chunks_exact(VIRTUAL_WIDTH * VIRTUAL_HEIGHT / 4).into_iter();
+ 
+                let virt_chunk_1 = virt_iter.next().unwrap();
+                let virt_chunk_2 = virt_iter.next().unwrap();
+                let virt_chunk_3 = virt_iter.next().unwrap();
+                let virt_chunk_4 = virt_iter.next().unwrap();
+
+                let pix_chunk_1 = pix_iter.next().unwrap();
+                let pix_chunk_2 = pix_iter.next().unwrap();
+                let pix_chunk_3 = pix_iter.next().unwrap();
+                let pix_chunk_4 = pix_iter.next().unwrap();
+
+                s.spawn(|| {
+                    crt_renderer.render(virt_chunk_1, pix_chunk_1);
+                });
+
+                s.spawn(|| {
+                    crt_renderer.render(virt_chunk_2, pix_chunk_2);
+                });
+
+                s.spawn(|| {
+                    crt_renderer.render(virt_chunk_3, pix_chunk_3);
+                });
+
+                s.spawn(|| {
+                    crt_renderer.render(virt_chunk_4, pix_chunk_4);
+                });
+            });
             
-            crt_renderer.render(&mut virtual_frame_buffer, pixels.get_frame_mut());
+            //crt_renderer.render(&mut virtual_frame_buffer, pixels.get_frame_mut());
             
             frame_time_100.push(start.elapsed().as_micros());
             

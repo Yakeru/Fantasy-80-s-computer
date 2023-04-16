@@ -23,6 +23,8 @@ pub struct VirtualFrameBuffer {
     
     frame: Box<[u8]>,
     overscan: [u8; VIRTUAL_HEIGHT],
+    rounded_corner_drawing: [u8; 10],
+    rounded_corner: bool,
     line_scroll_list: Box<[i8]>,
     text_layer: TextLayer,
     sprites: Vec<Sprite>,
@@ -72,6 +74,8 @@ impl VirtualFrameBuffer {
         VirtualFrameBuffer {
             frame: virtual_frame_buffer,
             overscan: [WHITE; VIRTUAL_HEIGHT],
+            rounded_corner_drawing: [10, 8, 6, 5, 4, 3, 2, 2, 1, 1],
+            rounded_corner: true,
             line_scroll_list: Box::new([0; VIRTUAL_HEIGHT]),
             text_layer,
             console: Console::new(10, 10, 30, 10, 
@@ -197,6 +201,14 @@ impl VirtualFrameBuffer {
 
     pub fn render(&mut self) {
         self.clock.update();
+
+        //Round corners
+        // if self.rounded_corner {
+        //     for line in self.frame.chunks_exact_mut(VIRTUAL_WIDTH) {
+
+        //     }
+        // }
+        
         sprite_layer_renderer(&self.sprites, &mut self.frame);
         text_layer_renderer(&self.text_layer, &mut self.frame, self.clock.half_second_latch);
         if self.console.display {

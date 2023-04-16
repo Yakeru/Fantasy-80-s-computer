@@ -1,3 +1,5 @@
+use std::thread::{self, Thread};
+
 use crate::{config::*, VirtualFrameBuffer, color_palettes::DEFAULT_PALETTE};
 
 const SUB_PIXEL_COUNT: usize = 4;
@@ -9,10 +11,8 @@ pub struct CrtEffectRenderer {
     //Virtual resolution multiplied by upscale doesnt exactly fit inside real screen resolution
     //some pixels arent used, so to center the picture we calculate an offset:
     picture_offset: usize,
-    circle_list: [usize; CORNER_LIST_SIZE],
     apply_filter: bool,
     crt_bleed: u8,
-    apply_round_corners: bool,
     brightness: u8
 }
 
@@ -21,9 +21,7 @@ impl CrtEffectRenderer {
         CrtEffectRenderer {
             upscaling,
             picture_offset: ((WIDTH - VIRTUAL_WIDTH * UPSCALE) / 2) * UPSCALE,
-            circle_list: [10, 8, 6, 5, 4, 3, 2, 2, 1, 1],
             apply_filter,
-            apply_round_corners: apply_filter,
             crt_bleed: 5,
             brightness
         }
@@ -37,17 +35,12 @@ impl CrtEffectRenderer {
         self.apply_filter = !self.apply_filter;
     }
 
-    pub fn toggle_round_corners(&mut self) {
-        self.apply_round_corners = !self.apply_round_corners;
-    }
-
     pub fn set_crt_bleed(&mut self, intensity: u8) {
         self.crt_bleed = intensity;
     }
 
-    pub fn render(&self, virtual_frame_buffer: &VirtualFrameBuffer, output_frame: &mut [u8]) {
-        
-        
+    pub fn render(&self, virtual_frame: &[u8], output_frame: &mut [u8]) {
+
         let mut rendered_scanline: [u8; RENDERED_LINE_LENGTH] = [0; RENDERED_LINE_LENGTH];
         let mut rendered_line: [u8; RENDERED_LINE_LENGTH] = if self.apply_filter {
             [0; RENDERED_LINE_LENGTH]
@@ -59,36 +52,7 @@ impl CrtEffectRenderer {
 
         let scanline_alpha = self.brightness.checked_sub(SCAN_LINE_STRENGTH).unwrap_or(0);
 
-        for virt_line in virtual_frame_buffer.get_frame().chunks_exact(VIRTUAL_WIDTH) {
-
-            // If round corners are activated, adapt range to exlude the pixels inside corner
-            let render_range_start: usize = 
-                if self.apply_round_corners {
-                    if line_count < CORNER_LIST_SIZE {
-                        self.circle_list[line_count]
-                    } else if line_count > VIRTUAL_HEIGHT - CORNER_LIST_SIZE - 1 {
-                        self.circle_list[VIRTUAL_HEIGHT - line_count - 1]
-                    } else {
-                        0
-                    }
-                }
-                else {
-                    0
-                };
-
-            let render_range_end: usize = 
-                if self.apply_round_corners {
-                    if line_count < CORNER_LIST_SIZE {
-                        VIRTUAL_WIDTH - self.circle_list[line_count]
-                    } else if line_count > VIRTUAL_HEIGHT - CORNER_LIST_SIZE - 1 {
-                        VIRTUAL_WIDTH - self.circle_list[VIRTUAL_HEIGHT - line_count - 1]
-                    } else {
-                        VIRTUAL_WIDTH
-                    }
-                }
-                else {
-                    VIRTUAL_WIDTH
-                };
+        for virt_line in virtual_frame.chunks_exact(VIRTUAL_WIDTH) {
 
             let mut rgb_before: (u8, u8, u8) = (0, 0, 0);
 
@@ -96,13 +60,9 @@ impl CrtEffectRenderer {
 
                 let screen_pixel_index = SUB_PIXEL_COUNT * UPSCALE * pixel_index + self.picture_offset;
 
-                let rgb = if (render_range_start..render_range_end).contains(&pixel_index) {
-                    DEFAULT_PALETTE.get_rgb(virt_line[pixel_index])
-                } else {
-                    (0, 0, 0)
-                };
+                let rgb = DEFAULT_PALETTE.get_rgb(virt_line[pixel_index]);
 
-                let rgb_after: (u8, u8, u8) = if (render_range_start..render_range_end).contains(&(pixel_index + 1)) {
+                let rgb_after: (u8, u8, u8) = if pixel_index < VIRTUAL_WIDTH - 1 {
                     DEFAULT_PALETTE.get_rgb(virt_line[pixel_index + 1])
                 } else {
                     (0, 0, 0)
