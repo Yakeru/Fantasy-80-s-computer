@@ -7,6 +7,7 @@
 // pub const VIRTUAL_HEIGHT: usize = 320;
 // pub const TEXT_COLUMNS: usize = 46;
 // pub const TEXT_ROWS: usize = 34;
+// pub const FULLSCREEN: bool = true;
 
 // QHD
 pub const WIDTH: usize = 2048;
@@ -19,6 +20,7 @@ pub const OVERSCAN_V: usize = 8;
 pub const OVERSCAN_H: usize = 10;
 pub const TEXT_COLUMNS: usize = 40; //320px
 pub const TEXT_ROWS: usize = 30; //240px
+pub const FULLSCREEN: bool = true;
 
 // 1080p
 // pub const WIDTH: usize = 1280;
@@ -29,6 +31,7 @@ pub const TEXT_ROWS: usize = 30; //240px
 // pub const VIRTUAL_HEIGHT: usize = 320;
 // pub const TEXT_COLUMNS: usize = 44;
 // pub const TEXT_ROWS: usize = 32;
+// pub const FULLSCREEN: bool = false;
 
 // No upscaling
 // pub const WIDTH: usize = 426;
@@ -39,51 +42,12 @@ pub const TEXT_ROWS: usize = 30; //240px
 // pub const VIRTUAL_HEIGHT: usize = 320;
 // pub const TEXT_COLUMNS: usize = 44;
 // pub const TEXT_ROWS: usize = 32;
+// pub const FULLSCREEN: bool = false;
 
 /* The following code is an experiment to generate a config struct, automatically selected
 according to the resolution of the screen, but since I'm using arrays all over the place
 and Rust doesnt allow non const values to initialize arrays, the refactoring to implement
 the auto-config was a bit to much work for now. Will get back to it later */
-
-// // 4K
-// pub const FOUR_K_WIDTH: usize = 2560;
-// pub const FOUR_K_HEIGHT: usize = 1920;
-// pub const FOUR_K_UPSCALE: usize = 6;
-// pub const FOUR_K_SCAN_LINE_STRENGTH: u8 = 100;
-// pub const FOUR_K_VIRTUAL_WIDTH: usize = 426;
-// pub const FOUR_K_VIRTUAL_HEIGHT: usize = 320;
-// pub const FOUR_K_TEXT_COLUMNS: usize = 46;
-// pub const FOUR_K_TEXT_ROWS: usize = 34;
-
-// // QHD
-// pub const QHD_WIDTH: usize = 2048;
-// pub const QHD_HEIGHT: usize = 1536;
-// pub const QHD_UPSCALE: usize = 6;
-// pub const QHD_SCAN_LINE_STRENGTH: u8 = 100;
-// pub const QHD_VIRTUAL_WIDTH: usize = 340;
-// pub const QHD_VIRTUAL_HEIGHT: usize = 256;
-// pub const QHD_TEXT_COLUMNS: usize = 40;
-// pub const QHD_TEXT_ROWS: usize = 30;
-
-// // 1080p
-// pub const FHD_WIDTH: usize = 1280;
-// pub const FHD_HEIGHT: usize = 960;
-// pub const FHD_UPSCALE: usize = 3;
-// pub const FHD_SCAN_LINE_STRENGTH: u8 = 100;
-// pub const FHD_VIRTUAL_WIDTH: usize = 426;
-// pub const FHD_VIRTUAL_HEIGHT: usize = 320;
-// pub const FHD_TEXT_COLUMNS: usize = 44;
-// pub const FHD_TEXT_ROWS: usize = 32;
-
-// // No upscaling
-// pub const DEFAULT_WIDTH: usize = 426;
-// pub const DEFAULT_HEIGHT: usize = 320;
-// pub const DEFAULT_UPSCALE: usize = 1;
-// pub const DEFAULT_SCAN_LINE_STRENGTH: u8 = 100;
-// pub const DEFAULT_VIRTUAL_WIDTH: usize = 426;
-// pub const DEFAULT_VIRTUAL_HEIGHT: usize = 320;
-// pub const DEFAULT_TEXT_COLUMNS: usize = 44;
-// pub const DEFAULT_TEXT_ROWS: usize = 32;
 
 // pub struct DisplayConfig {
 //     pub window_width: usize,

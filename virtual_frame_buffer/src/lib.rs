@@ -23,7 +23,7 @@ pub struct VirtualFrameBuffer {
     
     frame: Box<[u8]>,
     overscan: [u8; VIRTUAL_HEIGHT],
-    rounded_corner_drawing: [u8; 10],
+    rounded_corner_drawing: [usize; 10],
     rounded_corner: bool,
     line_scroll_list: Box<[i8]>,
     text_layer: TextLayer,
@@ -136,11 +136,11 @@ impl VirtualFrameBuffer {
         }
     }
 
-    pub fn set_overscan(&mut self, color: u8) {
-        self.set_overscan_range(color, 0..VIRTUAL_HEIGHT)
+    pub fn set_overscan_color(&mut self, color: u8) {
+        self.set_overscan_color_range(color, 0..VIRTUAL_HEIGHT)
     }
 
-    pub fn set_overscan_range<R: RangeBounds<usize>>(&mut self, color: u8, range: R) {
+    pub fn set_overscan_color_range<R: RangeBounds<usize>>(&mut self, color: u8, range: R) {
 
         let start = match range.start_bound() {
             Bound::Unbounded => 0,
@@ -159,6 +159,10 @@ impl VirtualFrameBuffer {
         for overscan_index in start..end {
             self.overscan[overscan_index] = color
         }
+    }
+
+    pub fn overscan_renderer(&mut self) {
+        
     }
 
     /// Sets all the pixels to the specified color of the color palette
@@ -203,11 +207,39 @@ impl VirtualFrameBuffer {
         self.clock.update();
 
         //Round corners
-        // if self.rounded_corner {
-        //     for line in self.frame.chunks_exact_mut(VIRTUAL_WIDTH) {
+        if self.rounded_corner {
+            let mut line_count: usize = 0;
 
-        //     }
-        // }
+            for line in self.frame.chunks_exact_mut(VIRTUAL_WIDTH) {
+
+                if line_count < self.rounded_corner_drawing.len() {
+                    //top left
+                    for pixel_index in 0..self.rounded_corner_drawing[line_count] {
+                        line[pixel_index] = 0;
+                    }
+
+                    //top right
+                    for pixel_index in (VIRTUAL_WIDTH - self.rounded_corner_drawing[line_count])..VIRTUAL_WIDTH {
+                        line[pixel_index] = 0;
+                    }
+                }
+
+                if line_count >= VIRTUAL_HEIGHT - self.rounded_corner_drawing.len() {
+                    //bottom left
+                    for pixel_index in 0..self.rounded_corner_drawing[VIRTUAL_HEIGHT - line_count - 1] {
+                        line[pixel_index] = 0;
+                    }
+
+                    //bottom rigt
+                    for pixel_index in (VIRTUAL_WIDTH - self.rounded_corner_drawing[VIRTUAL_HEIGHT - line_count - 1])..VIRTUAL_WIDTH {
+                        line[pixel_index] = 0;
+                    }
+                }
+
+                line_count += 1;
+            }
+            
+        }
         
         sprite_layer_renderer(&self.sprites, &mut self.frame);
         text_layer_renderer(&self.text_layer, &mut self.frame, self.clock.half_second_latch);

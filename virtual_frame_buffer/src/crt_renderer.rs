@@ -20,7 +20,7 @@ impl CrtEffectRenderer {
     pub fn new(upscaling: usize, apply_filter: bool, brightness: u8) -> CrtEffectRenderer {
         CrtEffectRenderer {
             upscaling,
-            picture_offset: ((WIDTH - VIRTUAL_WIDTH * UPSCALE) / 2) * UPSCALE,
+            picture_offset: ((WIDTH - VIRTUAL_WIDTH * UPSCALE) / 2) * SUB_PIXEL_COUNT,
             apply_filter,
             crt_bleed: 5,
             brightness

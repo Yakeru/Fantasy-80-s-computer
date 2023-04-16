@@ -1,6 +1,6 @@
 use rodio::{OutputStream, Sink, Source};
 use sound::{notes::*, play};
-use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}, text_layer::TextLayerChar, crt_renderer::CrtEffectRenderer, config::{HEIGHT, WIDTH, VIRTUAL_HEIGHT, VIRTUAL_WIDTH}};
+use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}, text_layer::TextLayerChar, crt_renderer::CrtEffectRenderer, config::{HEIGHT, WIDTH, VIRTUAL_HEIGHT, VIRTUAL_WIDTH, FULLSCREEN}};
 use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
@@ -79,11 +79,18 @@ fn main() -> Result<(), Error> {
         .set_cursor_grab(winit::window::CursorGrabMode::None)
         .unwrap();
 
+    if FULLSCREEN { 
+        window.set_decorations(false);
+        window.set_fullscreen(Some(Fullscreen::Borderless(None)));
+    }
+
     for monitor in window.available_monitors() {
         if monitor.name().is_some() {
             if monitor.name().unwrap().contains("DISPLAY2") {
-                window.set_decorations(false);
-                window.set_fullscreen(Some(Fullscreen::Borderless(Some(monitor))));
+                if FULLSCREEN { 
+                    window.set_decorations(false);
+                    window.set_fullscreen(Some(Fullscreen::Borderless(Some(monitor))));
+                }
                 break;
             }
         }
@@ -303,7 +310,7 @@ fn main() -> Result<(), Error> {
                 });
             });
             
-            //crt_renderer.render(&mut virtual_frame_buffer, pixels.get_frame_mut());
+            //crt_renderer.render(&mut virtual_frame_buffer.get_frame(), pixels.get_frame_mut());
             
             frame_time_100.push(start.elapsed().as_micros());
             
