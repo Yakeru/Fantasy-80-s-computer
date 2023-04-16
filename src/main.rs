@@ -278,6 +278,8 @@ fn main() -> Result<(), Error> {
 
             virtual_frame_buffer.render();
             
+            //Split virtual frame buffer and pixel's frame in 4 chunks, and send each chunk to a separate thread for CRT rendering.
+            //4 threads is 30% fastert than one in my case. No benefits in using 8 or 2.
             thread::scope(|s| {
 
                 let mut pix_iter = pixels.get_frame_mut().chunks_exact_mut((WIDTH * HEIGHT / 4) * 4).into_iter();
@@ -310,6 +312,7 @@ fn main() -> Result<(), Error> {
                 });
             });
             
+            // Render everything in a single thread
             //crt_renderer.render(&mut virtual_frame_buffer.get_frame(), pixels.get_frame_mut());
             
             frame_time_100.push(start.elapsed().as_micros());

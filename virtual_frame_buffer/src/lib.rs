@@ -218,6 +218,7 @@ impl VirtualFrameBuffer {
         //let clear_frame: [u8; VIRTUAL_WIDTH * VIRTUAL_HEIGHT] = [color; VIRTUAL_WIDTH * VIRTUAL_HEIGHT];
         self.frame
             .copy_from_slice(&[color; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]);
+        self.overscan.copy_from_slice(&[color; VIRTUAL_HEIGHT]);
     }
 
     //Removes all chars, colors and effects from the text_layer
@@ -266,7 +267,7 @@ impl VirtualFrameBuffer {
         if self.rounded_corner {
             self.rounded_corners_renderer();
         }
-        
+
         self.clock.count_frame();
     }
 }
