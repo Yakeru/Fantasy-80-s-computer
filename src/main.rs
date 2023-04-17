@@ -1,6 +1,6 @@
 use rodio::{OutputStream, Sink, Source};
 use sound::{notes::*, play};
-use display_controller::{*, color_palettes::{BLACK, WHITE}, text_layer::TextLayerChar, crt_renderer::CrtEffectRenderer, config::{HEIGHT, WIDTH, VIRTUAL_HEIGHT, VIRTUAL_WIDTH, FULLSCREEN}};
+use display_controller::{*, color_palettes::{BLACK, WHITE}, text_layer::TextLayerChar, renderer::Renderer, config::{HEIGHT, WIDTH, VIRTUAL_HEIGHT, VIRTUAL_WIDTH, FULLSCREEN}};
 use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
@@ -39,22 +39,22 @@ fn main() -> Result<(), Error> {
     //let channel_3 = Sink::try_new(&stream_handle).unwrap();
     //let channel_4 = Sink::try_new(&stream_handle).unwrap();
 
-    let _handle = thread::Builder::new().name("sound".to_string()).spawn(move || {
+    // let _handle = thread::Builder::new().name("sound".to_string()).spawn(move || {
 
-        let mut melody_1: Vec<Option<(f32, f32)>> = Vec::new();
-        melody_1.push(Some((0.0, 10.0)));
-        melody_1.push(Some((C5, 1.0)));
-        melody_1.push(None);
-        melody_1.push(Some((C5, 1.0)));
-        melody_1.push(Some((F5, 2.0)));
+    //     let mut melody_1: Vec<Option<(f32, f32)>> = Vec::new();
+    //     melody_1.push(Some((0.0, 10.0)));
+    //     melody_1.push(Some((C5, 1.0)));
+    //     melody_1.push(None);
+    //     melody_1.push(Some((C5, 1.0)));
+    //     melody_1.push(Some((F5, 2.0)));
 
-        let mut melody_2: Vec<Option<(f32, f32)>> = Vec::new();
-        melody_2.push(Some((0.0, 10.0)));
-        melody_2.push(Some((0.0, 3.0)));
-        melody_2.push(Some((A5, 2.0)));
+    //     let mut melody_2: Vec<Option<(f32, f32)>> = Vec::new();
+    //     melody_2.push(Some((0.0, 10.0)));
+    //     melody_2.push(Some((0.0, 3.0)));
+    //     melody_2.push(Some((A5, 2.0)));
 
-        play(480.0, &melody_1, &melody_2, &channel_1, &channel_2);
-    });
+    //     play(480.0, &melody_1, &melody_2, &channel_1, &channel_2);
+    // });
     
     // ************************************************ DISPLAY SETUP *********************************************
     // winit setup
@@ -135,7 +135,7 @@ fn main() -> Result<(), Error> {
     // The crt renderer takes the virtual frame buffers's frame, upscales it to match pixel's frame and winit window size,
     // then applies a filter evoking CRT sub-pixels and scanlines.
     // The upscaled and "crt'ed" image is then pushed into pixel's frame for on-screen render.
-    let mut crt_renderer: CrtEffectRenderer = CrtEffectRenderer::new(config::UPSCALE, true, u8::MAX);
+    let mut renderer: Renderer = Renderer::new(config::UPSCALE, true, u8::MAX);
 
     // ****************************************************** APPS SETUP ***********************************************
     
@@ -187,9 +187,11 @@ fn main() -> Result<(), Error> {
         //*control_flow = ControlFlow::WaitUntil(now.checked_add(plop).unwrap());
         *control_flow = ControlFlow::Poll; //Poll is synchronized with V-Sync
 
-        system_clock.update();
-
         if input.update(&event) {
+
+            system_clock.update();
+
+            //println!("second tick: {}, half second tick: {}, frames: {}", system_clock.second_tick, system_clock.half_second_tick, system_clock.get_frame_count());
 
             if input.quit() {
                 *control_flow = ControlFlow::Exit
@@ -197,7 +199,7 @@ fn main() -> Result<(), Error> {
 
             // BOOT, play boot animation once before showing the shell or any other app.
             if booting {
-                booting = boot_animation(&mut display_controller, &mut crt_renderer, &system_clock);
+                booting = boot_animation(&mut display_controller, &mut renderer, &system_clock);
             } else {
                 //Updating apps
                 let mut show_shell: bool = true;
@@ -244,7 +246,7 @@ fn main() -> Result<(), Error> {
                                 };
 
                                 if message == String::from("crt") {
-                                    crt_renderer.toggle_filter();
+                                    renderer.toggle_filter();
                                 }
 
                                 if message == String::from("d") {
@@ -296,19 +298,19 @@ fn main() -> Result<(), Error> {
                 let pix_chunk_4 = pix_iter.next().unwrap();
 
                 s.spawn(|| {
-                    crt_renderer.render(virt_chunk_1, pix_chunk_1);
+                    renderer.render(virt_chunk_1, pix_chunk_1);
                 });
 
                 s.spawn(|| {
-                    crt_renderer.render(virt_chunk_2, pix_chunk_2);
+                    renderer.render(virt_chunk_2, pix_chunk_2);
                 });
 
                 s.spawn(|| {
-                    crt_renderer.render(virt_chunk_3, pix_chunk_3);
+                    renderer.render(virt_chunk_3, pix_chunk_3);
                 });
 
                 s.spawn(|| {
-                    crt_renderer.render(virt_chunk_4, pix_chunk_4);
+                    renderer.render(virt_chunk_4, pix_chunk_4);
                 });
             });
             
@@ -360,7 +362,7 @@ fn draw_loading_border(display_controller: &mut DisplayController) {
 }
 
 ///Boot animation
-fn boot_animation(display_controller: &mut DisplayController, crt_renderer: &mut CrtEffectRenderer, clock: &Clock) -> bool {
+fn boot_animation(display_controller: &mut DisplayController, crt_renderer: &mut Renderer, clock: &Clock) -> bool {
     
     display_controller.get_console_mut().display = false;
 

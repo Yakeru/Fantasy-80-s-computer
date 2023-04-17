@@ -1,9 +1,9 @@
-use crate::{config::*, color_palettes::DEFAULT_PALETTE};
+use crate::{config::*, color_palettes::{ColorPalette, COLOR_PALETTE}};
 
 const SUB_PIXEL_COUNT: usize = 4;
 const RENDERED_LINE_LENGTH: usize = WIDTH * SUB_PIXEL_COUNT;
 
-pub struct CrtEffectRenderer {
+pub struct Renderer {
     upscaling: usize,
     //Virtual resolution multiplied by upscale doesnt exactly fit inside real screen resolution
     //some pixels arent used, so to center the picture we calculate an offset:
@@ -13,9 +13,9 @@ pub struct CrtEffectRenderer {
     brightness: u8
 }
 
-impl CrtEffectRenderer {
-    pub fn new(upscaling: usize, apply_filter: bool, brightness: u8) -> CrtEffectRenderer {
-        CrtEffectRenderer {
+impl Renderer {
+    pub fn new(upscaling: usize, apply_filter: bool, brightness: u8) -> Renderer {
+        Renderer {
             upscaling,
             picture_offset: ((WIDTH - VIRTUAL_WIDTH * UPSCALE) / 2) * SUB_PIXEL_COUNT,
             apply_filter,
@@ -57,10 +57,10 @@ impl CrtEffectRenderer {
 
                 let screen_pixel_index = SUB_PIXEL_COUNT * UPSCALE * pixel_index + self.picture_offset;
 
-                let rgb = DEFAULT_PALETTE.get_rgb(virt_line[pixel_index]);
+                let rgb = unsafe { COLOR_PALETTE.get_rgb(virt_line[pixel_index]) };
 
                 let rgb_after: (u8, u8, u8) = if pixel_index < VIRTUAL_WIDTH - 1 {
-                    DEFAULT_PALETTE.get_rgb(virt_line[pixel_index + 1])
+                    unsafe { COLOR_PALETTE.get_rgb(virt_line[pixel_index + 1]) }
                 } else {
                     (0, 0, 0)
                 };

@@ -13,7 +13,7 @@ pub mod color_palettes;
 pub mod sprite;
 pub mod text_layer;
 pub mod console;
-pub mod crt_renderer;
+pub mod renderer;
 
 const ROUNDED_CORNER: [usize;10] = [10, 8, 6, 5, 4, 3, 2, 2, 1, 1];
 

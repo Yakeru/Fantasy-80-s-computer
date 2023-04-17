@@ -70,7 +70,7 @@ BROWNISH_BLACK_RGB, DARKER_BLUE_RGB, DARKER_PURPLE_RGB, BLUE_GREEN_RGB, DARK_BRO
 DARK_RED_RGB, DARK_ORANGE_RGB, LIME_GREEN_RGB, MEDIUM_GREEN_RGB, TRUE_BLUE_RGB, MAUVE_RGB, DARKPEACH_RGB, PEACH_RGB];
 
 pub struct ColorPalette {
-    custom: [(u8, u8, u8); 32],
+    custom_palette: [(u8, u8, u8); 32],
     toggle_custom: bool,
 }
 
@@ -79,21 +79,29 @@ impl ColorPalette {
         self.toggle_custom = !self.toggle_custom
     }
 
+    pub fn get_toggle_custom(&self) -> bool {
+        self.toggle_custom
+    }
+
     pub fn set_custom_palette_color(&mut self, index: usize, rgb_color: (u8, u8, u8)) {
-        self.custom[index] = rgb_color
+        self.custom_palette[index] = rgb_color
+    }
+
+    pub fn get_custom_palette(&mut self) -> &mut [(u8, u8, u8); 32] {
+        &mut self.custom_palette
     }
 
     pub fn set_custom_palette(&mut self, rgb_palette: [(u8, u8, u8); 32]) {
-        self.custom = rgb_palette
+        self.custom_palette = rgb_palette
     }
 
     pub fn get_rgb(&self, index: u8) -> (u8, u8, u8) {
         if self.toggle_custom {
-            self.custom[index as usize]
+            self.custom_palette[index as usize]
         } else {
             DEFAULT_COLOR_PALETTE[index as usize]
         }
     }
 }
 
-pub static DEFAULT_PALETTE: ColorPalette = ColorPalette{custom: DEFAULT_COLOR_PALETTE, toggle_custom: false};
+pub static mut COLOR_PALETTE: ColorPalette = ColorPalette{custom_palette: DEFAULT_COLOR_PALETTE, toggle_custom: false};

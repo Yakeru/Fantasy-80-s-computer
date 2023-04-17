@@ -1,4 +1,5 @@
 use app_macro_derive::AppMacro;
+use display_controller::color_palettes::COLOR_PALETTE;
 use rand::Rng;
 
 const MIN_ITER: usize = 50;
@@ -24,6 +25,17 @@ struct ColorTheme {
     empty_color: u8,
     empty_ratio: f64,
     fuzzyness: f64,
+}
+
+impl ColorTheme {
+
+    pub fn get_palette_1(&mut self) -> &mut Vec<u8> {
+        &mut self.palette1
+    }
+
+    pub fn get_palette_2(&mut self) -> &mut Vec<u8> {
+        &mut self.palette2
+    }
 }
 
 #[derive(AppMacro)]
@@ -185,6 +197,7 @@ impl Mandelbrot {
         // } else if self.menu {
         //     self.draw_menu(virtual_frame_buffer);
         // }
+
         self.draw_welcome_screen(inputs, clock, dc);
     }
 
@@ -270,6 +283,13 @@ impl Mandelbrot {
             self.swap_palette();
         } else if inputs.key_pressed(VirtualKeyCode::F) {
             self.fuzzy = !self.fuzzy;
+        } else if inputs.key_pressed(VirtualKeyCode::X) {
+            unsafe { COLOR_PALETTE.toggle_custom() };
+        }
+        
+        if inputs.key_pressed_os(VirtualKeyCode::C) {
+            self.themes[self.current_theme].get_palette_1().rotate_right(1);
+            self.themes[self.current_theme].get_palette_2().rotate_right(1);
         }
 
         /*---------------------------------------------------------- */
@@ -300,13 +320,20 @@ impl Mandelbrot {
     fn draw_welcome_screen(
         &mut self,
         _inputs: &WinitInputHelper,
-        _clock: &Clock,
+        clock: &Clock,
         dc: &mut DisplayController,
     ) {
-
         dc.get_text_layer_mut().clear();
         dc.get_console_mut().display = false;
         dc.clear(BLACK);
+
+        if clock.half_second_tick {
+            unsafe { 
+                if COLOR_PALETTE.get_toggle_custom() {
+                    COLOR_PALETTE.get_custom_palette().rotate_left(1);
+                }
+            }
+        }
 
         let mandel_x_min: f64 = self.mandel_x_center - self.mandel_x_range / 2.0;
         let mandel_y_min: f64 = self.mandel_y_center - self.mandel_y_range / 2.0;
