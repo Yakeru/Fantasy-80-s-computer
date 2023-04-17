@@ -8,5 +8,5 @@ edition = "2021"
 [dependencies]
 winit = "0.27.3"
 winit_input_helper = "0.13.0"
-virtual_frame_buffer = { path = "../virtual_frame_buffer" }
+display_controller = { path = "../display_controller" }
 clock = { path = "../clock" }

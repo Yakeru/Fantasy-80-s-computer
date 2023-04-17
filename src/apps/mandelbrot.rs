@@ -149,7 +149,7 @@ impl Mandelbrot {
         }
     }
 
-    pub fn init_app(&mut self, _virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    pub fn init_app(&mut self, _dc: &mut DisplayController) {
         self.welcome_screen = true;
         self.game = false;
         self.menu = false;
@@ -159,7 +159,7 @@ impl Mandelbrot {
         &mut self,
         inputs: &WinitInputHelper,
         _clock: &Clock,
-        virtual_frame_buffer: &mut VirtualFrameBuffer,
+        dc: &mut DisplayController,
     ) -> Option<AppResponse> {
         // if self.welcome_screen {
         //     self.update_welcome_screen(inputs, virtual_frame_buffer);
@@ -168,7 +168,7 @@ impl Mandelbrot {
         // } else {
         //     self.update_menu(inputs, virtual_frame_buffer);
         // }
-        self.update_welcome_screen(inputs, virtual_frame_buffer);
+        self.update_welcome_screen(inputs, dc);
         return None;
     }
 
@@ -176,7 +176,7 @@ impl Mandelbrot {
         &mut self,
         inputs: &WinitInputHelper,
         clock: &Clock,
-        virtual_frame_buffer: &mut VirtualFrameBuffer,
+        dc: &mut DisplayController,
     ) {
         // if self.welcome_screen {
         //     self.draw_welcome_screen(inputs, clock, virtual_frame_buffer);
@@ -185,13 +185,13 @@ impl Mandelbrot {
         // } else if self.menu {
         //     self.draw_menu(virtual_frame_buffer);
         // }
-        self.draw_welcome_screen(inputs, clock, virtual_frame_buffer);
+        self.draw_welcome_screen(inputs, clock, dc);
     }
 
     fn update_welcome_screen(
         &mut self,
         inputs: &WinitInputHelper,
-        _virtual_frame_buffer: &mut VirtualFrameBuffer,
+        _dc: &mut DisplayController,
     ) {
 
         /*---------------------------------------------------------- */
@@ -300,13 +300,13 @@ impl Mandelbrot {
     fn draw_welcome_screen(
         &mut self,
         _inputs: &WinitInputHelper,
-        clock: &Clock,
-        virtual_frame_buffer: &mut VirtualFrameBuffer,
+        _clock: &Clock,
+        dc: &mut DisplayController,
     ) {
 
-        virtual_frame_buffer.get_text_layer_mut().clear();
-        virtual_frame_buffer.get_console_mut().display = false;
-        virtual_frame_buffer.clear(BLACK);
+        dc.get_text_layer_mut().clear();
+        dc.get_console_mut().display = false;
+        dc.clear(BLACK);
 
         let mandel_x_min: f64 = self.mandel_x_center - self.mandel_x_range / 2.0;
         let mandel_y_min: f64 = self.mandel_y_center - self.mandel_y_range / 2.0;
@@ -367,7 +367,7 @@ impl Mandelbrot {
                     }
                 };
 
-                virtual_frame_buffer.set_pixel(px, py, color);
+                dc.set_pixel(px, py, color);
             }
         }
 

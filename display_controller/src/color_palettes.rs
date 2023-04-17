@@ -96,4 +96,4 @@ impl ColorPalette {
     }
 }
 
-pub const DEFAULT_PALETTE: ColorPalette = ColorPalette{custom: DEFAULT_COLOR_PALETTE, toggle_custom: false};
+pub static DEFAULT_PALETTE: ColorPalette = ColorPalette{custom: DEFAULT_COLOR_PALETTE, toggle_custom: false};

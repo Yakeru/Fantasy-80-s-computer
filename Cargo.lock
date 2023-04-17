@@ -70,7 +70,7 @@ name = "app_macro"
 version = "0.2.0"
 dependencies = [
  "clock",
- "virtual_frame_buffer",
+ "display_controller",
  "winit",
  "winit_input_helper",
 ]
@@ -526,6 +526,15 @@ name = "dispatch"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd0c93bb4b0c6d9b77f4435b0ae98c24d17f1c45b2ff844c6151a07256ca923b"
+
+[[package]]
+name = "display_controller"
+version = "0.1.0"
+dependencies = [
+ "clock",
+ "rand",
+ "unicode",
+]
 
 [[package]]
 name = "dlib"
@@ -2262,15 +2271,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
-name = "virtual_frame_buffer"
-version = "0.1.0"
-dependencies = [
- "clock",
- "rand",
- "unicode",
-]
-
-[[package]]
 name = "walkdir"
 version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2691,12 +2691,12 @@ dependencies = [
  "app_macro_derive",
  "clock",
  "cpal",
+ "display_controller",
  "openweathermap",
  "pixels",
  "rand",
  "rodio",
  "unicode",
- "virtual_frame_buffer",
  "winit",
  "winit_input_helper",
 ]

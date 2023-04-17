@@ -1,5 +1,5 @@
 use app_macro_derive::AppMacro;
-
+use display_controller::{DisplayController, color_palettes::*};
 use openweathermap::{Receiver, CurrentWeather};
 use std::{time::{Duration, Instant}, f32::consts::PI};
 
@@ -48,12 +48,12 @@ impl WeatherApp {
         }
     }
 
-    pub fn init_app(&mut self, _virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    pub fn init_app(&mut self, _dc: &mut DisplayController) {
         openweathermap::update(&self.receiver);
     }
 
     fn update_app(
-        &mut self, _inputs: &WinitInputHelper, _clock: &Clock, _virtual_frame_buffer: &mut VirtualFrameBuffer
+        &mut self, _inputs: &WinitInputHelper, _clock: &Clock, _dc: &mut DisplayController
     ) -> Option<AppResponse> {
         let response = AppResponse::new();
 
@@ -74,54 +74,53 @@ impl WeatherApp {
         return Some(response);
     }
 
-    fn draw_app(&mut self, _inputs: &WinitInputHelper, _clock: &Clock, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-        virtual_frame_buffer.get_text_layer_mut().clear();
-        virtual_frame_buffer.clear(DARK_GREY);
-        virtual_frame_buffer.get_console_mut().display = false;
+    fn draw_app(&mut self, _inputs: &WinitInputHelper, _clock: &Clock, dc: &mut DisplayController) {
+        dc.get_text_layer_mut().clear();
+        dc.clear(DARK_GREY);
+        dc.get_console_mut().display = false;
 
         let x: usize = 100;
         let y: usize = 150;
         let r: usize = 50;
 
-        circle(x+1, y-1, r, WHITE, true, virtual_frame_buffer.get_frame_mut());
-        circle(x-1, y+1, r, BLACK, true, virtual_frame_buffer.get_frame_mut());
-        circle(x, y, r, YELLOW, true, virtual_frame_buffer.get_frame_mut());
-        circle(x+1, y-1, r-10, BLACK, true, virtual_frame_buffer.get_frame_mut());
-        circle(x-1, y+1, r-10, WHITE, true, virtual_frame_buffer.get_frame_mut());
-        circle(x, y, r-10, LIGHT_GREY, true, virtual_frame_buffer.get_frame_mut());
-        line(x, y, x, y-r+14, RED, virtual_frame_buffer.get_frame_mut());
-        line(x+1, y-r+15, x+1, y-r+17, RED, virtual_frame_buffer.get_frame_mut());
-        line(x-1, y-r+15, x-1, y-r+17, RED, virtual_frame_buffer.get_frame_mut());
-        circle(x, y, 4, RED, true, virtual_frame_buffer.get_frame_mut());
-
-        vector(x, y, 30, RED, self.angle, virtual_frame_buffer.get_frame_mut());
+        dc.circle(x+1, y-1, r, WHITE, true);
+        dc.circle(x-1, y+1, r, BLACK, true);
+        dc.circle(x, y, r, YELLOW, true);
+        dc.circle(x+1, y-1, r-10, BLACK, true);
+        dc.circle(x-1, y+1, r-10, WHITE, true);
+        dc.circle(x, y, r-10, LIGHT_GREY, true);
+        dc.line(x, y, x, y-r+14, RED);
+        dc.line(x+1, y-r+15, x+1, y-r+17, RED);
+        dc.line(x-1, y-r+15, x-1, y-r+17, RED);
+        dc.circle(x, y, 4, RED, true);
+        dc.vector(x, y, 30, RED, self.angle);
         
         match &self.current_weather {
             Some(result) => match result {
                 Ok(current_weather) => {
 
-                    virtual_frame_buffer.get_text_layer_mut().insert_string_xy(0, 0, 
+                    dc.get_text_layer_mut().insert_string_xy(0, 0, 
                         &format!("Description: {}", current_weather.weather[0].description), Some(WHITE), Some(DARK_GREY), 
                         false, false, false);
 
-                    virtual_frame_buffer.get_text_layer_mut().insert_string_xy(0, 1, 
+                    dc.get_text_layer_mut().insert_string_xy(0, 1, 
                         &format!("Temp: {} c", current_weather.main.temp), Some(WHITE), Some(DARK_GREY), 
                         false, false, false);
 
-                    virtual_frame_buffer.get_text_layer_mut().insert_string_xy(0, 2, 
+                    dc.get_text_layer_mut().insert_string_xy(0, 2, 
                         &format!("feels like: {} c", current_weather.main.feels_like), Some(WHITE), Some(DARK_GREY), 
                         false, false, false);
 
-                    virtual_frame_buffer.get_text_layer_mut().insert_string_xy(0, 3, 
+                    dc.get_text_layer_mut().insert_string_xy(0, 3, 
                         &format!("Humidity: {} %", current_weather.main.humidity), Some(WHITE), Some(DARK_GREY), 
                         false, false, false);
 
-                    virtual_frame_buffer.get_text_layer_mut().insert_string_xy(0, 4, 
+                    dc.get_text_layer_mut().insert_string_xy(0, 4, 
                         &format!("Pressure: {} Kpa", current_weather.main.pressure), Some(WHITE), Some(DARK_GREY), 
                         false, false, false);
                 }
                 Err(message) => {
-                    virtual_frame_buffer.get_text_layer_mut().insert_string_xy(0, 0, 
+                    dc.get_text_layer_mut().insert_string_xy(0, 0, 
                         message, Some(WHITE), Some(DARK_GREY), 
                         false, false, false);
                 }

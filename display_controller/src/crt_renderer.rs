@@ -1,10 +1,7 @@
-use std::thread::{self, Thread};
-
-use crate::{config::*, VirtualFrameBuffer, color_palettes::DEFAULT_PALETTE};
+use crate::{config::*, color_palettes::DEFAULT_PALETTE};
 
 const SUB_PIXEL_COUNT: usize = 4;
 const RENDERED_LINE_LENGTH: usize = WIDTH * SUB_PIXEL_COUNT;
-const CORNER_LIST_SIZE: usize = 10;
 
 pub struct CrtEffectRenderer {
     upscaling: usize,

@@ -1,6 +1,6 @@
 use rodio::{OutputStream, Sink, Source};
 use sound::{notes::*, play};
-use virtual_frame_buffer::{*, color_palettes::{BLACK, WHITE}, text_layer::TextLayerChar, crt_renderer::CrtEffectRenderer, config::{HEIGHT, WIDTH, VIRTUAL_HEIGHT, VIRTUAL_WIDTH, FULLSCREEN}};
+use display_controller::{*, color_palettes::{BLACK, WHITE}, text_layer::TextLayerChar, crt_renderer::CrtEffectRenderer, config::{HEIGHT, WIDTH, VIRTUAL_HEIGHT, VIRTUAL_WIDTH, FULLSCREEN}};
 use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
@@ -130,7 +130,7 @@ fn main() -> Result<(), Error> {
     // by Processes (structs implemeting "process") to build their image.
     // Its render combines all the layers in its frame, applies the crt filter and sends it to
     // pixels to display the final image in the window.
-    let mut virtual_frame_buffer: VirtualFrameBuffer = VirtualFrameBuffer::new();
+    let mut display_controller: DisplayController = DisplayController::new();
 
     // The crt renderer takes the virtual frame buffers's frame, upscales it to match pixel's frame and winit window size,
     // then applies a filter evoking CRT sub-pixels and scanlines.
@@ -175,7 +175,7 @@ fn main() -> Result<(), Error> {
     let mut input = WinitInputHelper::new();
     
     //The event loop here can be seen as the "bios + boot rom + console" part of the Fantasy computer.
-    //It initialises the virtual_frame_buffer, Console 0 and Shell.
+    //It initialises the display_controller, Console 0 and Shell.
     //If no app is running/rendering, it defaults back to running/rendering the Console 0 and Shell.
     //It goes through app_list and updates all apps that have their update flag to true.
     //It goes through app_list and renders the appa that have their render flag and focus flag to true. Should be just one, so it stops at the first one it finds.
@@ -197,7 +197,7 @@ fn main() -> Result<(), Error> {
 
             // BOOT, play boot animation once before showing the shell or any other app.
             if booting {
-                booting = boot_animation(&mut virtual_frame_buffer, &mut crt_renderer, &system_clock);
+                booting = boot_animation(&mut display_controller, &mut crt_renderer, &system_clock);
             } else {
                 //Updating apps
                 let mut show_shell: bool = true;
@@ -207,22 +207,22 @@ fn main() -> Result<(), Error> {
                     
                     // If app is running and drawing (in focus), call update with keyboard inputs and dont render shell.
                     if app[0].get_state().0 && app[0].get_state().1 {
-                        app_response = app[0].update(&input, &system_clock, &mut virtual_frame_buffer);
-                        app[0].draw(&input, &system_clock, &mut virtual_frame_buffer);
+                        app_response = app[0].update(&input, &system_clock, &mut display_controller);
+                        app[0].draw(&input, &system_clock, &mut display_controller);
                         show_shell = false;
                     }
                     
                     // If app is running but not drawing (running in the background), call update without keyboard inputs.
                     // dont draw.
                     else if app[0].get_state().0 && !app[0].get_state().1 {
-                        app_response = app[0].update(&input, &system_clock, &mut virtual_frame_buffer);
+                        app_response = app[0].update(&input, &system_clock, &mut display_controller);
                     }
                 }
 
                 // If no app is in focus, run the shell
                 if show_shell {
-                    app_response = shell.update(&input, &system_clock, &mut virtual_frame_buffer);
-                    shell.draw(&input, &system_clock, &mut virtual_frame_buffer);
+                    app_response = shell.update(&input, &system_clock, &mut display_controller);
+                    shell.draw(&input, &system_clock, &mut display_controller);
                 }
 
                 // Process app response
@@ -276,14 +276,14 @@ fn main() -> Result<(), Error> {
             // Render virtual frame buffer to pixels frame buffer with upscaling and CRT effect
             let start = Instant::now();
 
-            virtual_frame_buffer.render();
+            display_controller.render();
             
             //Split virtual frame buffer and pixel's frame in 4 chunks, and send each chunk to a separate thread for CRT rendering.
             //4 threads is 30% fastert than one in my case. No benefits in using 8 or 2.
             thread::scope(|s| {
 
                 let mut pix_iter = pixels.get_frame_mut().chunks_exact_mut((WIDTH * HEIGHT / 4) * 4).into_iter();
-                let mut virt_iter = virtual_frame_buffer.get_frame().chunks_exact(VIRTUAL_WIDTH * VIRTUAL_HEIGHT / 4).into_iter();
+                let mut virt_iter = display_controller.get_frame().chunks_exact(VIRTUAL_WIDTH * VIRTUAL_HEIGHT / 4).into_iter();
  
                 let virt_chunk_1 = virt_iter.next().unwrap();
                 let virt_chunk_2 = virt_iter.next().unwrap();
@@ -313,7 +313,7 @@ fn main() -> Result<(), Error> {
             });
             
             // Render everything in a single thread
-            //crt_renderer.render(&mut virtual_frame_buffer.get_frame(), pixels.get_frame_mut());
+            //crt_renderer.render(&mut display_controller.get_frame(), pixels.get_frame_mut());
             
             frame_time_100.push(start.elapsed().as_micros());
             
@@ -344,7 +344,7 @@ fn main() -> Result<(), Error> {
 }
 
 ///Just for fun, random colored lines in overscan zone, Amstrad style
-fn draw_loading_border(virtual_frame_buffer: &mut VirtualFrameBuffer) {
+fn draw_loading_border(display_controller: &mut DisplayController) {
     let mut random = rand::thread_rng();
     let mut rgb_color: u8 = random.gen_range(0..32);
     let mut line_count: usize = 0;
@@ -352,7 +352,7 @@ fn draw_loading_border(virtual_frame_buffer: &mut VirtualFrameBuffer) {
 
     while line_count <= VIRTUAL_HEIGHT {
         let range_max = if line_count + band_height > VIRTUAL_HEIGHT {VIRTUAL_HEIGHT } else { line_count + band_height };
-        virtual_frame_buffer.set_overscan_color_range(rgb_color, line_count..range_max);
+        display_controller.set_overscan_color_range(rgb_color, line_count..range_max);
         line_count += band_height;
         rgb_color = random.gen_range(0..32);
         band_height = random.gen_range(4..20);
@@ -360,9 +360,9 @@ fn draw_loading_border(virtual_frame_buffer: &mut VirtualFrameBuffer) {
 }
 
 ///Boot animation
-fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &mut CrtEffectRenderer, clock: &Clock) -> bool {
+fn boot_animation(display_controller: &mut DisplayController, crt_renderer: &mut CrtEffectRenderer, clock: &Clock) -> bool {
     
-    virtual_frame_buffer.get_console_mut().display = false;
+    display_controller.get_console_mut().display = false;
 
     //CRT warm up, brightness increases from 0 to 255 in 2 seconds
     let brigthness = if clock.total_running_time >= Duration::new(2, 0) {255} else {(clock.total_running_time.as_millis() * 255 / 2000) as u8};
@@ -370,24 +370,24 @@ fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &
 
     //Fill text layer with random garbage
     if clock.get_frame_count() == 0 {
-        genrate_random_garbage(virtual_frame_buffer);
+        genrate_random_garbage(display_controller);
     }
 
     //Clear garbage and display Loading...
     if clock.total_running_time >= Duration::new(3, 0) {
-        virtual_frame_buffer.get_text_layer_mut().clear();
-        virtual_frame_buffer.clear(0);
-        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(0, 0, "Loading..." , Some(WHITE), Some(BLACK), false, false, false);
+        display_controller.get_text_layer_mut().clear();
+        display_controller.clear(0);
+        display_controller.get_text_layer_mut().insert_string_xy(0, 0, "Loading..." , Some(WHITE), Some(BLACK), false, false, false);
     }
 
     //Display loading overscan while "loading"
     if clock.total_running_time >= Duration::new(3, 0) && clock.total_running_time < Duration::new(6, 0) {
-        draw_loading_border(virtual_frame_buffer);
+        draw_loading_border(display_controller);
     }
     
     if clock.total_running_time >= Duration::new(6, 0) {
-        virtual_frame_buffer.get_text_layer_mut().clear();
-        virtual_frame_buffer.clear(0);
+        display_controller.get_text_layer_mut().clear();
+        display_controller.clear(0);
         return false;
     }
     else {
@@ -395,15 +395,15 @@ fn boot_animation(virtual_frame_buffer: &mut VirtualFrameBuffer, crt_renderer: &
     } 
 }
 
-pub fn genrate_random_garbage(virtual_frame_buffer: &mut VirtualFrameBuffer) {
+pub fn genrate_random_garbage(display_controller: &mut DisplayController) {
 
     let mut random = rand::thread_rng();
         
     let frame: u8 = random.gen_range(0..32);
-    virtual_frame_buffer.clear(frame);
-    virtual_frame_buffer.get_text_layer_mut().clear();
+    display_controller.clear(frame);
+    display_controller.get_text_layer_mut().clear();
 
-    let char_map = virtual_frame_buffer.get_text_layer_mut().get_char_map_mut();
+    let char_map = display_controller.get_text_layer_mut().get_char_map_mut();
     for index in 0..char_map.len() {
         
         let mut color: u8 = random.gen_range(0..40);

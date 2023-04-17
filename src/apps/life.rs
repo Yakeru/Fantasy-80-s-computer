@@ -2,10 +2,10 @@ use std::time::Instant;
 
 use app_macro_derive::AppMacro;
 use rand::Rng;
-use virtual_frame_buffer::{
+use display_controller::{
     color_palettes::*,
     config::{TEXT_COLUMNS, TEXT_ROWS},
-    VirtualFrameBuffer,
+    DisplayController,
 };
 
 #[derive(AppMacro)]
@@ -89,7 +89,7 @@ impl Life {
         }
     }
 
-    pub fn init_app(&mut self, _virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    pub fn init_app(&mut self, _display_controller: &mut DisplayController) {
         self.welcome_screen = true;
         self.game = false;
         self.menu = false;
@@ -99,14 +99,14 @@ impl Life {
         &mut self,
         inputs: &WinitInputHelper,
         _clock: &Clock,
-        virtual_frame_buffer: &mut VirtualFrameBuffer,
+        display_controller: &mut DisplayController,
     ) -> Option<AppResponse> {
         if self.welcome_screen {
-            self.update_welcome_screen(inputs, virtual_frame_buffer);
+            self.update_welcome_screen(inputs, display_controller);
         } else if self.game {
-            self.update_game(inputs, virtual_frame_buffer);
+            self.update_game(inputs, display_controller);
         } else {
-            self.update_menu(inputs, virtual_frame_buffer);
+            self.update_menu(inputs, display_controller);
         }
 
         return None;
@@ -116,14 +116,14 @@ impl Life {
         &mut self,
         inputs: &WinitInputHelper,
         clock: &Clock,
-        virtual_frame_buffer: &mut VirtualFrameBuffer,
+        display_controller: &mut DisplayController,
     ) {
         if self.welcome_screen {
-            self.draw_welcome_screen(inputs, clock, virtual_frame_buffer);
+            self.draw_welcome_screen(inputs, clock, display_controller);
         } else if self.game {
-            self.draw_game(virtual_frame_buffer);
+            self.draw_game(display_controller);
         } else if self.menu {
-            self.draw_menu(virtual_frame_buffer);
+            self.draw_menu(display_controller);
         }
     }
 
@@ -185,7 +185,7 @@ impl Life {
     fn update_welcome_screen(
         &mut self,
         inputs: &WinitInputHelper,
-        _virtual_frame_buffer: &mut VirtualFrameBuffer,
+        _display_controller: &mut DisplayController,
     ) {
         if inputs.key_pressed(VirtualKeyCode::Escape) {
             self.set_state(false, false);
@@ -208,13 +208,13 @@ impl Life {
         &mut self,
         _inputs: &WinitInputHelper,
         clock: &Clock,
-        virtual_frame_buffer: &mut VirtualFrameBuffer,
+        display_controller: &mut DisplayController,
     ) {
-        virtual_frame_buffer.get_text_layer_mut().clear();
-        virtual_frame_buffer.get_console_mut().display = false;
-        virtual_frame_buffer.clear(BLACK);
+        display_controller.get_text_layer_mut().clear();
+        display_controller.get_console_mut().display = false;
+        display_controller.clear(BLACK);
         if clock.second_latch && clock.half_second_latch {
-            virtual_frame_buffer.get_text_layer_mut().insert_string_xy(
+            display_controller.get_text_layer_mut().insert_string_xy(
                 (TEXT_COLUMNS - 29) / 2,
                 10,
                 " 🯆                         🯆 ",
@@ -224,7 +224,7 @@ impl Life {
                 false,
                 false,
             );
-            virtual_frame_buffer.get_text_layer_mut().insert_string_xy(
+            display_controller.get_text_layer_mut().insert_string_xy(
                 (TEXT_COLUMNS - 29) / 2,
                 11,
                 " 🯆  Conway's Game Of Life  🯆 ",
@@ -234,7 +234,7 @@ impl Life {
                 false,
                 false,
             );
-            virtual_frame_buffer.get_text_layer_mut().insert_string_xy(
+            display_controller.get_text_layer_mut().insert_string_xy(
                 (TEXT_COLUMNS - 29) / 2,
                 12,
                 " 🯆                         🯆 ",
@@ -245,7 +245,7 @@ impl Life {
                 false,
             );
         } else if clock.second_latch && !clock.half_second_latch {
-            virtual_frame_buffer.get_text_layer_mut().insert_string_xy(
+            display_controller.get_text_layer_mut().insert_string_xy(
                 (TEXT_COLUMNS - 29) / 2,
                 11,
                 "🯆🯆🯆 Conway's Game Of Life 🯆🯆🯆",
@@ -256,7 +256,7 @@ impl Life {
                 false,
             );
         } else if !clock.second_latch && clock.half_second_latch {
-            virtual_frame_buffer.get_text_layer_mut().insert_string_xy(
+            display_controller.get_text_layer_mut().insert_string_xy(
                 (TEXT_COLUMNS - 29) / 2,
                 10,
                 " 🯆                         🯆 ",
@@ -266,7 +266,7 @@ impl Life {
                 false,
                 false,
             );
-            virtual_frame_buffer.get_text_layer_mut().insert_string_xy(
+            display_controller.get_text_layer_mut().insert_string_xy(
                 (TEXT_COLUMNS - 29) / 2,
                 11,
                 " 🯆  Conway's Game Of Life  🯆 ",
@@ -276,7 +276,7 @@ impl Life {
                 false,
                 false,
             );
-            virtual_frame_buffer.get_text_layer_mut().insert_string_xy(
+            display_controller.get_text_layer_mut().insert_string_xy(
                 (TEXT_COLUMNS - 29) / 2,
                 12,
                 " 🯆                         🯆 ",
@@ -287,7 +287,7 @@ impl Life {
                 false,
             );
         } else {
-            virtual_frame_buffer.get_text_layer_mut().insert_string_xy(
+            display_controller.get_text_layer_mut().insert_string_xy(
                 (TEXT_COLUMNS - 29) / 2,
                 11,
                 "🯆🯆🯆 Conway's Game Of Life 🯆🯆🯆",
@@ -298,7 +298,7 @@ impl Life {
                 false,
             );
         }
-        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(
+        display_controller.get_text_layer_mut().insert_string_xy(
             (TEXT_COLUMNS - 20) / 2,
             20,
             "1 - Random mode",
@@ -308,7 +308,7 @@ impl Life {
             false,
             false,
         );
-        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(
+        display_controller.get_text_layer_mut().insert_string_xy(
             (TEXT_COLUMNS - 20) / 2,
             21,
             "2 - Combat mode",
@@ -318,7 +318,7 @@ impl Life {
             false,
             false,
         );
-        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(
+        display_controller.get_text_layer_mut().insert_string_xy(
             (TEXT_COLUMNS - 24) / 2,
             TEXT_ROWS - 1,
             "2022 - Damien Torreilles",
@@ -339,14 +339,14 @@ impl Life {
     fn update_game(
         &mut self,
         inputs: &WinitInputHelper,
-        virtual_frame_buffer: &mut VirtualFrameBuffer,
+        display_controller: &mut DisplayController,
     ) {
         if inputs.key_released(VirtualKeyCode::C) {
             self.restart_sim();
         }
 
         if inputs.key_released(VirtualKeyCode::Escape) {
-            self.init_app(virtual_frame_buffer);
+            self.init_app(display_controller);
         }
 
         let now = Instant::now();
@@ -371,10 +371,10 @@ impl Life {
         }
     }
 
-    fn draw_game(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-        virtual_frame_buffer.get_text_layer_mut().clear();
-        virtual_frame_buffer.get_console_mut().display = false;
-        virtual_frame_buffer.clear(WHITE);
+    fn draw_game(&mut self, display_controller: &mut DisplayController) {
+        display_controller.get_text_layer_mut().clear();
+        display_controller.get_console_mut().display = false;
+        display_controller.clear(WHITE);
 
         let bkg_color = Some(BLACK);
 
@@ -406,11 +406,11 @@ impl Life {
                     }
 
                     let char = chars[(self.gen_a[row][col].age % (chars.len() - 1) as u8) as usize];
-                    virtual_frame_buffer
+                    display_controller
                         .get_text_layer_mut()
                         .insert_char_xy(col, row, char, color, bkg_color, false, false, false);
                 } else {
-                    virtual_frame_buffer
+                    display_controller
                         .get_text_layer_mut()
                         .insert_char_xy(col, row, ' ', bkg_color, bkg_color, false, false, false);
                 }
@@ -427,7 +427,7 @@ impl Life {
     fn update_menu(
         &mut self,
         inputs: &WinitInputHelper,
-        _virtual_frame_buffer: &mut VirtualFrameBuffer,
+        _display_controller: &mut DisplayController,
     ) {
         if inputs.key_released(VirtualKeyCode::Escape) {
             self.welcome_screen = true;
@@ -455,10 +455,10 @@ impl Life {
         }
     }
 
-    fn draw_menu(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-        virtual_frame_buffer.get_text_layer_mut().clear();
-        virtual_frame_buffer.clear(BLACK);
-        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(
+    fn draw_menu(&mut self, display_controller: &mut DisplayController) {
+        display_controller.get_text_layer_mut().clear();
+        display_controller.clear(BLACK);
+        display_controller.get_text_layer_mut().insert_string_xy(
             5,
             5,
             "Team A : ",
@@ -468,7 +468,7 @@ impl Life {
             false,
             false,
         );
-        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(
+        display_controller.get_text_layer_mut().insert_string_xy(
             5,
             7,
             "Team B : ",
@@ -478,7 +478,7 @@ impl Life {
             false,
             false,
         );
-        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(
+        display_controller.get_text_layer_mut().insert_string_xy(
             14,
             5,
             "🯆",
@@ -488,7 +488,7 @@ impl Life {
             false,
             false,
         );
-        virtual_frame_buffer.get_text_layer_mut().insert_string_xy(
+        display_controller.get_text_layer_mut().insert_string_xy(
             14,
             7,
             "🯆",
@@ -515,9 +515,9 @@ fn calculate_life(
     next_gen: &mut [[Cell; TEXT_COLUMNS]; TEXT_ROWS],
     random_game_mode: bool,
 ) -> bool {
-    let mut death_count = 0;
-    let mut birth_count = 0;
-    let mut stillborn_count = 0;
+    let mut _death_count = 0;
+    let mut _birth_count = 0;
+    let mut _stillborn_count = 0;
 
     for row in 0..TEXT_ROWS {
         for col in 0..TEXT_COLUMNS {
@@ -562,9 +562,9 @@ fn calculate_life(
             if current_cell.alive && (total_count < 2 || total_count > 3) {
                 next_gen_cell = dead_cell;
                 if current_cell.age == 0 {
-                    stillborn_count += 1;
+                    _stillborn_count += 1;
                 }
-                death_count += 1;
+                _death_count += 1;
             } else if !current_cell.alive && total_count == 3 {
                 next_gen_cell.alive = true;
                 next_gen_cell.age = 0;
@@ -577,7 +577,7 @@ fn calculate_life(
                         next_gen_cell.team = Team::B;
                     }
                 }
-                birth_count += 1;
+                _birth_count += 1;
             } else if current_cell.alive {
                 if current_cell.age == 255 {
                     next_gen_cell = dead_cell;
