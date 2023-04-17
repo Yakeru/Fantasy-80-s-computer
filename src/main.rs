@@ -39,22 +39,22 @@ fn main() -> Result<(), Error> {
     //let channel_3 = Sink::try_new(&stream_handle).unwrap();
     //let channel_4 = Sink::try_new(&stream_handle).unwrap();
 
-    // let _handle = thread::Builder::new().name("sound".to_string()).spawn(move || {
+    let _handle = thread::Builder::new().name("sound".to_string()).spawn(move || {
 
-    //     let mut melody_1: Vec<Option<(f32, f32)>> = Vec::new();
-    //     melody_1.push(Some((0.0, 10.0)));
-    //     melody_1.push(Some((C5, 1.0)));
-    //     melody_1.push(None);
-    //     melody_1.push(Some((C5, 1.0)));
-    //     melody_1.push(Some((F5, 2.0)));
+        let mut melody_1: Vec<Option<(f32, f32)>> = Vec::new();
+        melody_1.push(Some((0.0, 10.0)));
+        melody_1.push(Some((C5, 1.0)));
+        melody_1.push(None);
+        melody_1.push(Some((C5, 1.0)));
+        melody_1.push(Some((F5, 2.0)));
 
-    //     let mut melody_2: Vec<Option<(f32, f32)>> = Vec::new();
-    //     melody_2.push(Some((0.0, 10.0)));
-    //     melody_2.push(Some((0.0, 3.0)));
-    //     melody_2.push(Some((A5, 2.0)));
+        let mut melody_2: Vec<Option<(f32, f32)>> = Vec::new();
+        melody_2.push(Some((0.0, 10.0)));
+        melody_2.push(Some((0.0, 3.0)));
+        melody_2.push(Some((A5, 2.0)));
 
-    //     play(480.0, &melody_1, &melody_2, &channel_1, &channel_2);
-    // });
+        play(480.0, &melody_1, &melody_2, &channel_1, &channel_2);
+    });
     
     // ************************************************ DISPLAY SETUP *********************************************
     // winit setup

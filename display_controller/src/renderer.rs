@@ -1,4 +1,4 @@
-use crate::{config::*, color_palettes::{ColorPalette, COLOR_PALETTE}};
+use crate::{config::*, color_palettes::COLOR_PALETTE};
 
 const SUB_PIXEL_COUNT: usize = 4;
 const RENDERED_LINE_LENGTH: usize = WIDTH * SUB_PIXEL_COUNT;
