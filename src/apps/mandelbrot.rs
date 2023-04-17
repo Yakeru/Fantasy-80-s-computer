@@ -1,5 +1,4 @@
 use app_macro_derive::AppMacro;
-use display_controller::color_palettes::COLOR_PALETTE;
 use rand::Rng;
 
 const MIN_ITER: usize = 50;
@@ -59,7 +58,8 @@ pub struct Mandelbrot {
     reverse: bool,
     fuzzy: bool,
     themes: Vec<ColorTheme>,
-    current_theme: usize
+    current_theme: usize,
+    palette_rotation: bool,
 }
 
 impl Mandelbrot {
@@ -157,7 +157,8 @@ impl Mandelbrot {
             reverse: false,
             fuzzy: true,
             themes: themes,
-            current_theme: 2
+            current_theme: 2,
+            palette_rotation: false
         }
     }
 
@@ -284,12 +285,7 @@ impl Mandelbrot {
         } else if inputs.key_pressed(VirtualKeyCode::F) {
             self.fuzzy = !self.fuzzy;
         } else if inputs.key_pressed(VirtualKeyCode::X) {
-            unsafe { COLOR_PALETTE.toggle_custom() };
-        }
-        
-        if inputs.key_pressed_os(VirtualKeyCode::C) {
-            self.themes[self.current_theme].get_palette_1().rotate_right(1);
-            self.themes[self.current_theme].get_palette_2().rotate_right(1);
+            self.palette_rotation = !self.palette_rotation;
         }
 
         /*---------------------------------------------------------- */
@@ -327,11 +323,13 @@ impl Mandelbrot {
         dc.get_console_mut().display = false;
         dc.clear(BLACK);
 
-        if clock.half_second_tick {
-            unsafe { 
-                if COLOR_PALETTE.get_toggle_custom() {
-                    COLOR_PALETTE.get_custom_palette().rotate_left(1);
-                }
+        if self.palette_rotation && clock.get_frame_count() % 2 == 0 {
+            if self.themes[self.current_theme].get_palette_1().len() > 0 {
+                self.themes[self.current_theme].get_palette_1().rotate_right(1);
+            }
+            
+            if self.themes[self.current_theme].get_palette_2().len() > 0 {
+                self.themes[self.current_theme].get_palette_2().rotate_right(1);
             }
         }
 

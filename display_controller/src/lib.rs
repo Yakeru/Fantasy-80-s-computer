@@ -15,8 +15,6 @@ pub mod text_layer;
 pub mod console;
 pub mod renderer;
 
-const ROUNDED_CORNER: [usize;10] = [10, 8, 6, 5, 4, 3, 2, 2, 1, 1];
-
 /// Contains a list of u8 values corresponding to values from a color palette.
 /// So just one u8 per pixel, R G and B values are retrieved from the palette, No Alpha.
 /// This frame buffer is meant to contain a low resolution low color picure that
@@ -24,7 +22,6 @@ const ROUNDED_CORNER: [usize;10] = [10, 8, 6, 5, 4, 3, 2, 2, 1, 1];
 pub struct DisplayController {
     frame: Box<[u8]>,
     overscan: [u8; VIRTUAL_HEIGHT],
-    rounded_corner: bool,
     line_scroll_list: [i8; VIRTUAL_HEIGHT],
     text_layer: TextLayer,
     sprites: Vec<Sprite>,
@@ -70,7 +67,6 @@ impl DisplayController {
         DisplayController {
             frame: Box::new([0; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]),
             overscan: [WHITE; VIRTUAL_HEIGHT],
-            rounded_corner: true,
             line_scroll_list: [0; VIRTUAL_HEIGHT],
             text_layer: TextLayer::new(),
             console: Console::new(10, 10, 30, 10, 
@@ -173,39 +169,6 @@ impl DisplayController {
         }
     }
 
-    pub fn rounded_corners_renderer(&mut self) {
-        let mut line_count: usize = 0;
-
-        for line in self.frame.chunks_exact_mut(VIRTUAL_WIDTH) {
-
-            if line_count < ROUNDED_CORNER.len() {
-                //top left
-                for pixel_index in 0..ROUNDED_CORNER[line_count] {
-                    line[pixel_index] = 0;
-                }
-
-                //top right
-                for pixel_index in (VIRTUAL_WIDTH - ROUNDED_CORNER[line_count])..VIRTUAL_WIDTH {
-                    line[pixel_index] = 0;
-                }
-            }
-
-            if line_count >= VIRTUAL_HEIGHT - ROUNDED_CORNER.len() {
-                //bottom left
-                for pixel_index in 0..ROUNDED_CORNER[VIRTUAL_HEIGHT - line_count - 1] {
-                    line[pixel_index] = 0;
-                }
-
-                //bottom rigt
-                for pixel_index in (VIRTUAL_WIDTH - ROUNDED_CORNER[VIRTUAL_HEIGHT - line_count - 1])..VIRTUAL_WIDTH {
-                    line[pixel_index] = 0;
-                }
-            }
-
-            line_count += 1;
-        }
-    }
-
     /// Sets all the pixels to the specified color of the color palette
     /// Used to clear the screen between frames or set the background when
     /// redering only the text layer. Doesn't include the overscan.
@@ -257,11 +220,6 @@ impl DisplayController {
 
         //Overscan
         self.overscan_renderer();
-
-        //Round corners
-        if self.rounded_corner {
-            self.rounded_corners_renderer();
-        }
 
         self.clock.count_frame();
     }

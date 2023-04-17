@@ -276,7 +276,7 @@ fn main() -> Result<(), Error> {
             }
 
             // Render virtual frame buffer to pixels frame buffer with upscaling and CRT effect
-            let start = Instant::now();
+            //let start = Instant::now();
 
             display_controller.render();
             
@@ -298,40 +298,40 @@ fn main() -> Result<(), Error> {
                 let pix_chunk_4 = pix_iter.next().unwrap();
 
                 s.spawn(|| {
-                    renderer.render(virt_chunk_1, pix_chunk_1);
+                    renderer.render(virt_chunk_1, pix_chunk_1, 0);
                 });
 
                 s.spawn(|| {
-                    renderer.render(virt_chunk_2, pix_chunk_2);
+                    renderer.render(virt_chunk_2, pix_chunk_2, VIRTUAL_HEIGHT / 4);
                 });
 
                 s.spawn(|| {
-                    renderer.render(virt_chunk_3, pix_chunk_3);
+                    renderer.render(virt_chunk_3, pix_chunk_3, VIRTUAL_HEIGHT / 2);
                 });
 
                 s.spawn(|| {
-                    renderer.render(virt_chunk_4, pix_chunk_4);
+                    renderer.render(virt_chunk_4, pix_chunk_4, VIRTUAL_HEIGHT - VIRTUAL_HEIGHT / 4);
                 });
             });
             
             // Render everything in a single thread
-            //crt_renderer.render(&mut display_controller.get_frame(), pixels.get_frame_mut());
+            //crt_renderer.render(&mut display_controller.get_frame(), pixels.get_frame_mut(), 0);
             
-            frame_time_100.push(start.elapsed().as_micros());
+            // frame_time_100.push(start.elapsed().as_micros());
             
-            if frame_time_100.len() == 100 {
+            // if frame_time_100.len() == 100 {
                 
-                let mut total_time: u128 = 0;
+            //     let mut total_time: u128 = 0;
                 
-                for time in &frame_time_100 {
-                    total_time += time;
-                }
+            //     for time in &frame_time_100 {
+            //         total_time += time;
+            //     }
 
-                let avg = total_time/100;
+            //     let avg = total_time/100;
 
-                println!("Render time: {} micros", avg);
-                frame_time_100.clear();
-            }
+            //     println!("Render time: {} micros", avg);
+            //     frame_time_100.clear();
+            // }
             
             
             pixels.render().expect("Pixels render oups");

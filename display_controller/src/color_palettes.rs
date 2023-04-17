@@ -64,44 +64,7 @@ pub const MAUVE_RGB: (u8, u8, u8) =  (117, 70, 101);
 pub const DARKPEACH_RGB: (u8, u8, u8) =  (255, 110, 89);
 pub const PEACH_RGB: (u8, u8, u8) =  (255, 157, 129);
 
-pub const DEFAULT_COLOR_PALETTE: [(u8, u8, u8); 32] = [BLACK_RGB, DARK_BLUE_RGB, DARK_PURPLE_RGB, DARK_GREEN_RGB, BROWN_RGB, DARK_GREY_RGB, LIGHT_GREY_RGB, WHITE_RGB, 
+pub static mut COLOR_PALETTE: [(u8, u8, u8); 32] = [BLACK_RGB, DARK_BLUE_RGB, DARK_PURPLE_RGB, DARK_GREEN_RGB, BROWN_RGB, DARK_GREY_RGB, LIGHT_GREY_RGB, WHITE_RGB, 
 RED_RGB, ORANGE_RGB, YELLOW_RGB, GREEN_RGB, BLUE_RGB, LAVENDER_RGB, PINK_RGB, LIGHT_PEACH_RGB, 
 BROWNISH_BLACK_RGB, DARKER_BLUE_RGB, DARKER_PURPLE_RGB, BLUE_GREEN_RGB, DARK_BROWN_RGB, DARKER_GREY_RGB, MEDIUM_GREY_RGB, LIGHT_YELLOW_RGB, 
 DARK_RED_RGB, DARK_ORANGE_RGB, LIME_GREEN_RGB, MEDIUM_GREEN_RGB, TRUE_BLUE_RGB, MAUVE_RGB, DARKPEACH_RGB, PEACH_RGB];
-
-pub struct ColorPalette {
-    custom_palette: [(u8, u8, u8); 32],
-    toggle_custom: bool,
-}
-
-impl ColorPalette {
-    pub fn toggle_custom(&mut self) {
-        self.toggle_custom = !self.toggle_custom
-    }
-
-    pub fn get_toggle_custom(&self) -> bool {
-        self.toggle_custom
-    }
-
-    pub fn set_custom_palette_color(&mut self, index: usize, rgb_color: (u8, u8, u8)) {
-        self.custom_palette[index] = rgb_color
-    }
-
-    pub fn get_custom_palette(&mut self) -> &mut [(u8, u8, u8); 32] {
-        &mut self.custom_palette
-    }
-
-    pub fn set_custom_palette(&mut self, rgb_palette: [(u8, u8, u8); 32]) {
-        self.custom_palette = rgb_palette
-    }
-
-    pub fn get_rgb(&self, index: u8) -> (u8, u8, u8) {
-        if self.toggle_custom {
-            self.custom_palette[index as usize]
-        } else {
-            DEFAULT_COLOR_PALETTE[index as usize]
-        }
-    }
-}
-
-pub static mut COLOR_PALETTE: ColorPalette = ColorPalette{custom_palette: DEFAULT_COLOR_PALETTE, toggle_custom: false};
