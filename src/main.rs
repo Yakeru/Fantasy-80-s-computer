@@ -5,7 +5,7 @@ use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
 use winit_input_helper::WinitInputHelper;
-use std::{time::{Duration, Instant}, thread};
+use std::{time::Duration, thread};
 use winit::{
     dpi::{PhysicalSize, Position, PhysicalPosition},
     event_loop::{ControlFlow, EventLoop},
@@ -168,7 +168,7 @@ fn main() -> Result<(), Error> {
     let mandelbrot = Box::new(Mandelbrot::new());
     app_list.push(mandelbrot);
     
-    let mut frame_time_100: Vec<u128> = Vec::new();
+    //let mut frame_time_100: Vec<u128> = Vec::new();
 
     // ****************************************************** MAIN WINIT EVENT LOOP ***********************************************
     
@@ -193,7 +193,7 @@ fn main() -> Result<(), Error> {
 
             //println!("second tick: {}, half second tick: {}, frames: {}", system_clock.second_tick, system_clock.half_second_tick, system_clock.get_frame_count());
 
-            if input.quit() {
+            if input.close_requested() || input.destroyed() {
                 *control_flow = ControlFlow::Exit
             }
 
@@ -284,7 +284,7 @@ fn main() -> Result<(), Error> {
             //4 threads is 30% fastert than one in my case. No benefits in using 8 or 2.
             thread::scope(|s| {
 
-                let mut pix_iter = pixels.get_frame_mut().chunks_exact_mut((WIDTH * HEIGHT / 4) * 4).into_iter();
+                let mut pix_iter = pixels.frame_mut().chunks_exact_mut((WIDTH * HEIGHT / 4) * 4).into_iter();
                 let mut virt_iter = display_controller.get_frame().chunks_exact(VIRTUAL_WIDTH * VIRTUAL_HEIGHT / 4).into_iter();
  
                 let virt_chunk_1 = virt_iter.next().unwrap();

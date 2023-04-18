@@ -414,7 +414,7 @@ impl DisplayController {
         }
     }
     
-    pub fn vector(&mut self, x: usize, y: usize, l: usize, color: u8, a:f32) {
+    pub fn vector(&mut self, x: usize, y: usize, l: usize, color: u8, a:f32) -> (usize, usize) {
     
         let x1 = x;
         let y1 = y;
@@ -439,7 +439,8 @@ impl DisplayController {
         }
     
         self.line(x1, y1, x2, y2, color);
-    
+
+        return (x2, y2)
     }
     
     pub fn square(&mut self, x: usize, y: usize, width: usize, height: usize, color: u8, fill: bool) {
