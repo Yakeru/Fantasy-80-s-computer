@@ -1,7 +1,7 @@
 use crate::{config::*, color_palettes::COLOR_PALETTE};
 
 const SUB_PIXEL_COUNT: usize = 4;
-const RENDERED_LINE_LENGTH: usize = WIDTH * SUB_PIXEL_COUNT;
+const RENDERED_LINE_LENGTH: usize = VIRTUAL_WIDTH * SUB_PIXEL_COUNT;
 const ROUNDED_CORNER: [usize;10] = [10, 8, 6, 5, 4, 3, 2, 2, 1, 1];
 
 pub struct Renderer {

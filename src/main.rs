@@ -5,7 +5,7 @@ use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
 use winit_input_helper::WinitInputHelper;
-use std::{time::Duration, thread};
+use std::{time::{Duration, Instant}, thread};
 use winit::{
     dpi::{PhysicalSize, Position, PhysicalPosition},
     event_loop::{ControlFlow, EventLoop},
@@ -104,8 +104,8 @@ fn main() -> Result<(), Error> {
     let mut pixels = {
         let surface_texture = SurfaceTexture::new(config::WIDTH as u32, config::HEIGHT as u32, &window);
         PixelsBuilder::new(
-            config::WIDTH as u32,
-            config::HEIGHT as u32,
+            config::VIRTUAL_WIDTH as u32,
+            config::VIRTUAL_HEIGHT as u32,
             surface_texture,
         )
         .enable_vsync(true)
@@ -168,7 +168,7 @@ fn main() -> Result<(), Error> {
     let mandelbrot = Box::new(Mandelbrot::new());
     app_list.push(mandelbrot);
     
-    //let mut frame_time_100: Vec<u128> = Vec::new();
+    let mut frame_time_100: Vec<u128> = Vec::new();
 
     // ****************************************************** MAIN WINIT EVENT LOOP ***********************************************
     
@@ -276,63 +276,27 @@ fn main() -> Result<(), Error> {
             }
 
             // Render virtual frame buffer to pixels frame buffer with upscaling and CRT effect
-            //let start = Instant::now();
+            let start = Instant::now();
 
             display_controller.render();
+        
+            renderer.render(&mut display_controller.get_frame(), pixels.frame_mut(), 0);
             
-            //Split virtual frame buffer and pixel's frame in 4 chunks, and send each chunk to a separate thread for CRT rendering.
-            //4 threads is 30% fastert than one in my case. No benefits in using 8 or 2.
-            thread::scope(|s| {
-
-                let mut pix_iter = pixels.frame_mut().chunks_exact_mut((WIDTH * HEIGHT / 4) * 4).into_iter();
-                let mut virt_iter = display_controller.get_frame().chunks_exact(VIRTUAL_WIDTH * VIRTUAL_HEIGHT / 4).into_iter();
- 
-                let virt_chunk_1 = virt_iter.next().unwrap();
-                let virt_chunk_2 = virt_iter.next().unwrap();
-                let virt_chunk_3 = virt_iter.next().unwrap();
-                let virt_chunk_4 = virt_iter.next().unwrap();
-
-                let pix_chunk_1 = pix_iter.next().unwrap();
-                let pix_chunk_2 = pix_iter.next().unwrap();
-                let pix_chunk_3 = pix_iter.next().unwrap();
-                let pix_chunk_4 = pix_iter.next().unwrap();
-
-                s.spawn(|| {
-                    renderer.render(virt_chunk_1, pix_chunk_1, 0);
-                });
-
-                s.spawn(|| {
-                    renderer.render(virt_chunk_2, pix_chunk_2, VIRTUAL_HEIGHT / 4);
-                });
-
-                s.spawn(|| {
-                    renderer.render(virt_chunk_3, pix_chunk_3, VIRTUAL_HEIGHT / 2);
-                });
-
-                s.spawn(|| {
-                    renderer.render(virt_chunk_4, pix_chunk_4, VIRTUAL_HEIGHT - VIRTUAL_HEIGHT / 4);
-                });
-            });
+            frame_time_100.push(start.elapsed().as_micros());
             
-            // Render everything in a single thread
-            //crt_renderer.render(&mut display_controller.get_frame(), pixels.get_frame_mut(), 0);
-            
-            // frame_time_100.push(start.elapsed().as_micros());
-            
-            // if frame_time_100.len() == 100 {
+            if frame_time_100.len() == 100 {
                 
-            //     let mut total_time: u128 = 0;
+                let mut total_time: u128 = 0;
                 
-            //     for time in &frame_time_100 {
-            //         total_time += time;
-            //     }
+                for time in &frame_time_100 {
+                    total_time += time;
+                }
 
-            //     let avg = total_time/100;
+                let avg = total_time/100;
 
-            //     println!("Render time: {} micros", avg);
-            //     frame_time_100.clear();
-            // }
-            
+                println!("Render time: {} micros", avg);
+                frame_time_100.clear();
+            }
             
             pixels.render().expect("Pixels render oups");
             window.request_redraw();

@@ -9,10 +9,23 @@
 // pub const TEXT_ROWS: usize = 34;
 // pub const FULLSCREEN: bool = true;
 
+// QHD Software
+// pub const WIDTH: usize = 2048;
+// pub const HEIGHT: usize = 1536;
+// pub const UPSCALE: usize = 6;
+// pub const SCAN_LINE_STRENGTH: u8 = 100;
+// pub const VIRTUAL_WIDTH: usize = 340;
+// pub const VIRTUAL_HEIGHT: usize = 256;
+// pub const OVERSCAN_V: usize = 8;
+// pub const OVERSCAN_H: usize = 10;
+// pub const TEXT_COLUMNS: usize = 40; //320px
+// pub const TEXT_ROWS: usize = 30; //240px
+// pub const FULLSCREEN: bool = true;
+
 // QHD
 pub const WIDTH: usize = 2048;
 pub const HEIGHT: usize = 1536;
-pub const UPSCALE: usize = 6;
+pub const UPSCALE: usize = 1;
 pub const SCAN_LINE_STRENGTH: u8 = 100;
 pub const VIRTUAL_WIDTH: usize = 340;
 pub const VIRTUAL_HEIGHT: usize = 256;
