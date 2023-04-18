@@ -1,20 +1,21 @@
 [package]
-name = "windows_project"
-version = "0.2.0"
+name = "fantasy_cpc"
+version = "0.3.0"
 edition = "2021"
 authors = ["Damien Torreilles <damien.torreilles@gmail.com>"]
 
 [dependencies]
+chrono = "0.4.24"
 rand = "0.8.5"
-winit = "0.27.5"
-winit_input_helper = "0.13.0"
-pixels = "0.10.0"
+winit = "0.28.3"
+winit_input_helper = "0.14.1"
+pixels = "0.12.1"
 openweathermap = "0.2.4"
-cpal = "0.14.2"
-rodio = "0.16.0"
-anyhow = "1.0.66"
+cpal = "0.15.2"
+rodio = "0.17.1"
+anyhow = "1.0.70"
 app_macro = { path = "./app_macro" }
 app_macro_derive = { path = "./app_macro/app_macro_derive" }
-virtual_frame_buffer = { path = "./virtual_frame_buffer" }
+display_controller = { path = "./display_controller" }
 unicode = { path = "./unicode" }
 clock = { path = "./clock" }

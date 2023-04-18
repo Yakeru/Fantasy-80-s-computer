@@ -1,12 +1,10 @@
-use std::thread::{self, Thread};
-
-use crate::{config::*, VirtualFrameBuffer, color_palettes::DEFAULT_PALETTE};
+use crate::{config::*, color_palettes::COLOR_PALETTE};
 
 const SUB_PIXEL_COUNT: usize = 4;
 const RENDERED_LINE_LENGTH: usize = WIDTH * SUB_PIXEL_COUNT;
-const CORNER_LIST_SIZE: usize = 10;
+const ROUNDED_CORNER: [usize;10] = [10, 8, 6, 5, 4, 3, 2, 2, 1, 1];
 
-pub struct CrtEffectRenderer {
+pub struct Renderer {
     upscaling: usize,
     //Virtual resolution multiplied by upscale doesnt exactly fit inside real screen resolution
     //some pixels arent used, so to center the picture we calculate an offset:
@@ -16,9 +14,9 @@ pub struct CrtEffectRenderer {
     brightness: u8
 }
 
-impl CrtEffectRenderer {
-    pub fn new(upscaling: usize, apply_filter: bool, brightness: u8) -> CrtEffectRenderer {
-        CrtEffectRenderer {
+impl Renderer {
+    pub fn new(upscaling: usize, apply_filter: bool, brightness: u8) -> Renderer {
+        Renderer {
             upscaling,
             picture_offset: ((WIDTH - VIRTUAL_WIDTH * UPSCALE) / 2) * SUB_PIXEL_COUNT,
             apply_filter,
@@ -39,7 +37,22 @@ impl CrtEffectRenderer {
         self.crt_bleed = intensity;
     }
 
-    pub fn render(&self, virtual_frame: &[u8], output_frame: &mut [u8]) {
+    pub fn is_inside_rounded_corner(&self, x: usize, y: usize) -> bool {
+
+        if y < ROUNDED_CORNER.len() 
+            && (x < ROUNDED_CORNER[y] || x >= VIRTUAL_WIDTH - ROUNDED_CORNER[y]) {
+            return true
+        }
+
+        if y >= VIRTUAL_HEIGHT - ROUNDED_CORNER.len() 
+            && (x < ROUNDED_CORNER[VIRTUAL_HEIGHT - y - 1] || x >= VIRTUAL_WIDTH - ROUNDED_CORNER[VIRTUAL_HEIGHT - y - 1]) {
+            return true
+        }
+
+        return false
+    }
+
+    pub fn render(&self, virtual_frame: &[u8], output_frame: &mut [u8], starting_line: usize) {
 
         let mut rendered_scanline: [u8; RENDERED_LINE_LENGTH] = [0; RENDERED_LINE_LENGTH];
         let mut rendered_line: [u8; RENDERED_LINE_LENGTH] = if self.apply_filter {
@@ -60,12 +73,18 @@ impl CrtEffectRenderer {
 
                 let screen_pixel_index = SUB_PIXEL_COUNT * UPSCALE * pixel_index + self.picture_offset;
 
-                let rgb = DEFAULT_PALETTE.get_rgb(virt_line[pixel_index]);
+                let rgb = if self.is_inside_rounded_corner(pixel_index, line_count + starting_line) {
+                    (0, 0, 0) } else {
+                        unsafe { COLOR_PALETTE[(virt_line[pixel_index]) as usize]}
+                    };
 
                 let rgb_after: (u8, u8, u8) = if pixel_index < VIRTUAL_WIDTH - 1 {
-                    DEFAULT_PALETTE.get_rgb(virt_line[pixel_index + 1])
+                    if self.is_inside_rounded_corner(pixel_index + 1, line_count + starting_line) {
+                        (0, 0, 0) } else {
+                            unsafe { COLOR_PALETTE[(virt_line[pixel_index]) as usize]}
+                        }
                 } else {
-                    (0, 0, 0)
+                    (0,0,0)
                 };
 
                 if self.upscaling == 6 {

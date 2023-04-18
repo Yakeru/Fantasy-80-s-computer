@@ -52,8 +52,8 @@ impl Sprite {
         let contents =
             fs::read_to_string(path_to_file).expect("Something went wrong reading the file");
         let split_text: Vec<&str> = contents.split(',').collect();
-        let size_x = split_text[0].parse::<usize>().unwrap();
-        let size_y = split_text[1].parse::<usize>().unwrap();
+        //let size_x = split_text[0].parse::<usize>().unwrap();
+        //let size_y = split_text[1].parse::<usize>().unwrap();
 
         let mut data: Vec<u8> = Vec::new();
 

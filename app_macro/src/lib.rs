@@ -1,14 +1,14 @@
 use clock::Clock;
 use winit::{event::KeyboardInput, event_loop::ControlFlow};
-use virtual_frame_buffer::*;
+use display_controller::*;
 use winit_input_helper::WinitInputHelper;
 
 pub trait AppMacro {
     fn get_name(&self) -> &str;
     fn set_state(&mut self, updating: bool, drawing: bool);
     fn get_state(&self) -> (bool, bool);
-    fn update(&mut self, inputs: &WinitInputHelper, clock: &Clock, virtual_frame_buffer: &mut VirtualFrameBuffer) -> Option<AppResponse>;
-    fn draw(&mut self, inputs: &WinitInputHelper, clock: &Clock, virtual_frame_buffer: &mut VirtualFrameBuffer);
+    fn update(&mut self, inputs: &WinitInputHelper, clock: &Clock, display_controller: &mut DisplayController) -> Option<AppResponse>;
+    fn draw(&mut self, inputs: &WinitInputHelper, clock: &Clock, display_controller: &mut DisplayController);
 }
 
 #[derive(Clone)]

@@ -22,10 +22,10 @@ fn impl_app_macro(ast: &syn::DeriveInput) -> TokenStream {
         use winit::event_loop::*;
         use winit_input_helper::*;
         use clock::Clock;
-        use virtual_frame_buffer::*;
-        use virtual_frame_buffer::config::*;
-        use virtual_frame_buffer::color_palettes::*;
-        use virtual_frame_buffer::text_layer::*;
+        use display_controller::*;
+        use display_controller::config::*;
+        use display_controller::color_palettes::*;
+        use display_controller::text_layer::*;
         use app_macro::*;
 
         impl AppMacro for #name {
@@ -46,10 +46,10 @@ fn impl_app_macro(ast: &syn::DeriveInput) -> TokenStream {
                 (self.updating, self.drawing)
             }
 
-            fn update(&mut self, inputs: &WinitInputHelper, system_clock: &Clock, virtual_frame_buffer: &mut VirtualFrameBuffer) -> Option<AppResponse> {
+            fn update(&mut self, inputs: &WinitInputHelper, system_clock: &Clock, display_controller: &mut DisplayController) -> Option<AppResponse> {
                 
                 if !self.initialized {
-                    self.init_app(virtual_frame_buffer);
+                    self.init_app(display_controller);
                     self.initialized = true;
                 }
 
@@ -61,11 +61,11 @@ fn impl_app_macro(ast: &syn::DeriveInput) -> TokenStream {
                     }
                 }
                 
-                return self.update_app(inputs, system_clock, virtual_frame_buffer);
+                return self.update_app(inputs, system_clock, display_controller);
             }
             
-            fn draw(&mut self, inputs: &WinitInputHelper, system_clock: &Clock, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-                self.draw_app(inputs, system_clock, virtual_frame_buffer);
+            fn draw(&mut self, inputs: &WinitInputHelper, system_clock: &Clock, display_controller: &mut DisplayController) {
+                self.draw_app(inputs, system_clock, display_controller);
             }
         }
     };

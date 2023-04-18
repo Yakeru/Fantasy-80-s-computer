@@ -1,7 +1,7 @@
 use app_macro_derive::AppMacro;
-use virtual_frame_buffer::characters_rom::CHAR_TABLE;
+use display_controller::characters_rom::CHAR_TABLE;
 
-const SPLASH: &str = "\u{000D} Fantasy CPC Microcomputer V(0.1)\u{000D}\u{000D} 2022 Damien Torreilles\u{000D}\u{000D}";
+const SPLASH: &str = "\u{000D} Fantasy CPC Microcomputer V(0.3.0)\u{000D}\u{000D} 2023 Damien Torreilles\u{000D}\u{000D}";
 const SHELL_START_MESSAGE: &str = "SHELL 0.1\u{000D}Ready\u{000D}";
 
 const DEFAULT_BKG_COLOR: u8 = TRUE_BLUE;
@@ -105,27 +105,27 @@ impl Shell {
         response
     }
 
-    pub fn init_app(&mut self, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-        virtual_frame_buffer.get_console_mut().pos_x = 0;
-        virtual_frame_buffer.get_console_mut().pos_y = 0;
-        virtual_frame_buffer.get_console_mut().set_col_count(TEXT_COLUMNS);
-        virtual_frame_buffer.get_console_mut().set_row_count(TEXT_ROWS);
-        virtual_frame_buffer.get_console_mut().clear();
-        virtual_frame_buffer.get_console_mut().push_string(SPLASH);
-        virtual_frame_buffer.get_console_mut().push_string(SHELL_START_MESSAGE);
-        virtual_frame_buffer.get_console_mut().push_char('>');
+    pub fn init_app(&mut self, dc: &mut DisplayController) {
+        dc.get_console_mut().pos_x = 0;
+        dc.get_console_mut().pos_y = 0;
+        dc.get_console_mut().set_col_count(TEXT_COLUMNS);
+        dc.get_console_mut().set_row_count(TEXT_ROWS);
+        dc.get_console_mut().clear();
+        dc.get_console_mut().push_string(SPLASH);
+        dc.get_console_mut().push_string(SHELL_START_MESSAGE);
+        dc.get_console_mut().push_char('>');
     }
 
     pub fn update_app(
         &mut self,
         inputs: &WinitInputHelper,
         _clock: &Clock,
-        virtual_frame_buffer: &mut VirtualFrameBuffer
+        dc: &mut DisplayController
     ) -> Option<AppResponse> {
 
         if self.clear_text_layer {
-            virtual_frame_buffer.get_console_mut().clear();
-            virtual_frame_buffer.get_console_mut().push_char('>');
+            dc.get_console_mut().clear();
+            dc.get_console_mut().push_char('>');
             self.clear_text_layer = false;
         }
 
@@ -133,20 +133,20 @@ impl Shell {
             match inputs.text().get(0) {
                 Some(TextChar::Char(c)) => { 
                     if *c == unicode::ESCAPE {
-                        virtual_frame_buffer.get_console_mut().push_char('\u{000D}');
-                        virtual_frame_buffer.get_console_mut().push_string("Type 'quit' or 'exit' to quit Fantasy CPC.");
-                        virtual_frame_buffer.get_console_mut().push_char('\u{000D}');
-                        virtual_frame_buffer.get_console_mut().push_char('>');
+                        dc.get_console_mut().push_char('\u{000D}');
+                        dc.get_console_mut().push_string("Type 'quit' or 'exit' to quit Fantasy CPC.");
+                        dc.get_console_mut().push_char('\u{000D}');
+                        dc.get_console_mut().push_char('>');
                         self.command.clear();
                     } else {
                         self.command.push(*c);
-                        virtual_frame_buffer.get_console_mut().push_text_layer_char(self.get_text_layer_char_from_style(self.style_a_char(*c, Style::Default)));   
+                        dc.get_console_mut().push_text_layer_char(self.get_text_layer_char_from_style(self.style_a_char(*c, Style::Default)));   
                     }
                 },
                 Some(TextChar::Back) => { 
                     if !self.command.is_empty() {
                         self.command.pop();
-                        virtual_frame_buffer.get_console_mut().push_char(unicode::BACKSPACE);
+                        dc.get_console_mut().push_char(unicode::BACKSPACE);
                     }
                 },
                 None => ()
@@ -157,13 +157,13 @@ impl Shell {
             let response = self.interpret_command(self.command.iter().cloned().collect::<String>());
             let message_string = response.get_message().clone();
             if message_string.is_some() {
-                virtual_frame_buffer.get_console_mut().push_char('\u{000D}');
-                virtual_frame_buffer.get_console_mut().push_string(&message_string.unwrap());
-                virtual_frame_buffer.get_console_mut().push_char('\u{000D}');
-                virtual_frame_buffer.get_console_mut().push_char('>');
+                dc.get_console_mut().push_char('\u{000D}');
+                dc.get_console_mut().push_string(&message_string.unwrap());
+                dc.get_console_mut().push_char('\u{000D}');
+                dc.get_console_mut().push_char('>');
             } else {
-                virtual_frame_buffer.get_console_mut().push_char('\u{000D}');
-                virtual_frame_buffer.get_console_mut().push_char('>');
+                dc.get_console_mut().push_char('\u{000D}');
+                dc.get_console_mut().push_char('>');
             }
             self.command.clear();
             return Some(response);
@@ -172,8 +172,8 @@ impl Shell {
         return None;
     }
 
-    pub fn draw_app(&mut self, _inputs: &WinitInputHelper, _clock: &Clock, virtual_frame_buffer: &mut VirtualFrameBuffer) {
-        virtual_frame_buffer.clear(WHITE);
-        virtual_frame_buffer.get_console_mut().display = true;
+    pub fn draw_app(&mut self, _inputs: &WinitInputHelper, _clock: &Clock, dc: &mut DisplayController) {
+        dc.clear(WHITE);
+        dc.get_console_mut().display = true;
     }
 }

@@ -26,6 +26,17 @@ struct ColorTheme {
     fuzzyness: f64,
 }
 
+impl ColorTheme {
+
+    pub fn get_palette_1(&mut self) -> &mut Vec<u8> {
+        &mut self.palette1
+    }
+
+    pub fn get_palette_2(&mut self) -> &mut Vec<u8> {
+        &mut self.palette2
+    }
+}
+
 #[derive(AppMacro)]
 pub struct Mandelbrot {
     enable_auto_escape: bool,
@@ -47,7 +58,8 @@ pub struct Mandelbrot {
     reverse: bool,
     fuzzy: bool,
     themes: Vec<ColorTheme>,
-    current_theme: usize
+    current_theme: usize,
+    palette_rotation: bool,
 }
 
 impl Mandelbrot {
@@ -145,11 +157,12 @@ impl Mandelbrot {
             reverse: false,
             fuzzy: true,
             themes: themes,
-            current_theme: 2
+            current_theme: 2,
+            palette_rotation: false
         }
     }
 
-    pub fn init_app(&mut self, _virtual_frame_buffer: &mut VirtualFrameBuffer) {
+    pub fn init_app(&mut self, _dc: &mut DisplayController) {
         self.welcome_screen = true;
         self.game = false;
         self.menu = false;
@@ -159,7 +172,7 @@ impl Mandelbrot {
         &mut self,
         inputs: &WinitInputHelper,
         _clock: &Clock,
-        virtual_frame_buffer: &mut VirtualFrameBuffer,
+        dc: &mut DisplayController,
     ) -> Option<AppResponse> {
         // if self.welcome_screen {
         //     self.update_welcome_screen(inputs, virtual_frame_buffer);
@@ -168,7 +181,7 @@ impl Mandelbrot {
         // } else {
         //     self.update_menu(inputs, virtual_frame_buffer);
         // }
-        self.update_welcome_screen(inputs, virtual_frame_buffer);
+        self.update_welcome_screen(inputs, dc);
         return None;
     }
 
@@ -176,7 +189,7 @@ impl Mandelbrot {
         &mut self,
         inputs: &WinitInputHelper,
         clock: &Clock,
-        virtual_frame_buffer: &mut VirtualFrameBuffer,
+        dc: &mut DisplayController,
     ) {
         // if self.welcome_screen {
         //     self.draw_welcome_screen(inputs, clock, virtual_frame_buffer);
@@ -185,13 +198,14 @@ impl Mandelbrot {
         // } else if self.menu {
         //     self.draw_menu(virtual_frame_buffer);
         // }
-        self.draw_welcome_screen(inputs, clock, virtual_frame_buffer);
+
+        self.draw_welcome_screen(inputs, clock, dc);
     }
 
     fn update_welcome_screen(
         &mut self,
         inputs: &WinitInputHelper,
-        _virtual_frame_buffer: &mut VirtualFrameBuffer,
+        _dc: &mut DisplayController,
     ) {
 
         /*---------------------------------------------------------- */
@@ -270,6 +284,8 @@ impl Mandelbrot {
             self.swap_palette();
         } else if inputs.key_pressed(VirtualKeyCode::F) {
             self.fuzzy = !self.fuzzy;
+        } else if inputs.key_pressed(VirtualKeyCode::X) {
+            self.palette_rotation = !self.palette_rotation;
         }
 
         /*---------------------------------------------------------- */
@@ -301,12 +317,21 @@ impl Mandelbrot {
         &mut self,
         _inputs: &WinitInputHelper,
         clock: &Clock,
-        virtual_frame_buffer: &mut VirtualFrameBuffer,
+        dc: &mut DisplayController,
     ) {
+        dc.get_text_layer_mut().clear();
+        dc.get_console_mut().display = false;
+        dc.clear(BLACK);
 
-        virtual_frame_buffer.get_text_layer_mut().clear();
-        virtual_frame_buffer.get_console_mut().display = false;
-        virtual_frame_buffer.clear(BLACK);
+        if self.palette_rotation && clock.get_frame_count() % 2 == 0 {
+            if self.themes[self.current_theme].get_palette_1().len() > 0 {
+                self.themes[self.current_theme].get_palette_1().rotate_right(1);
+            }
+            
+            if self.themes[self.current_theme].get_palette_2().len() > 0 {
+                self.themes[self.current_theme].get_palette_2().rotate_right(1);
+            }
+        }
 
         let mandel_x_min: f64 = self.mandel_x_center - self.mandel_x_range / 2.0;
         let mandel_y_min: f64 = self.mandel_y_center - self.mandel_y_range / 2.0;
@@ -322,8 +347,8 @@ impl Mandelbrot {
         let mut random = rand::thread_rng();
 
         // Mandelbrot algorithm from Wikipedia : https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set
-        for py in 0..VIRTUAL_HEIGHT {
-            for px in 0..VIRTUAL_WIDTH {
+        for py in OVERSCAN_V..VIRTUAL_HEIGHT - OVERSCAN_V {
+            for px in OVERSCAN_H..VIRTUAL_WIDTH - OVERSCAN_H {
 
                 x0 = ((px as f64 * self.mandel_x_range) / VIRTUAL_WIDTH as f64) + mandel_x_min;
                 y0 = ((py as f64 * self.mandel_y_range) / VIRTUAL_HEIGHT as f64) + mandel_y_min;
@@ -367,7 +392,7 @@ impl Mandelbrot {
                     }
                 };
 
-                virtual_frame_buffer.set_pixel(px, py, color);
+                dc.set_pixel(px, py, color);
             }
         }
 
