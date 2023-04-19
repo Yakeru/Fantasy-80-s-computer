@@ -1,6 +1,7 @@
 use rodio::{OutputStream, Sink, Source};
+use shader_crt_upscaler_renderer::CrtRenderer;
 use sound::{notes::*, play};
-use display_controller::{*, color_palettes::{BLACK, WHITE}, text_layer::TextLayerChar, renderer::Renderer, config::{HEIGHT, WIDTH, VIRTUAL_HEIGHT, VIRTUAL_WIDTH, FULLSCREEN}};
+use display_controller::{*, color_palettes::{BLACK, WHITE}, text_layer::TextLayerChar, software_crt_upscaler_renderer::Renderer, config::{HEIGHT, WIDTH, VIRTUAL_HEIGHT, VIRTUAL_WIDTH, FULLSCREEN}};
 use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
@@ -9,10 +10,12 @@ use std::{time::{Duration, Instant}, thread};
 use winit::{
     dpi::{PhysicalSize, Position, PhysicalPosition},
     event_loop::{ControlFlow, EventLoop},
-    window::{WindowBuilder, Fullscreen}
+    window::{WindowBuilder, Fullscreen}, event::Event
 };
 
 use clock::Clock;
+
+mod shader_crt_upscaler_renderer;
 
 //Apps
 mod apps;
@@ -39,22 +42,22 @@ fn main() -> Result<(), Error> {
     //let channel_3 = Sink::try_new(&stream_handle).unwrap();
     //let channel_4 = Sink::try_new(&stream_handle).unwrap();
 
-    let _handle = thread::Builder::new().name("sound".to_string()).spawn(move || {
+    // let _handle = thread::Builder::new().name("sound".to_string()).spawn(move || {
 
-        let mut melody_1: Vec<Option<(f32, f32)>> = Vec::new();
-        melody_1.push(Some((0.0, 10.0)));
-        melody_1.push(Some((C5, 1.0)));
-        melody_1.push(None);
-        melody_1.push(Some((C5, 1.0)));
-        melody_1.push(Some((F5, 2.0)));
+    //     let mut melody_1: Vec<Option<(f32, f32)>> = Vec::new();
+    //     melody_1.push(Some((0.0, 10.0)));
+    //     melody_1.push(Some((C5, 1.0)));
+    //     melody_1.push(None);
+    //     melody_1.push(Some((C5, 1.0)));
+    //     melody_1.push(Some((F5, 2.0)));
 
-        let mut melody_2: Vec<Option<(f32, f32)>> = Vec::new();
-        melody_2.push(Some((0.0, 10.0)));
-        melody_2.push(Some((0.0, 3.0)));
-        melody_2.push(Some((A5, 2.0)));
+    //     let mut melody_2: Vec<Option<(f32, f32)>> = Vec::new();
+    //     melody_2.push(Some((0.0, 10.0)));
+    //     melody_2.push(Some((0.0, 3.0)));
+    //     melody_2.push(Some((A5, 2.0)));
 
-        play(480.0, &melody_1, &melody_2, &channel_1, &channel_2);
-    });
+    //     play(480.0, &melody_1, &melody_2, &channel_1, &channel_2);
+    // });
     
     // ************************************************ DISPLAY SETUP *********************************************
     // winit setup
@@ -132,10 +135,13 @@ fn main() -> Result<(), Error> {
     // pixels to display the final image in the window.
     let mut display_controller: DisplayController = DisplayController::new();
 
-    // The crt renderer takes the virtual frame buffers's frame, upscales it to match pixel's frame and winit window size,
+    // The software crt renderer takes the virtual frame buffers's frame, upscales it to match pixel's frame and winit window size,
     // then applies a filter evoking CRT sub-pixels and scanlines.
     // The upscaled and "crt'ed" image is then pushed into pixel's frame for on-screen render.
     let mut renderer: Renderer = Renderer::new(config::UPSCALE, true, u8::MAX);
+
+    // A crt renderer using pixels upscaler and a CRT shader in WGSL
+    let mut crt_shader_renderer = CrtRenderer::new(&pixels, WIDTH as u32, HEIGHT as u32)?;
 
     // ****************************************************** APPS SETUP ***********************************************
     
@@ -169,6 +175,7 @@ fn main() -> Result<(), Error> {
     app_list.push(mandelbrot);
     
     let mut frame_time_100: Vec<u128> = Vec::new();
+    let mut time = 0.0;
 
     // ****************************************************** MAIN WINIT EVENT LOOP ***********************************************
     
@@ -186,6 +193,26 @@ fn main() -> Result<(), Error> {
         // let plop = Duration::from_millis(2);
         //*control_flow = ControlFlow::WaitUntil(now.checked_add(plop).unwrap());
         *control_flow = ControlFlow::Poll; //Poll is synchronized with V-Sync
+
+        if let Event::RedrawRequested(_) = event {
+                    
+            let render_result = pixels.render_with(|encoder, render_target, context| {
+                let noise_texture = crt_shader_renderer.texture_view();
+                context.scaling_renderer.render(encoder, noise_texture);
+
+                crt_shader_renderer.update(&context.queue, WIDTH as f32, HEIGHT as f32);
+
+                crt_shader_renderer.render(encoder, render_target, context.scaling_renderer.clip_rect());
+
+                Ok(())
+            });
+
+            if let Err(err) = render_result {
+                //log_error("pixels.render_with", err);
+                *control_flow = ControlFlow::Exit;
+                return;
+            }
+        }
 
         if input.update(&event) {
 
@@ -298,7 +325,7 @@ fn main() -> Result<(), Error> {
                 frame_time_100.clear();
             }
             
-            pixels.render().expect("Pixels render oups");
+            //pixels.render().expect("Pixels render oups");
             window.request_redraw();
             system_clock.count_frame();
 
