@@ -105,7 +105,7 @@ impl Shell {
         response
     }
 
-    pub fn init_app(&mut self, dc: &mut DisplayController) {
+    pub fn init_app(&mut self, _clock: &Clock, dc: &mut DisplayController) {
         dc.get_console_mut().pos_x = 0;
         dc.get_console_mut().pos_y = 0;
         dc.get_console_mut().set_col_count(TEXT_COLUMNS);
@@ -175,5 +175,9 @@ impl Shell {
     pub fn draw_app(&mut self, _inputs: &WinitInputHelper, _clock: &Clock, dc: &mut DisplayController) {
         dc.clear(WHITE);
         dc.get_console_mut().display = true;
+    }
+
+    pub fn reboot(&mut self) {
+        self.initialized = false;
     }
 }

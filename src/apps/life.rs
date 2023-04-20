@@ -89,7 +89,7 @@ impl Life {
         }
     }
 
-    pub fn init_app(&mut self, _display_controller: &mut DisplayController) {
+    pub fn init_app(&mut self, _clock: &Clock, _display_controller: &mut DisplayController) {
         self.welcome_screen = true;
         self.game = false;
         self.menu = false;
@@ -98,13 +98,13 @@ impl Life {
     pub fn update_app(
         &mut self,
         inputs: &WinitInputHelper,
-        _clock: &Clock,
+        clock: &Clock,
         display_controller: &mut DisplayController,
     ) -> Option<AppResponse> {
         if self.welcome_screen {
             self.update_welcome_screen(inputs, display_controller);
         } else if self.game {
-            self.update_game(inputs, display_controller);
+            self.update_game(inputs, clock, display_controller);
         } else {
             self.update_menu(inputs, display_controller);
         }
@@ -339,6 +339,7 @@ impl Life {
     fn update_game(
         &mut self,
         inputs: &WinitInputHelper,
+        clock: &Clock,
         display_controller: &mut DisplayController,
     ) {
         if inputs.key_released(VirtualKeyCode::C) {
@@ -346,7 +347,7 @@ impl Life {
         }
 
         if inputs.key_released(VirtualKeyCode::Escape) {
-            self.init_app(display_controller);
+            self.init_app(clock, display_controller);
         }
 
         let now = Instant::now();
