@@ -1,7 +1,7 @@
 use rodio::{OutputStream, Sink, Source};
-use shader_crt_upscaler_renderer::CrtRenderer;
+use crt_shader_renderer::CrtRenderer;
 use sound::{notes::*, play};
-use display_controller::{*, color_palettes::{BLACK, WHITE}, text_layer::TextLayerChar, software_crt_upscaler_renderer::Renderer, config::{HEIGHT, WIDTH, VIRTUAL_HEIGHT, VIRTUAL_WIDTH, FULLSCREEN}};
+use display_controller::{*, color_palettes::{BLACK, WHITE}, text_layer::TextLayerChar, renderer::Renderer, config::{HEIGHT, WIDTH, VIRTUAL_HEIGHT, VIRTUAL_WIDTH, FULLSCREEN, UPSCALE}};
 use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
@@ -15,7 +15,7 @@ use winit::{
 
 use clock::Clock;
 
-mod shader_crt_upscaler_renderer;
+mod crt_shader_renderer;
 
 //Apps
 mod apps;
@@ -138,10 +138,14 @@ fn main() -> Result<(), Error> {
     // The software crt renderer takes the virtual frame buffers's frame, upscales it to match pixel's frame and winit window size,
     // then applies a filter evoking CRT sub-pixels and scanlines.
     // The upscaled and "crt'ed" image is then pushed into pixel's frame for on-screen render.
-    let mut renderer: Renderer = Renderer::new(config::UPSCALE, true, u8::MAX);
+    let mut renderer: Renderer = Renderer::new(u8::MAX);
 
     // A crt renderer using pixels upscaler and a CRT shader in WGSL
-    let mut crt_shader_renderer = CrtRenderer::new(&pixels, WIDTH as u32, HEIGHT as u32)?;
+    let mut display_mode: u32 = 0;
+    let mut mask_type: u32 = 0;
+    let mut distortion: u32 = 0;
+
+    let crt_shader_renderer = CrtRenderer::new(&pixels, WIDTH as u32, HEIGHT as u32, display_mode, UPSCALE as u32, (UPSCALE/2) as u32, mask_type as u32, distortion as u32)?;
 
     // ****************************************************** APPS SETUP ***********************************************
     
@@ -151,7 +155,7 @@ fn main() -> Result<(), Error> {
     // no other process is running or has the focus.
     // The Shell uses the console as default output.
     // When closing/quitting an app, it should always fall back to the shell.
-    let mut shell = Box::new(Shell::new());
+    let mut shell = Box::new(Shell::new()); 
     shell.set_state(true, true);
 
     // To be managed properly, apps must be added to that list.
@@ -200,7 +204,7 @@ fn main() -> Result<(), Error> {
                 let noise_texture = crt_shader_renderer.texture_view();
                 context.scaling_renderer.render(encoder, noise_texture);
 
-                crt_shader_renderer.update(&context.queue, WIDTH as f32, HEIGHT as f32);
+                crt_shader_renderer.update(&context.queue, WIDTH as f32, HEIGHT as f32, display_mode as f32, UPSCALE as f32, (UPSCALE/2) as f32, mask_type as f32, distortion as f32);
 
                 crt_shader_renderer.render(encoder, render_target, context.scaling_renderer.clip_rect());
 
@@ -272,26 +276,32 @@ fn main() -> Result<(), Error> {
                                     }
                                 };
 
-                                if message == String::from("crt") {
-                                    renderer.toggle_filter();
+                                if message == String::from("mode 0") {
+                                    display_mode = 0;
                                 }
 
-                                if message == String::from("d") {
+                                if message == String::from("mode 1") {
+                                    display_mode = 1;
                                 }
 
-                                if message == String::from("e") {
+                                if message == String::from("mode 2") {
+                                    display_mode = 2;
                                 }
 
-                                if message == String::from("f") {
+                                if message == String::from("dist 0") {
+                                    distortion = 0;
                                 }
 
-                                if message == String::from("g") {
+                                if message == String::from("dist 1") {
+                                    distortion = 42;
                                 }
 
-                                if message == String::from("a") {
+                                if message == String::from("dist 2") {
+                                    distortion = 16;
                                 }
 
-                                if message == String::from("b") {
+                                if message == String::from("dist 3") {
+                                    distortion = 2;
                                 }
                             }
                             
@@ -307,7 +317,7 @@ fn main() -> Result<(), Error> {
 
             display_controller.render();
         
-            renderer.render(&mut display_controller.get_frame(), pixels.frame_mut(), 0);
+            renderer.render(&mut display_controller.get_frame(), pixels.frame_mut());
             
             frame_time_100.push(start.elapsed().as_micros());
             

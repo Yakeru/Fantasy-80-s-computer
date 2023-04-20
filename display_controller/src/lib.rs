@@ -13,7 +13,7 @@ pub mod color_palettes;
 pub mod sprite;
 pub mod text_layer;
 pub mod console;
-pub mod software_crt_upscaler_renderer;
+pub mod renderer;
 
 /// Contains a list of u8 values corresponding to values from a color palette.
 /// So just one u8 per pixel, R G and B values are retrieved from the palette, No Alpha.

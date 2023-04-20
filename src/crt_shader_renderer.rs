@@ -12,6 +12,11 @@ pub(crate) struct CrtRenderer {
     render_pipeline: wgpu::RenderPipeline,
     screen_width_buffer: wgpu::Buffer,
     screen_height_buffer: wgpu::Buffer,
+    display_mode_buffer: wgpu::Buffer,
+    scanline_height_buffer: wgpu::Buffer,
+    mask_size_buffer: wgpu::Buffer,
+    mask_type_buffer: wgpu::Buffer,
+    distortion_buffer: wgpu::Buffer,
     vertex_buffer: wgpu::Buffer,
 }
 
@@ -20,6 +25,11 @@ impl CrtRenderer {
         pixels: &pixels::Pixels,
         width: u32,
         height: u32,
+        display_mode: u32,
+        scanline_height: u32,
+        mask_size: u32,
+        mask_type: u32,
+        distortion: u32,
     ) -> Result<Self, TextureError> {
         let device = pixels.device();
         let shader = wgpu::include_wgsl!("../shaders/crt_shader.wgsl");
@@ -31,7 +41,7 @@ impl CrtRenderer {
 
         // Create a texture sampler with nearest neighbor
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            label: Some("NoiseRenderer sampler"),
+            label: Some("CrtRenderer sampler"),
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::ClampToEdge,
@@ -83,6 +93,41 @@ impl CrtRenderer {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
+        // Create uniform buffer
+        let display_mode_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("screen height"),
+            contents: &0.0_f32.to_ne_bytes(),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
+        // Create uniform buffer
+        let scanline_height_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("screen height"),
+            contents: &0.0_f32.to_ne_bytes(),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
+        // Create uniform buffer
+        let mask_size_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("screen height"),
+            contents: &0.0_f32.to_ne_bytes(),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
+        // Create uniform buffer
+        let mask_type_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("screen height"),
+            contents: &0.0_f32.to_ne_bytes(),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
+        // Create uniform buffer
+        let distortion_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("screen height"),
+            contents: &0.0_f32.to_ne_bytes(),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
         // Create bind group
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: None,
@@ -123,6 +168,56 @@ impl CrtRenderer {
                     },
                     count: None,
                 },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 4,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: wgpu::BufferSize::new(std::mem::size_of::<f32>() as u64),
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 5,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: wgpu::BufferSize::new(std::mem::size_of::<f32>() as u64),
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 6,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: wgpu::BufferSize::new(std::mem::size_of::<f32>() as u64),
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 7,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: wgpu::BufferSize::new(std::mem::size_of::<f32>() as u64),
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 8,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: wgpu::BufferSize::new(std::mem::size_of::<f32>() as u64),
+                    },
+                    count: None,
+                }
             ],
         });
         let bind_group = create_bind_group(
@@ -132,6 +227,11 @@ impl CrtRenderer {
             &sampler,
             &screen_width_buffer,
             &screen_height_buffer,
+            &display_mode_buffer,
+            &scanline_height_buffer,
+            &mask_size_buffer,
+            &mask_type_buffer,
+            &distortion_buffer,
         );
 
         // Create pipeline
@@ -174,6 +274,11 @@ impl CrtRenderer {
             render_pipeline,
             screen_width_buffer,
             screen_height_buffer,
+            display_mode_buffer,
+            scanline_height_buffer,
+            mask_size_buffer,
+            mask_type_buffer,
+            distortion_buffer,
             vertex_buffer,
         })
     }
@@ -195,15 +300,26 @@ impl CrtRenderer {
             &self.texture_view,
             &self.sampler,
             &self.screen_width_buffer,
-            &self.screen_height_buffer
+            &self.screen_height_buffer,
+            &self.display_mode_buffer,
+            &self.scanline_height_buffer,
+            &self.mask_size_buffer,
+            &self.mask_type_buffer,
+            &self.distortion_buffer
         );
 
         Ok(())
     }
 
-    pub(crate) fn update(&self, queue: &wgpu::Queue, screen_width: f32, screen_height: f32) {
+    pub(crate) fn update(&self, queue: &wgpu::Queue, screen_width: f32, screen_height: f32, 
+        display_mode: f32, scanline_height: f32, mask_size: f32, mask_type: f32, distortion: f32) {
         queue.write_buffer(&self.screen_width_buffer, 0, &screen_width.to_ne_bytes());
         queue.write_buffer(&self.screen_height_buffer, 0, &screen_height.to_ne_bytes());
+        queue.write_buffer(&self.display_mode_buffer, 0, &display_mode.to_ne_bytes());
+        queue.write_buffer(&self.scanline_height_buffer, 0, &scanline_height.to_ne_bytes());
+        queue.write_buffer(&self.mask_size_buffer, 0, &mask_size.to_ne_bytes());
+        queue.write_buffer(&self.mask_type_buffer, 0, &mask_type.to_ne_bytes());
+        queue.write_buffer(&self.distortion_buffer, 0, &distortion.to_ne_bytes());
     }
 
     pub(crate) fn render(
@@ -213,7 +329,7 @@ impl CrtRenderer {
         clip_rect: (u32, u32, u32, u32),
     ) {
         let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("NoiseRenderer render pass"),
+            label: Some("CRT render pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: render_target,
                 resolve_target: None,
@@ -266,6 +382,11 @@ fn create_bind_group(
     sampler: &wgpu::Sampler,
     screen_width_buffer: &wgpu::Buffer,
     screen_height_buffer: &wgpu::Buffer,
+    display_mode: &wgpu::Buffer,
+    scanline_height: &wgpu::Buffer,
+    mask_size: &wgpu::Buffer,
+    mask_type: &wgpu::Buffer,
+    distortion: &wgpu::Buffer,
 ) -> pixels::wgpu::BindGroup {
     device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: None,
@@ -286,6 +407,26 @@ fn create_bind_group(
             wgpu::BindGroupEntry {
                 binding: 3,
                 resource: screen_height_buffer.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 4,
+                resource: display_mode.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 5,
+                resource: scanline_height.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 6,
+                resource: mask_size.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 7,
+                resource: mask_type.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 8,
+                resource: distortion.as_entire_binding(),
             },
         ],
     })
