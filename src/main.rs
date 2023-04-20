@@ -1,7 +1,7 @@
 use rodio::{OutputStream, Sink, Source};
 use crt_shader_renderer::CrtRenderer;
 use sound::{notes::*, play};
-use display_controller::{*, color_palettes::{BLACK, WHITE}, text_layer::TextLayerChar, renderer::Renderer, config::{HEIGHT, WIDTH, VIRTUAL_HEIGHT, VIRTUAL_WIDTH, FULLSCREEN, UPSCALE}};
+use display_controller::{*, color_palettes::{BLACK, WHITE}, text_layer::TextLayerChar, config::{HEIGHT, WIDTH, VIRTUAL_HEIGHT, FULLSCREEN, UPSCALE}};
 use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rand::Rng;
@@ -42,22 +42,22 @@ fn main() -> Result<(), Error> {
     //let channel_3 = Sink::try_new(&stream_handle).unwrap();
     //let channel_4 = Sink::try_new(&stream_handle).unwrap();
 
-    // let _handle = thread::Builder::new().name("sound".to_string()).spawn(move || {
+    let _handle = thread::Builder::new().name("sound".to_string()).spawn(move || {
 
-    //     let mut melody_1: Vec<Option<(f32, f32)>> = Vec::new();
-    //     melody_1.push(Some((0.0, 10.0)));
-    //     melody_1.push(Some((C5, 1.0)));
-    //     melody_1.push(None);
-    //     melody_1.push(Some((C5, 1.0)));
-    //     melody_1.push(Some((F5, 2.0)));
+        let mut melody_1: Vec<Option<(f32, f32)>> = Vec::new();
+        melody_1.push(Some((0.0, 10.0)));
+        melody_1.push(Some((C5, 1.0)));
+        melody_1.push(None);
+        melody_1.push(Some((C5, 1.0)));
+        melody_1.push(Some((F5, 2.0)));
 
-    //     let mut melody_2: Vec<Option<(f32, f32)>> = Vec::new();
-    //     melody_2.push(Some((0.0, 10.0)));
-    //     melody_2.push(Some((0.0, 3.0)));
-    //     melody_2.push(Some((A5, 2.0)));
+        let mut melody_2: Vec<Option<(f32, f32)>> = Vec::new();
+        melody_2.push(Some((0.0, 10.0)));
+        melody_2.push(Some((0.0, 3.0)));
+        melody_2.push(Some((A5, 2.0)));
 
-    //     play(480.0, &melody_1, &melody_2, &channel_1, &channel_2);
-    // });
+        play(480.0, &melody_1, &melody_2, &channel_1, &channel_2);
+    });
     
     // ************************************************ DISPLAY SETUP *********************************************
     // winit setup
@@ -135,14 +135,9 @@ fn main() -> Result<(), Error> {
     // pixels to display the final image in the window.
     let mut display_controller: DisplayController = DisplayController::new();
 
-    // The software crt renderer takes the virtual frame buffers's frame, upscales it to match pixel's frame and winit window size,
-    // then applies a filter evoking CRT sub-pixels and scanlines.
-    // The upscaled and "crt'ed" image is then pushed into pixel's frame for on-screen render.
-    let mut renderer: Renderer = Renderer::new(u8::MAX);
-
     // A crt renderer using pixels upscaler and a CRT shader in WGSL
     let mut display_mode: u32 = 0;
-    let mut mask_type: u32 = 0;
+    let mask_type: u32 = 0;
     let mut distortion: u32 = 0;
 
     let crt_shader_renderer = CrtRenderer::new(&pixels, WIDTH as u32, HEIGHT as u32, display_mode, UPSCALE as u32, (UPSCALE/2) as u32, mask_type as u32, distortion as u32)?;
@@ -179,7 +174,6 @@ fn main() -> Result<(), Error> {
     app_list.push(mandelbrot);
     
     let mut frame_time_100: Vec<u128> = Vec::new();
-    let mut time = 0.0;
 
     // ****************************************************** MAIN WINIT EVENT LOOP ***********************************************
     
@@ -212,7 +206,7 @@ fn main() -> Result<(), Error> {
             });
 
             if let Err(err) = render_result {
-                //log_error("pixels.render_with", err);
+                println!("Rendering error : {}", err);
                 *control_flow = ControlFlow::Exit;
                 return;
             }
@@ -230,7 +224,7 @@ fn main() -> Result<(), Error> {
 
             // BOOT, play boot animation once before showing the shell or any other app.
             if booting {
-                booting = boot_animation(&mut display_controller, &mut renderer, &system_clock);
+                booting = boot_animation(&mut display_controller, &system_clock);
             } else {
                 //Updating apps
                 let mut show_shell: bool = true;
@@ -315,10 +309,8 @@ fn main() -> Result<(), Error> {
             // Render virtual frame buffer to pixels frame buffer with upscaling and CRT effect
             let start = Instant::now();
 
-            display_controller.render();
-        
-            renderer.render(&mut display_controller.get_frame(), pixels.frame_mut());
-            
+            display_controller.render(pixels.frame_mut());
+                    
             frame_time_100.push(start.elapsed().as_micros());
             
             if frame_time_100.len() == 100 {
@@ -363,13 +355,13 @@ fn draw_loading_border(display_controller: &mut DisplayController) {
 }
 
 ///Boot animation
-fn boot_animation(display_controller: &mut DisplayController, crt_renderer: &mut Renderer, clock: &Clock) -> bool {
+fn boot_animation(display_controller: &mut DisplayController, clock: &Clock) -> bool {
     
     display_controller.get_console_mut().display = false;
 
     //CRT warm up, brightness increases from 0 to 255 in 2 seconds
     let brigthness = if clock.total_running_time >= Duration::new(2, 0) {255} else {(clock.total_running_time.as_millis() * 255 / 2000) as u8};
-    crt_renderer.set_brightness(brigthness);
+    display_controller.set_brightness(brigthness);
 
     //Fill text layer with random garbage
     if clock.get_frame_count() == 0 {
