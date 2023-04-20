@@ -49,7 +49,7 @@ fn impl_app_macro(ast: &syn::DeriveInput) -> TokenStream {
             fn update(&mut self, inputs: &WinitInputHelper, system_clock: &Clock, display_controller: &mut DisplayController) -> Option<AppResponse> {
                 
                 if !self.initialized {
-                    self.init_app(display_controller);
+                    self.init_app(system_clock, display_controller);
                     self.initialized = true;
                 }
 
@@ -58,6 +58,8 @@ fn impl_app_macro(ast: &syn::DeriveInput) -> TokenStream {
                 if self.enable_auto_escape {
                     if inputs.key_released(VirtualKeyCode::Escape) {
                         self.set_state(false, false);
+                        self.initialized = false;
+                        display_controller.set_brightness(255);
                     }
                 }
                 

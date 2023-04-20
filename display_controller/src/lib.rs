@@ -4,6 +4,7 @@ use clock::Clock;
 use color_palettes::*;
 use config::*;
 use console::Console;
+use rand::Rng;
 use sprite::Sprite;
 use text_layer::{TextLayer, text_index_to_frame_coord, text_coord_to_frame_coord, TextLayerChar};
 
@@ -605,6 +606,51 @@ impl DisplayController {
                 self.line(point1.0, point1.1, point3.0, point3.1, color);
                 self.line(point2.0, point2.1, point4.0, point4.1, color);
             }
+        }
+    }
+
+    pub fn genrate_random_garbage(&mut self) {
+        let mut random = rand::thread_rng();
+            
+        let frame: u8 = random.gen_range(0..32);
+        self.clear(frame);
+        self.get_text_layer_mut().clear();
+    
+        let char_map = self.get_text_layer_mut().get_char_map_mut();
+        for index in 0..char_map.len() {
+            
+            let mut color: u8 = random.gen_range(0..40);
+            color = if color > 31 { 0 } else { color };
+    
+            let mut bkg_color: u8 = random.gen_range(0..40);
+            bkg_color = if bkg_color > 31 { 0 } else { bkg_color };
+            
+            let mut char_index = random.gen_range(0..100);
+            char_index = if char_index > characters_rom::CHAR_TABLE.len() - 1 { 0 } else { char_index };
+            let c:char = characters_rom::CHAR_TABLE[char_index];
+    
+            let effect:u8 = random.gen_range(0..10);
+            let swap: bool = if effect & 0b00000001 > 0 {true} else {false};
+            let blink: bool = if effect & 0b00000010 > 0 {true} else {false};
+            let shadowed: bool = if effect & 0b00000100 > 0 {true} else {false};
+    
+            let text_layer_char: TextLayerChar = TextLayerChar{c, color, bkg_color, swap, blink, shadowed};
+            char_map[index] = Some(text_layer_char);
+        }
+    }
+
+    pub fn draw_loading_overscan_artefacts(&mut self) {
+        let mut random = rand::thread_rng();
+        let mut rgb_color: u8 = random.gen_range(0..32);
+        let mut line_count: usize = 0;
+        let mut band_height: usize = random.gen_range(4..20);
+    
+        while line_count <= VIRTUAL_HEIGHT {
+            let range_max = if line_count + band_height > VIRTUAL_HEIGHT {VIRTUAL_HEIGHT } else { line_count + band_height };
+            self.set_overscan_color_range(rgb_color, line_count..range_max);
+            line_count += band_height;
+            rgb_color = random.gen_range(0..32);
+            band_height = random.gen_range(4..20);
         }
     }
 }

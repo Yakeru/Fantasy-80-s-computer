@@ -138,7 +138,7 @@ impl Mandelbrot {
         });
 
         Mandelbrot {
-            enable_auto_escape: false,
+            enable_auto_escape: true,
             name: String::from("mandelbrot"),
             updating: false,
             drawing: false,
@@ -162,10 +162,22 @@ impl Mandelbrot {
         }
     }
 
-    pub fn init_app(&mut self, _dc: &mut DisplayController) {
+    pub fn init_app(&mut self, _clock: &Clock, _dc: &mut DisplayController) {
         self.welcome_screen = true;
         self.game = false;
         self.menu = false;
+        self.mandel_x_center = X_COORD;
+        self.mandel_y_center = Y_COORD;
+        self.mandel_x_range = MAX_X_RANGE;
+        self.mandel_y_range = MAX_Y_RANGE;
+        self.max_iteration = MIN_ITER;
+        self.previous_empty_ratio = 0.0;
+        self.previous_empty_ratio_delta = 0.0;
+        self.pause = true;
+        self.reverse = false;
+        self.fuzzy = true;
+        self.current_theme = 2;
+        self.palette_rotation = false;
     }
 
     pub fn update_app(
@@ -212,10 +224,7 @@ impl Mandelbrot {
         //                 choosing default scenarios
         /*---------------------------------------------------------- */
 
-        if inputs.key_pressed(VirtualKeyCode::Escape) {
-            self.reset();
-            self.set_state(false, false);
-        } else if inputs.key_pressed(VirtualKeyCode::Space) {
+        if inputs.key_pressed(VirtualKeyCode::Space) {
             self.pause = !self.pause;
             println!("x: {}, y: {}", self.mandel_x_center, self.mandel_y_center);
         } else if inputs.key_pressed(VirtualKeyCode::Key1) {

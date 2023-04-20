@@ -58,7 +58,7 @@ impl WeatherApp {
         }
     }
 
-    pub fn init_app(&mut self, _dc: &mut DisplayController) {
+    pub fn init_app(&mut self, _clock: &Clock, _dc: &mut DisplayController) {
         openweathermap::update(&self.receiver);
         let now = Local::now();
         self.current_second = now.second();
