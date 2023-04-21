@@ -1,12 +1,12 @@
 use rodio::{OutputStream, Sink, Source};
 use crt_shader_renderer::CrtRenderer;
+use shader_variables::ShaderVariables;
 use sound::{notes::*, play};
-use display_controller::{*, color_palettes::{BLACK, WHITE}, text_layer::TextLayerChar, config::{HEIGHT, WIDTH, VIRTUAL_HEIGHT, FULLSCREEN, UPSCALE}};
+use display_controller::{*, config::*};
 use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
-use rand::Rng;
 use winit_input_helper::WinitInputHelper;
-use std::{time::{Duration, Instant}, thread};
+use std::{time::Instant, thread};
 use winit::{
     dpi::{PhysicalSize, Position, PhysicalPosition},
     event_loop::{ControlFlow, EventLoop},
@@ -16,6 +16,7 @@ use winit::{
 use clock::Clock;
 
 mod crt_shader_renderer;
+mod shader_variables;
 
 //Apps
 mod apps;
@@ -134,11 +135,8 @@ fn main() -> Result<(), Error> {
     let mut display_controller: DisplayController = DisplayController::new();
 
     // A crt renderer using pixels upscaler and a CRT shader in WGSL
-    let mut display_mode: u32 = 0;
-    let mask_type: u32 = 0;
-    let mut distortion: u32 = 0;
-
-    let crt_shader_renderer = CrtRenderer::new(&pixels, WIDTH as u32, HEIGHT as u32, display_mode, UPSCALE as u32, (UPSCALE/2) as u32, mask_type as u32, distortion as u32)?;
+    let mut shader_variables: ShaderVariables = ShaderVariables::new();
+    let crt_shader_renderer = CrtRenderer::new(&pixels, &shader_variables)?;
 
     // ****************************************************** APPS SETUP ***********************************************
     
@@ -200,7 +198,7 @@ fn main() -> Result<(), Error> {
                 let noise_texture = crt_shader_renderer.texture_view();
                 context.scaling_renderer.render(encoder, noise_texture);
 
-                crt_shader_renderer.update(&context.queue, WIDTH as f32, HEIGHT as f32, display_mode as f32, UPSCALE as f32, (UPSCALE/2) as f32, mask_type as f32, distortion as f32);
+                crt_shader_renderer.update(&context.queue, &shader_variables);
 
                 crt_shader_renderer.render(encoder, render_target, context.scaling_renderer.clip_rect());
 
@@ -277,31 +275,50 @@ fn main() -> Result<(), Error> {
                             }
 
                             if message == String::from("mode 0") {
-                                display_mode = 0;
+                                shader_variables.mode = 0.0;
                             }
 
                             if message == String::from("mode 1") {
-                                display_mode = 1;
+                                shader_variables.mode = 1.0;
                             }
 
                             if message == String::from("mode 2") {
-                                display_mode = 2;
+                                shader_variables.mode = 2.0;
                             }
 
                             if message == String::from("dist 0") {
-                                distortion = 0;
+                                shader_variables.horiz_distortion = 0.0;
+                                shader_variables.vert_distortion = 0.0;
                             }
 
                             if message == String::from("dist 1") {
-                                distortion = 42;
+                                shader_variables.horiz_distortion = 32.0*(4.0/3.0);
+                                shader_variables.vert_distortion = 32.0;
                             }
 
                             if message == String::from("dist 2") {
-                                distortion = 16;
+                                shader_variables.horiz_distortion = 16.0*(4.0/3.0);
+                                shader_variables.vert_distortion = 16.0;
                             }
 
                             if message == String::from("dist 3") {
-                                distortion = 2;
+                                shader_variables.horiz_distortion = 8.0*(4.0/3.0);
+                                shader_variables.vert_distortion = 8.0;
+                            }
+
+                            if message == String::from("dist 4") {
+                                shader_variables.horiz_distortion = 2.0*(4.0/3.0);
+                                shader_variables.vert_distortion = 2.0;
+                            }
+
+                            if message == String::from("dist 5") {
+                                shader_variables.horiz_distortion = 1.0*(4.0/3.0);
+                                shader_variables.vert_distortion = 1.0;
+                            }
+
+                            if message == String::from("dist 6") {
+                                shader_variables.horiz_distortion = 0.5*(4.0/3.0);
+                                shader_variables.vert_distortion = 0.5;
                             }
                         }
                         
