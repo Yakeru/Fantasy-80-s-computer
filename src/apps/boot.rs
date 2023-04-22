@@ -1,12 +1,8 @@
-use std::{time::Duration, thread};
-
+use std::time::Duration;
 use app_macro_derive::AppMacro;
 use app_macro::AppResponse;
 use display_controller::DisplayController;
-use rodio::{OutputStream, Sink};
 use winit_input_helper::WinitInputHelper;
-
-use crate::sound::{play::play, notes::*};
 
 #[derive(AppMacro)]
 pub struct Boot {

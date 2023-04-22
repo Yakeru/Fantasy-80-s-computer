@@ -13,6 +13,15 @@ name = "clock"
 version = "0.1.0"
 
 [[package]]
+name = "display_controller"
+version = "0.1.0"
+dependencies = [
+ "clock",
+ "rand",
+ "unicode",
+]
+
+[[package]]
 name = "getrandom"
 version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -68,15 +77,6 @@ dependencies = [
 [[package]]
 name = "unicode"
 version = "0.1.0"
-
-[[package]]
-name = "virtual_frame_buffer"
-version = "0.1.0"
-dependencies = [
- "clock",
- "rand",
- "unicode",
-]
 
 [[package]]
 name = "wasi"

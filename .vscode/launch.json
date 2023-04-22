@@ -5,11 +5,12 @@
     "version": "0.2.0",
     "configurations": [
         
+        
         {
             "name": "(Windows) Launch",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/target/debug/windows_project.exe",
+            "program": "${workspaceFolder}/target/debug/fantasy_cpc.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
@@ -19,12 +20,12 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'windows_project'",
+            "name": "Debug executable 'fantasy_cpc'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=windows_project",
-                    "--package=windows_project"
+                    "--bin=fantasy_cpc",
+                    "--package=fantasy_cpc"
                 ],
                 "filter": {
                     "kind": "bin"
@@ -36,13 +37,13 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'windows_project'",
+            "name": "Debug unit tests in executable 'fantasy_cpc'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=windows_project",
-                    "--package=windows_project"
+                    "--bin=fantasy_cpc",
+                    "--package=fantasy_cpc"
                 ],
                 "filter": {
                     "kind": "bin"

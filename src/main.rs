@@ -6,7 +6,7 @@ use display_controller::{*, config::*};
 use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use winit_input_helper::WinitInputHelper;
-use std::{time::Instant, thread};
+use std::thread;
 use winit::{
     dpi::{PhysicalSize, Position, PhysicalPosition},
     event_loop::{ControlFlow, EventLoop},
@@ -62,7 +62,7 @@ fn main() -> Result<(), Error> {
     // This project was conceived with a recycled QHD iPAD pannel in mind
     // But winit can be set-up anyway you want.
     let event_loop = EventLoop::new();
-    let builder = WindowBuilder::new()
+    let window_builder = WindowBuilder::new()
         .with_decorations(true)
         .with_inner_size(PhysicalSize::new(
             config::WIDTH as i32,
@@ -71,7 +71,7 @@ fn main() -> Result<(), Error> {
         .with_title("Fantasy CPC")
         .with_resizable(false)
         .with_position(Position::Physical(PhysicalPosition::new(5, 5)));
-    let window = builder
+    let window = window_builder
         .build(&event_loop)
         .expect("Window creation failed !");
 
@@ -131,7 +131,7 @@ fn main() -> Result<(), Error> {
 
     // A crt renderer using pixels upscaler and a CRT shader in WGSL
     let mut shader_variables: ShaderVariables = ShaderVariables::new();
-    let crt_shader_renderer = CrtRenderer::new(&pixels, &shader_variables)?;
+    let crt_renderer = CrtRenderer::new(&pixels, &shader_variables)?;
 
     // ****************************************************** APPS SETUP ***********************************************
     
@@ -144,13 +144,13 @@ fn main() -> Result<(), Error> {
     let mut shell = Box::new(Shell::new()); 
     shell.set_state(true, true);
 
-    // To be managed properly, apps must be added to that list.
-    // The main goes through the list and updates/renders the apps according to their statuses.
-    let mut app_list: Vec<Box<dyn AppMacro>> = Vec::new();
-
     // ********* //
     // The apps  //
     // ********* //
+
+    // To be managed properly, apps must be added to that list.
+    // The main goes through the list and updates/renders the apps according to their statuses.
+    let mut app_list: Vec<Box<dyn AppMacro>> = Vec::new();
 
     // BOOT APP, not really an app, just plays the animation at startup, and when "reboot" command is sent
     let boot = Box::new(Boot::new());
@@ -167,13 +167,11 @@ fn main() -> Result<(), Error> {
     // MANDELBROT
     let mandelbrot = Box::new(Mandelbrot::new());
     app_list.push(mandelbrot);
-    
-    let mut frame_time_100: Vec<u128> = Vec::new();
 
     // ****************************************************** MAIN WINIT EVENT LOOP ***********************************************
     
     let mut input = WinitInputHelper::new();
-    
+
     //The event loop here can be seen as the "bios + boot rom + console" part of the Fantasy computer.
     //It initialises the display_controller, Console 0 and Shell.
     //If no app is running/rendering, it defaults back to running/rendering the Console 0 and Shell.
@@ -182,24 +180,16 @@ fn main() -> Result<(), Error> {
     //It reads the messages returned by the apps and displays them to Console 0.
     event_loop.run(move |event, _, control_flow| {
 
-        // let now = Instant::now();
-        // let plop = Duration::from_millis(2);
-        //*control_flow = ControlFlow::WaitUntil(now.checked_add(plop).unwrap());
         *control_flow = ControlFlow::Poll; //Poll is synchronized with V-Sync
 
         if let Event::RedrawRequested(_) = event {
-                    
             let render_result = pixels.render_with(|encoder, render_target, context| {
-                let noise_texture = crt_shader_renderer.texture_view();
-                context.scaling_renderer.render(encoder, noise_texture);
-
-                crt_shader_renderer.update(&context.queue, &shader_variables);
-
-                crt_shader_renderer.render(encoder, render_target, context.scaling_renderer.clip_rect());
-
+                let texture = crt_renderer.texture_view();
+                context.scaling_renderer.render(encoder, texture);
+                crt_renderer.update(&context.queue, &shader_variables);
+                crt_renderer.render(encoder, render_target, context.scaling_renderer.clip_rect());
                 Ok(())
             });
-
             if let Err(err) = render_result {
                 println!("Rendering error : {}", err);
                 *control_flow = ControlFlow::Exit;
@@ -211,8 +201,7 @@ fn main() -> Result<(), Error> {
 
             system_clock.update();
 
-            //println!("second tick: {}, half second tick: {}, frames: {}", system_clock.second_tick, system_clock.half_second_tick, system_clock.get_frame_count());
-
+            // If user clicks on cross to close window for example
             if input.close_requested() || input.destroyed() {
                 *control_flow = ControlFlow::Exit
             }
@@ -324,32 +313,14 @@ fn main() -> Result<(), Error> {
                 None => ()
             }
 
-            // Render virtual frame buffer to pixels frame buffer with upscaling and CRT effect
-            let start = Instant::now();
-
+            //Combine all the layers, render text, render sprites, etc...
+            //into pixel's frame buffer
             display_controller.render(pixels.frame_mut());
-                    
-            frame_time_100.push(start.elapsed().as_micros());
             
-            if frame_time_100.len() == 100 {
-                
-                let mut total_time: u128 = 0;
-                
-                for time in &frame_time_100 {
-                    total_time += time;
-                }
-
-                let avg = total_time/100;
-
-                println!("Render time: {} micros", avg);
-                frame_time_100.clear();
-            }
-            
-            //pixels.render().expect("Pixels render oups");
             window.request_redraw();
             system_clock.count_frame();
 
-            // Reset input buffers for next loop
+            // Reset mouse delta for next loop/frame
             mouse_move_delta.0 = 0.0;
             mouse_move_delta.1 = 0.0;
         }
