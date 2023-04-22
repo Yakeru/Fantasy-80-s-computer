@@ -13,7 +13,6 @@ pub struct Shell {
     name: String,
     color: u8,
     bkg_color: u8,
-    //last_character_received: Option<char>,
     clear_text_layer: bool,
     command: Vec<char>,
     // command_history: Vec<String>,
@@ -106,10 +105,8 @@ impl Shell {
     }
 
     pub fn init_app(&mut self, _clock: &Clock, dc: &mut DisplayController) {
-        dc.get_console_mut().pos_x = 0;
-        dc.get_console_mut().pos_y = 0;
-        dc.get_console_mut().set_col_count(TEXT_COLUMNS);
-        dc.get_console_mut().set_row_count(TEXT_ROWS);
+        dc.get_console_mut().set_coordinates((0, 0));
+        dc.get_console_mut().set_size((TEXT_COLUMNS, TEXT_ROWS));
         dc.get_console_mut().clear();
         dc.get_console_mut().push_string(SPLASH);
         dc.get_console_mut().push_string(SHELL_START_MESSAGE);
@@ -153,12 +150,10 @@ impl Shell {
             }
         }
 
-        if inputs.key_released(VirtualKeyCode::Return) {
+        if inputs.key_pressed_os(VirtualKeyCode::Return) {
             let response = self.interpret_command(self.command.iter().cloned().collect::<String>());
             let message_string = response.get_message().clone();
             if message_string.is_some() {
-                dc.get_console_mut().push_char('\u{000D}');
-                dc.get_console_mut().push_string(&message_string.unwrap());
                 dc.get_console_mut().push_char('\u{000D}');
                 dc.get_console_mut().push_char('>');
             } else {
@@ -173,7 +168,6 @@ impl Shell {
     }
 
     pub fn draw_app(&mut self, _inputs: &WinitInputHelper, _clock: &Clock, dc: &mut DisplayController) {
-        dc.clear(WHITE);
         dc.get_console_mut().display = true;
     }
 

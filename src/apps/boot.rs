@@ -29,18 +29,35 @@ impl Boot {
          }
     }
     
-    pub fn init_app(&mut self, clock: &Clock, _dc: &mut DisplayController) {
+    pub fn init_app(&mut self, clock: &Clock, dc: &mut DisplayController) {
+        dc.get_console_mut().display = false;
         self.frame_count = 0;
         self.starting_time = clock.total_running_time;
     }
 
     pub fn update_app(
         &mut self,
-        _inputs: &WinitInputHelper,
-        _clock: &Clock,
-        _dc: &mut DisplayController,
+        inputs: &WinitInputHelper,
+        clock: &Clock,
+        dc: &mut DisplayController,
     ) -> Option<AppResponse> {
+        if clock.total_running_time - self.starting_time >= Duration::new(6, 0) {
+            self.quit_app(dc);
+        }
+
+        if inputs.key_pressed(VirtualKeyCode::Escape) {
+            self.quit_app(dc);
+        }
+
         return None;
+    }
+
+    fn quit_app(&mut self, dc: &mut DisplayController) {
+        self.set_state(false, false);
+        self.initialized = false;
+        dc.set_brightness(255);
+        dc.clear(BLUE);
+        dc.get_text_layer_mut().clear();
     }
 
     pub fn draw_app(
@@ -76,15 +93,6 @@ impl Boot {
         if clock.total_running_time - self.starting_time >= Duration::new(3, 0) && clock.total_running_time - self.starting_time < Duration::new(6, 0) {
             dc.draw_loading_overscan_artefacts();
         }
-        
-        if clock.total_running_time - self.starting_time >= Duration::new(6, 0) {
-            dc.get_text_layer_mut().clear();
-            dc.clear(0);
-            self.drawing = false;
-            self.updating = false;
-            self.initialized = false;
-        }
-
         self.frame_count += 1;
     }
 }

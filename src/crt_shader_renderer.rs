@@ -8,8 +8,8 @@ use crate::shader_variables::ShaderVariables;
 
 pub(crate) struct CrtRenderer {
     texture_view: wgpu::TextureView,
-    sampler: wgpu::Sampler,
-    bind_group_layout: wgpu::BindGroupLayout,
+    _sampler: wgpu::Sampler,
+    _bind_group_layout: wgpu::BindGroupLayout,
     bind_group: wgpu::BindGroup,
     render_pipeline: wgpu::RenderPipeline,
     variables_buffer: wgpu::Buffer,
@@ -150,8 +150,8 @@ impl CrtRenderer {
 
         Ok(Self {
             texture_view,
-            sampler,
-            bind_group_layout,
+            _sampler: sampler,
+            _bind_group_layout: bind_group_layout,
             bind_group,
             render_pipeline,
             variables_buffer,
@@ -163,7 +163,7 @@ impl CrtRenderer {
         &self.texture_view
     }
 
-    pub(crate) fn resize(
+    pub(crate) fn _resize(
         &mut self,
         pixels: &pixels::Pixels,
         variables: &ShaderVariables,
@@ -171,9 +171,9 @@ impl CrtRenderer {
         self.texture_view = create_texture_view(pixels, variables.screen_width as u32, variables.screen_height as u32)?;
         self.bind_group = create_bind_group(
             pixels.device(),
-            &self.bind_group_layout,
+            &self._bind_group_layout,
             &self.texture_view,
-            &self.sampler,
+            &self._sampler,
             &self.variables_buffer,
         );
 

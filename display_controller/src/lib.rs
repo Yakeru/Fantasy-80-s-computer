@@ -6,7 +6,7 @@ use config::*;
 use console::Console;
 use rand::Rng;
 use sprite::Sprite;
-use text_layer::{TextLayer, text_index_to_frame_coord, text_coord_to_frame_coord, TextLayerChar};
+use text_layer::{TextLayer, text_index_to_frame_coord, TextLayerChar, index_to_text_coord};
 
 pub mod config;
 pub mod characters_rom;
@@ -75,9 +75,7 @@ impl DisplayController {
             line_scroll_list: [0; VIRTUAL_HEIGHT],
             brightness: 255,
             text_layer: TextLayer::new(),
-            console: Console::new(10, 10, 30, 10, 
-                YELLOW, TRUE_BLUE, TextLayerChar { c: '\u{25AE}', color: YELLOW, bkg_color: TRUE_BLUE, 
-                swap: false, blink: true, shadowed: false }, false, false),
+            console: Console::new(),
             sprites: Vec::new(),
             clock: Clock::new()
         }
@@ -101,6 +99,10 @@ impl DisplayController {
 
     pub fn get_console_mut(&mut self) -> &mut Console {
         &mut self.console
+    }
+
+    pub fn get_console(&self) -> &Console {
+        &self.console
     }
 
     pub fn get_frame(&self) -> &Box<[u8]> {
@@ -242,10 +244,10 @@ impl DisplayController {
         //Text layer
         self.text_layer_renderer();
         
-        //Console
-        if self.console.display {
-            self.console_renderer();
-        }
+        // //Console
+        // if self.console.display {
+        //     self.console_renderer();
+        // }
 
         //Line offset
         self.apply_line_scroll_effect();
@@ -306,54 +308,30 @@ impl DisplayController {
     }
     
     fn text_layer_renderer(&mut self) {
+        let mut console_char_index = 0;
+
         for char_counter in 0..self.text_layer.get_len() {
-    
-            let text_layer_char = self.text_layer.get_char_map()[char_counter];
             let frame_coord = text_index_to_frame_coord(char_counter);
-    
-            match text_layer_char {
-    
-                Some(char_struct) => {
-                    self.text_layer_char_renderer(&char_struct, frame_coord.0, frame_coord.1);
-                },
-                None => ()
-            }
-        }
-    }
-    
-    
-    pub fn console_renderer(&mut self) {
-        let empty_text_cell = TextLayerChar {
-            c: ' ', color: self.console.default_color, bkg_color: self.console.default_bkg_color, 
-            swap: false, blink: false, shadowed: false
-        };
-        let cursor = self.console.cursor;
-        
-        let mut char_index = 0;
-        for row_count in 0..self.console.get_row_count() {
-            let char_y = self.console.pos_y + row_count;        
-            for col_count in 0..self.console.get_col_count() {
-                let char_x = self.console.pos_x + col_count;
-                let frame_coord = text_coord_to_frame_coord(char_x, char_y);
-                let char = self.console.get_content().get(char_index).copied();
-                if char.is_some() {
-                    match char.unwrap() {
-                        Some(char) => {
-                            self.text_layer_char_renderer(&char, frame_coord.0, frame_coord.1);
-                        },
-                        None => {
-                            self.text_layer_char_renderer(&empty_text_cell, frame_coord.0, frame_coord.1);
-                        }
-                    }
-                } else {
-                    self.text_layer_char_renderer(&empty_text_cell, frame_coord.0, frame_coord.1);
+            let char_coord = index_to_text_coord(char_counter);
+
+            //if text coord inside console, render console, else render text layer buffer
+            if self.console.display 
+            && char_coord.0 >= self.console.get_coordinates().0 
+            && char_coord.0 < self.console.get_coordinates().0 + self.console.get_size().0
+            && char_coord.1 >= self.console.get_coordinates().1 
+            && char_coord.1 < self.console.get_coordinates().1 + self.console.get_size().1
+            {
+                let char = self.console.get_formatted_buffer()[console_char_index];
+                self.text_layer_char_renderer(&char, frame_coord.0, frame_coord.1);
+                console_char_index += 1;
+            } else {
+                let text_layer_char = self.text_layer.get_char_map()[char_counter];
+                match text_layer_char {
+                    Some(char_struct) => {
+                        self.text_layer_char_renderer(&char_struct, frame_coord.0, frame_coord.1);
+                    },
+                    None => ()
                 }
-    
-                if char_index == self.console.get_content().len() {
-                    self.text_layer_char_renderer(&cursor, frame_coord.0, frame_coord.1);
-                }
-    
-                char_index += 1;
             }
         }
     }

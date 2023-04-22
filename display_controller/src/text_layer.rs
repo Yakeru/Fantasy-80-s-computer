@@ -97,6 +97,12 @@ pub const fn text_coord_to_index(x: usize, y: usize) -> usize {
     (y * TEXT_COLUMNS + x) % (TEXT_COLUMNS * TEXT_ROWS)
 }
 
+pub const fn index_to_text_coord(index: usize) -> (usize, usize) {
+    let y: usize = index / TEXT_COLUMNS;
+    let x: usize = index % TEXT_COLUMNS;
+    (x, y)
+}
+
 pub const fn text_coord_to_frame_coord(x: usize, y: usize) -> (usize, usize) {
     let horizontal_border: usize = (VIRTUAL_WIDTH - TEXT_COLUMNS * CHARACTER_WIDTH) / 2;
     let vertical_border: usize = (VIRTUAL_HEIGHT - TEXT_ROWS * CHARACTER_HEIGHT) / 2;

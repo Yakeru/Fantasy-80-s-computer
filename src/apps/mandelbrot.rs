@@ -5,17 +5,12 @@ const MIN_ITER: usize = 50;
 const MAX_X_RANGE: f64 = 2.47;
 const MAX_Y_RANGE: f64 = 1.8976471;
 const MIN_RANGE: f64 = 0.0000000000000007;
-const X_COORD: f64 = -1.1933507301923187;
-const Y_COORD: f64 = -0.1590146002746485;
+const X_COORD: f64 = -1.193350730214532;
+const Y_COORD: f64 = -0.15901460025672767;
 const EMPTY_RATIO_TRIGGER: f64 = 0.15;
 const ANTI_EMPTY_RATIO_TRIGGER: f64 = EMPTY_RATIO_TRIGGER * 0.65;
 const EMPTY_RATIO_DELTA_TRIGGER: f64 = 0.001;
 const RANGE_DIVIDER_AKA_SPEED: f64 = 100.0;
-
-// const WARM_PALETTE: Vec<u8> = 
-// const COOL_PALETTE: Vec<u8> = ;
-// const TREE_PALETTE: Vec<u8> = ;
-// const CANYON_PALETTE: Vec<u8> = ;
 
 struct ColorTheme {
     palette1: Vec<u8>,
@@ -471,7 +466,6 @@ impl Mandelbrot {
     }
 
     fn swap_palette(&mut self) {
-
         self.current_theme += 1;
         if self.current_theme >= self.themes.len() {
             self.current_theme = 0;
