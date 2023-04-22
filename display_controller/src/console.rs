@@ -49,14 +49,14 @@ impl Console {
     }
 
     pub fn set_size(&mut self, size: (usize, usize)) {
-        let col_count = if size.0 < 10 {10} else if size.0 > TEXT_COLUMNS {TEXT_COLUMNS} else {size.0};
-        let row_count = if size.1 < 3 {3} else if size.1 > TEXT_ROWS {TEXT_ROWS} else {size.1};
+        let col_count = size.0.clamp(10, TEXT_COLUMNS);
+        let row_count = size.1.clamp(3, TEXT_ROWS);
         self.screen_size = (col_count, row_count)
     }
 
     pub fn set_coordinates(&mut self, xy_coord: (usize, usize)) {
-        let x = if xy_coord.0  == usize::MAX {0} else if xy_coord.0 > TEXT_COLUMNS - self.screen_size.0 {TEXT_COLUMNS - self.screen_size.0} else {xy_coord.0};
-        let y = if xy_coord.1  == usize::MAX {0} else if xy_coord.1 > TEXT_ROWS - self.screen_size.1 {TEXT_ROWS - self.screen_size.1} else {xy_coord.1};
+        let x = xy_coord.0.clamp(0, TEXT_COLUMNS - self.screen_size.0);
+        let y = xy_coord.1.clamp(0, TEXT_ROWS - self.screen_size.1);
         self.screen_coordinates = (x, y);
     }
 

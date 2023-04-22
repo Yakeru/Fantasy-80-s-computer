@@ -30,10 +30,6 @@ use crate::apps::mandelbrot::*;
 mod sound;
 use crate::play::play;
 
-//Settings
-//const FRAME_TIME_MS: u128 = 16; //ms per frame : 16 = 60fps, 32 = 30fps, 1000 = 1fps
-//const FRAMES_PER_SEC: u128 = 60;
-
 fn main() -> Result<(), Error> {
 
     // ************************************************* SOUND TEST **********************************************    
@@ -44,20 +40,19 @@ fn main() -> Result<(), Error> {
     //let channel_3 = Sink::try_new(&stream_handle).unwrap();
     //let channel_4 = Sink::try_new(&stream_handle).unwrap();
 
+    let mut melody_1: Vec<Option<(f32, f32)>> = Vec::new();
+    melody_1.push(Some((0.0, 10.0)));
+    melody_1.push(Some((C5, 1.0)));
+    melody_1.push(None);
+    melody_1.push(Some((C5, 1.0)));
+    melody_1.push(Some((F5, 2.0)));
+
+    let mut melody_2: Vec<Option<(f32, f32)>> = Vec::new();
+    melody_2.push(Some((0.0, 10.0)));
+    melody_2.push(Some((0.0, 3.0)));
+    melody_2.push(Some((A5, 2.0)));
+
     let _handle = thread::Builder::new().name("sound".to_string()).spawn(move || {
-
-        let mut melody_1: Vec<Option<(f32, f32)>> = Vec::new();
-        melody_1.push(Some((0.0, 10.0)));
-        melody_1.push(Some((C5, 1.0)));
-        melody_1.push(None);
-        melody_1.push(Some((C5, 1.0)));
-        melody_1.push(Some((F5, 2.0)));
-
-        let mut melody_2: Vec<Option<(f32, f32)>> = Vec::new();
-        melody_2.push(Some((0.0, 10.0)));
-        melody_2.push(Some((0.0, 3.0)));
-        melody_2.push(Some((A5, 2.0)));
-
         play(480.0, &melody_1, &melody_2, &channel_1, &channel_2);
     });
     
@@ -272,7 +267,7 @@ fn main() -> Result<(), Error> {
                             };
 
                             if message == String::from("reboot") {
-                                shell.reboot();
+                                shell.init_app(&system_clock, &mut display_controller);
                             }
 
                             if message == String::from("mode 0") {

@@ -170,8 +170,4 @@ impl Shell {
     pub fn draw_app(&mut self, _inputs: &WinitInputHelper, _clock: &Clock, dc: &mut DisplayController) {
         dc.get_console_mut().display = true;
     }
-
-    pub fn reboot(&mut self) {
-        self.initialized = false;
-    }
 }

@@ -1,9 +1,12 @@
-use std::time::Duration;
+use std::{time::Duration, thread};
 
 use app_macro_derive::AppMacro;
 use app_macro::AppResponse;
 use display_controller::DisplayController;
+use rodio::{OutputStream, Sink};
 use winit_input_helper::WinitInputHelper;
+
+use crate::sound::{play::play, notes::*};
 
 #[derive(AppMacro)]
 pub struct Boot {
@@ -68,12 +71,47 @@ impl Boot {
     ) {
         dc.get_console_mut().display = false;
 
-        //CRT warm up, brightness increases from 0 to 255 in 2 seconds
+        //CRT warm up, brightness increases from 0 to 255 and un-distord picture
         let brigthness = if clock.total_running_time - self.starting_time >= Duration::new(2, 0) {
             255
         } else {
             ((clock.total_running_time - self.starting_time).as_millis() * 255 / 2000) as u8
         };
+
+        // if message == String::from("dist 0") {
+        //     shader_variables.horiz_distortion = 0.0;
+        //     shader_variables.vert_distortion = 0.0;
+        // }
+
+        // if message == String::from("dist 1") {
+        //     shader_variables.horiz_distortion = 32.0*(4.0/3.0);
+        //     shader_variables.vert_distortion = 32.0;
+        // }
+
+        // if message == String::from("dist 2") {
+        //     shader_variables.horiz_distortion = 16.0*(4.0/3.0);
+        //     shader_variables.vert_distortion = 16.0;
+        // }
+
+        // if message == String::from("dist 3") {
+        //     shader_variables.horiz_distortion = 8.0*(4.0/3.0);
+        //     shader_variables.vert_distortion = 8.0;
+        // }
+
+        // if message == String::from("dist 4") {
+        //     shader_variables.horiz_distortion = 2.0*(4.0/3.0);
+        //     shader_variables.vert_distortion = 2.0;
+        // }
+
+        // if message == String::from("dist 5") {
+        //     shader_variables.horiz_distortion = 1.0*(4.0/3.0);
+        //     shader_variables.vert_distortion = 1.0;
+        // }
+
+        // if message == String::from("dist 6") {
+        //     shader_variables.horiz_distortion = 0.5*(4.0/3.0);
+        //     shader_variables.vert_distortion = 0.5;
+        // }
 
         dc.set_brightness(brigthness);
 
