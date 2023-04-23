@@ -7,8 +7,8 @@ pub trait AppMacro {
     fn get_name(&self) -> &str;
     fn set_state(&mut self, updating: bool, drawing: bool);
     fn get_state(&self) -> (bool, bool);
-    fn update(&mut self, inputs: &WinitInputHelper, clock: &Clock, display_controller: &mut DisplayController) -> Option<AppResponse>;
-    fn draw(&mut self, inputs: &WinitInputHelper, clock: &Clock, display_controller: &mut DisplayController);
+    fn update(&mut self, inputs: Option<&WinitInputHelper>, clock: &Clock, display_controller: &mut DisplayController) -> Option<AppResponse>;
+    fn draw(&mut self, clock: &Clock, display_controller: &mut DisplayController);
 }
 
 #[derive(Clone)]

@@ -115,10 +115,12 @@ impl Shell {
 
     pub fn update_app(
         &mut self,
-        inputs: &WinitInputHelper,
+        inputs: Option<&WinitInputHelper>,
         _clock: &Clock,
         dc: &mut DisplayController
     ) -> Option<AppResponse> {
+
+        if inputs.is_none() {return None};
 
         if self.clear_text_layer {
             dc.get_console_mut().clear();
@@ -126,8 +128,8 @@ impl Shell {
             self.clear_text_layer = false;
         }
 
-        if !inputs.text().is_empty() {
-            match inputs.text().get(0) {
+        if !inputs.unwrap().text().is_empty() {
+            match inputs.unwrap().text().get(0) {
                 Some(TextChar::Char(c)) => { 
                     if *c == unicode::ESCAPE {
                         dc.get_console_mut().push_char('\u{000D}');
@@ -150,10 +152,12 @@ impl Shell {
             }
         }
 
-        if inputs.key_pressed_os(VirtualKeyCode::Return) {
+        if inputs.unwrap().key_pressed_os(VirtualKeyCode::Return) {
             let response = self.interpret_command(self.command.iter().cloned().collect::<String>());
             let message_string = response.get_message().clone();
             if message_string.is_some() {
+                dc.get_console_mut().push_char('\u{000D}');
+                dc.get_console_mut().push_string(&(message_string.unwrap()));
                 dc.get_console_mut().push_char('\u{000D}');
                 dc.get_console_mut().push_char('>');
             } else {
@@ -167,7 +171,7 @@ impl Shell {
         return None;
     }
 
-    pub fn draw_app(&mut self, _inputs: &WinitInputHelper, _clock: &Clock, dc: &mut DisplayController) {
+    pub fn draw_app(&mut self, _clock: &Clock, dc: &mut DisplayController) {
         dc.get_console_mut().display = true;
     }
 }

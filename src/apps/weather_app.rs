@@ -65,7 +65,7 @@ impl WeatherApp {
     }
 
     fn update_app(
-        &mut self, _inputs: &WinitInputHelper, _clock: &Clock, _dc: &mut DisplayController
+        &mut self, _inputs: Option<&WinitInputHelper>, _clock: &Clock, _dc: &mut DisplayController
     ) -> Option<AppResponse> {
         let response = AppResponse::new();
 
@@ -80,7 +80,7 @@ impl WeatherApp {
         return Some(response);
     }
 
-    fn draw_app(&mut self, _inputs: &WinitInputHelper, _clock: &Clock, dc: &mut DisplayController) {
+    fn draw_app(&mut self, _clock: &Clock, dc: &mut DisplayController) {
         dc.get_text_layer_mut().clear();
         dc.clear(BLACK);
         dc.get_console_mut().display = false;

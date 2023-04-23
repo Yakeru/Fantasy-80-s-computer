@@ -215,26 +215,26 @@ fn main() -> Result<(), Error> {
                 // If app is running and drawing (in focus), call update with keyboard inputs and dont render shell.
                 if app[0].get_state().0 && app[0].get_state().1 {
                     show_shell = false;
-                    app_response = app[0].update(&input, &system_clock, &mut display_controller);
+                    app_response = app[0].update(Some(&input), &system_clock, &mut display_controller);
 
                     // Check again if app is drawing : if the app update just above stops the app,
                     // we don't want to draw
                     if app[0].get_state().1 {
-                        app[0].draw(&input, &system_clock, &mut display_controller);
+                        app[0].draw(&system_clock, &mut display_controller);
                     }
                 }
                 
                 // If app is running but not drawing (running in the background), call update without keyboard inputs.
                 // dont draw.
                 else if app[0].get_state().0 && !app[0].get_state().1 {
-                    app_response = app[0].update(&input, &system_clock, &mut display_controller);
+                    app_response = app[0].update(None, &system_clock, &mut display_controller);
                 }
             }
 
             // If no app is in focus, run the shell
             if show_shell {
-                app_response = shell.update(&input, &system_clock, &mut display_controller);
-                shell.draw(&input, &system_clock, &mut display_controller);
+                app_response = shell.update(Some(&input), &system_clock, &mut display_controller);
+                shell.draw(&system_clock, &mut display_controller);
             }
 
             // Process app response

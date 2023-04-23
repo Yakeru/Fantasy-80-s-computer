@@ -36,7 +36,7 @@ impl Boot {
 
     pub fn update_app(
         &mut self,
-        inputs: &WinitInputHelper,
+        inputs: Option<&WinitInputHelper>,
         clock: &Clock,
         dc: &mut DisplayController,
     ) -> Option<AppResponse> {
@@ -44,7 +44,7 @@ impl Boot {
             self.quit_app(dc);
         }
 
-        if inputs.key_pressed(VirtualKeyCode::Escape) {
+        if inputs.is_some() && inputs.unwrap().key_pressed(VirtualKeyCode::Escape) {
             self.quit_app(dc);
         }
 
@@ -61,7 +61,6 @@ impl Boot {
 
     pub fn draw_app(
         &mut self,
-        _inputs: &WinitInputHelper,
         clock: &Clock,
         dc: &mut DisplayController,
     ) {

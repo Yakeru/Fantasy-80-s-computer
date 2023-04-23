@@ -97,7 +97,7 @@ impl Life {
 
     pub fn update_app(
         &mut self,
-        inputs: &WinitInputHelper,
+        inputs: Option<&WinitInputHelper>,
         clock: &Clock,
         display_controller: &mut DisplayController,
     ) -> Option<AppResponse> {
@@ -114,12 +114,11 @@ impl Life {
 
     pub fn draw_app(
         &mut self,
-        inputs: &WinitInputHelper,
         clock: &Clock,
         display_controller: &mut DisplayController,
     ) {
         if self.welcome_screen {
-            self.draw_welcome_screen(inputs, clock, display_controller);
+            self.draw_welcome_screen(clock, display_controller);
         } else if self.game {
             self.draw_game(display_controller);
         } else if self.menu {
@@ -184,18 +183,25 @@ impl Life {
 
     fn update_welcome_screen(
         &mut self,
-        inputs: &WinitInputHelper,
+        inputs: Option<&WinitInputHelper>,
         _display_controller: &mut DisplayController,
     ) {
-        if inputs.key_pressed(VirtualKeyCode::Escape) {
+        if inputs.is_none() {return}
+        let user_inputs = inputs.unwrap();
+
+        if user_inputs.key_pressed(VirtualKeyCode::Escape) {
             self.set_state(false, false);
-        } else if inputs.key_pressed(VirtualKeyCode::Key1) {
+        }
+        
+        if user_inputs.key_pressed(VirtualKeyCode::Key1) {
             self.welcome_screen = false;
             self.menu = false;
             self.game = true;
             self.random_game_mode = true;
             self.restart_sim();
-        } else if inputs.key_pressed(VirtualKeyCode::Key2) {
+        } 
+        
+        if user_inputs.key_pressed(VirtualKeyCode::Key2) {
             self.welcome_screen = false;
             self.menu = true;
             self.game = false;
@@ -206,7 +212,6 @@ impl Life {
 
     fn draw_welcome_screen(
         &mut self,
-        _inputs: &WinitInputHelper,
         clock: &Clock,
         display_controller: &mut DisplayController,
     ) {
@@ -338,15 +343,15 @@ impl Life {
 
     fn update_game(
         &mut self,
-        inputs: &WinitInputHelper,
+        inputs: Option<&WinitInputHelper>,
         clock: &Clock,
         display_controller: &mut DisplayController,
     ) {
-        if inputs.key_released(VirtualKeyCode::C) {
+        if inputs.is_some() && inputs.unwrap().key_pressed(VirtualKeyCode::C) {
             self.restart_sim();
         }
 
-        if inputs.key_released(VirtualKeyCode::Escape) {
+        if inputs.is_some() && inputs.unwrap().key_pressed(VirtualKeyCode::Escape) {
             self.init_app(clock, display_controller);
         }
 
@@ -427,22 +432,36 @@ impl Life {
 
     fn update_menu(
         &mut self,
-        inputs: &WinitInputHelper,
+        inputs: Option<&WinitInputHelper>,
         _display_controller: &mut DisplayController,
     ) {
-        if inputs.key_released(VirtualKeyCode::Escape) {
+
+        if inputs.is_none() {return}
+        let user_inputs = inputs.unwrap();
+
+        if user_inputs.key_pressed(VirtualKeyCode::Escape) {
             self.welcome_screen = true;
             self.menu = false;
             self.game = false;
-        } else if inputs.key_released(VirtualKeyCode::Left) {
+        } 
+        
+        if user_inputs.key_pressed(VirtualKeyCode::Left) {
             self.team_a_color -= 1;
-        } else if inputs.key_released(VirtualKeyCode::Right) {
+        }
+        
+        if user_inputs.key_pressed(VirtualKeyCode::Right) {
             self.team_a_color += 1;
-        } else if inputs.key_released(VirtualKeyCode::Up) {
+        }
+        
+        if user_inputs.key_pressed(VirtualKeyCode::Up) {
             self.team_b_color += 1;
-        } else if inputs.key_released(VirtualKeyCode::Down) {
+        }
+        
+        if user_inputs.key_pressed(VirtualKeyCode::Down) {
             self.team_b_color -= 1;
-        } else if inputs.key_released(VirtualKeyCode::Return) {
+        }
+        
+        if user_inputs.key_pressed(VirtualKeyCode::Return) {
             self.welcome_screen = false;
             self.menu = false;
             self.game = true;

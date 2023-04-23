@@ -177,7 +177,7 @@ impl Mandelbrot {
 
     pub fn update_app(
         &mut self,
-        inputs: &WinitInputHelper,
+        inputs: Option<&WinitInputHelper>,
         _clock: &Clock,
         dc: &mut DisplayController,
     ) -> Option<AppResponse> {
@@ -194,75 +194,88 @@ impl Mandelbrot {
 
     pub fn draw_app(
         &mut self,
-        inputs: &WinitInputHelper,
         clock: &Clock,
         dc: &mut DisplayController,
     ) {
-        // if self.welcome_screen {
-        //     self.draw_welcome_screen(inputs, clock, virtual_frame_buffer);
-        // } else if self.game {
-        //     self.draw_game(virtual_frame_buffer);
-        // } else if self.menu {
-        //     self.draw_menu(virtual_frame_buffer);
-        // }
-
-        self.draw_welcome_screen(inputs, clock, dc);
+        self.draw_welcome_screen(clock, dc);
     }
 
     fn update_welcome_screen(
         &mut self,
-        inputs: &WinitInputHelper,
+        inputs: Option<&WinitInputHelper>,
         _dc: &mut DisplayController,
     ) {
 
+        if inputs.is_none() {return}
+
+        let user_inputs = inputs.unwrap();
+        
         /*---------------------------------------------------------- */
         //                 choosing default scenarios
         /*---------------------------------------------------------- */
 
-        if inputs.key_pressed(VirtualKeyCode::Space) {
+        if user_inputs.key_pressed(VirtualKeyCode::Space) {
             self.pause = !self.pause;
             println!("x: {}, y: {}", self.mandel_x_center, self.mandel_y_center);
-        } else if inputs.key_pressed(VirtualKeyCode::Key1) {
+        } 
+        
+        if user_inputs.key_pressed(VirtualKeyCode::Key1) {
             self.reset();
             self.mandel_x_center = X_COORD;
             self.mandel_y_center = Y_COORD;
             self.current_theme = 2; //tree
-        } else if inputs.key_pressed(VirtualKeyCode::Key2) {
+        }
+        
+        if user_inputs.key_pressed(VirtualKeyCode::Key2) {
             self.reset();
             self.mandel_x_center = -0.749089134879074;
             self.mandel_y_center = 0.04575273713964573;
             self.current_theme = 1; //cool
-        } else if inputs.key_pressed(VirtualKeyCode::Key3) {
+        } 
+        
+        if user_inputs.key_pressed(VirtualKeyCode::Key3) {
             self.reset();
             self.mandel_x_center = -1.254716173206939;
             self.mandel_y_center = -0.03269356495238624;
             self.current_theme = 3; //canyon
-        } else if inputs.key_pressed(VirtualKeyCode::Key4) {
+        } 
+        
+        if user_inputs.key_pressed(VirtualKeyCode::Key4) {
             self.reset();
             self.mandel_x_center = 0.26781837605081366;
             self.mandel_y_center = -0.003918849643395729;
             self.current_theme = 0; //warm
-        } else if inputs.key_pressed(VirtualKeyCode::Key5) {
+        }
+        
+        if user_inputs.key_pressed(VirtualKeyCode::Key5) {
             self.reset();
             self.mandel_x_center = -0.10971550489778131;
             self.mandel_y_center = 0.8945121343911098;
             self.current_theme = 2; //tree
-        } else if inputs.key_pressed(VirtualKeyCode::Key6) {
+        }
+        
+        if user_inputs.key_pressed(VirtualKeyCode::Key6) {
             self.reset();
             self.mandel_x_center = -1.403277422173161;
             self.mandel_y_center = -0.00022314715329581908;
             self.current_theme = 2; //tree
-        } else if inputs.key_pressed(VirtualKeyCode::Key7) {
+        } 
+        
+        if user_inputs.key_pressed(VirtualKeyCode::Key7) {
             self.reset();
             self.mandel_x_center = -0.19827338980477996;
             self.mandel_y_center = -1.100975539162933;
             self.current_theme = 3; //canyon
-        } else if inputs.key_pressed(VirtualKeyCode::Key8) {
+        } 
+        
+        if user_inputs.key_pressed(VirtualKeyCode::Key8) {
             self.reset();
             self.mandel_x_center = -1.9425557680573255;
             self.mandel_y_center = 0.0; 
             self.current_theme = 1; //cool
-        } else if inputs.key_pressed(VirtualKeyCode::Key9) {
+        } 
+        
+        if user_inputs.key_pressed(VirtualKeyCode::Key9) {
             self.reset();
             self.mandel_x_center = 0.3514237590616519;
             self.mandel_y_center = -0.06386655970753488;
@@ -273,44 +286,56 @@ impl Mandelbrot {
         //                      Rendering controls 
         /*---------------------------------------------------------- */
 
-        else if inputs.key_pressed(VirtualKeyCode::Slash) {
+        if user_inputs.key_pressed(VirtualKeyCode::Slash) {
             self.reverse = !self.reverse;
-        } else if inputs.key_pressed(VirtualKeyCode::R) {
+        }
+        
+        if user_inputs.key_pressed(VirtualKeyCode::R) {
             self.reset();
-        } else if inputs.key_pressed(VirtualKeyCode::Comma) {
+        }
+        
+        if user_inputs.key_pressed(VirtualKeyCode::Comma) {
             self.max_iteration -= 10;
             if self.max_iteration <= MIN_ITER {self.max_iteration = MIN_ITER};
             println!("max_iteration: {}", self.max_iteration);
-        } else if inputs.key_pressed(VirtualKeyCode::Period) {
+        }
+        
+        if user_inputs.key_pressed(VirtualKeyCode::Period) {
             self.max_iteration += 10;
             println!("max_iteration: {}", self.max_iteration);
-        } else if inputs.key_pressed(VirtualKeyCode::P) {
+        } 
+        
+        if user_inputs.key_pressed(VirtualKeyCode::P) {
             self.swap_palette();
-        } else if inputs.key_pressed(VirtualKeyCode::F) {
+        }
+        
+        if user_inputs.key_pressed(VirtualKeyCode::F) {
             self.fuzzy = !self.fuzzy;
-        } else if inputs.key_pressed(VirtualKeyCode::X) {
+        }
+        
+        if user_inputs.key_pressed(VirtualKeyCode::X) {
             self.palette_rotation = !self.palette_rotation;
         }
 
         /*---------------------------------------------------------- */
         //                      Movement controls 
         /*---------------------------------------------------------- */
-        if inputs.key_pressed_os(VirtualKeyCode::Up) {
+        if user_inputs.key_pressed_os(VirtualKeyCode::Up) {
             self.mandel_y_center -= self.mandel_y_range/50.0;
             println!("x: {}, y: {}", self.mandel_x_center, self.mandel_y_center);
         }
 
-        if inputs.key_pressed_os(VirtualKeyCode::Down) {
+        if user_inputs.key_pressed_os(VirtualKeyCode::Down) {
             self.mandel_y_center += self.mandel_y_range/50.0;
             println!("x: {}, y: {}", self.mandel_x_center, self.mandel_y_center);
         } 
         
-        if inputs.key_pressed_os(VirtualKeyCode::Left) {
+        if user_inputs.key_pressed_os(VirtualKeyCode::Left) {
             self.mandel_x_center -= self.mandel_x_range/50.0;
             println!("x: {}, y: {}", self.mandel_x_center, self.mandel_y_center);
         } 
         
-        if inputs.key_pressed_os(VirtualKeyCode::Right) {
+        if user_inputs.key_pressed_os(VirtualKeyCode::Right) {
             self.mandel_x_center += self.mandel_x_range/50.0;
             println!("x: {}, y: {}", self.mandel_x_center, self.mandel_y_center);
         }
@@ -319,7 +344,6 @@ impl Mandelbrot {
 
     fn draw_welcome_screen(
         &mut self,
-        _inputs: &WinitInputHelper,
         clock: &Clock,
         dc: &mut DisplayController,
     ) {
