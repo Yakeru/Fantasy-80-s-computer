@@ -1,5 +1,5 @@
 use clock::Clock;
-use winit::{event::KeyboardInput, event_loop::ControlFlow};
+use winit::event_loop::ControlFlow;
 use display_controller::*;
 use winit_input_helper::WinitInputHelper;
 
@@ -16,42 +16,6 @@ pub struct AppResponse {
     pub event: Option<ControlFlow>,
     pub message: Option<String>,
 }
-
-#[derive(Clone, Copy)]
-pub struct AppInputs {
-    pub keyboard_input: Option<KeyboardInput>,
-    pub char_received: Option<char>,
-    pub mouse_move_delta: (f64, f64),
-    pub system_clock: Clock
-}
-
-// impl AppInputs {
-
-//     pub fn test(&self) {
-//         match self.keyboard_input {
-//             Some(input) => {
-//                 match input.virtual_keycode {
-//                     Some(code) => (),
-//                     None => ()
-//                 }
-//             },
-//             None => ()
-//         }
-//     }
-
-//     pub fn get_keyboard_input(&self) -> Option<KeyboardInput> {
-//         self.keyboard_input
-//     }
-
-//     pub fn get_char_received(&self) -> Option<char> {
-//         self.char_received
-//     }
-
-//     pub fn set_keyboard_input(&mut self, keyboardInput: KeyboardInput) {
-
-//     }
-
-// }
 
 impl AppResponse {
     pub fn new() -> AppResponse {

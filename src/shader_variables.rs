@@ -1,4 +1,4 @@
-use display_controller::config::{WIDTH, HEIGHT, UPSCALE};
+use display_controller::config::{WIDTH, HEIGHT};
 
 pub struct ShaderVariables {
     pub screen_width: f32,
@@ -17,8 +17,8 @@ impl ShaderVariables {
             screen_width: WIDTH as f32,
             screen_height: HEIGHT as f32,
             mode: 0.0,
-            scanline_interval: UPSCALE as f32,
-            mask_size: (UPSCALE/2) as f32,
+            scanline_interval: 6.0 as f32,
+            mask_size: 3.0 as f32,
             mask_type: 3.0,
             horiz_distortion: 0.0,
             vert_distortion: 0.0
