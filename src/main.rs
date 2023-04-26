@@ -32,35 +32,13 @@ use crate::play::play;
 
 fn main() -> Result<(), Error> {
 
-    // ************************************************* SOUND TEST **********************************************    
+    // ************************************************ SOUND INIT ************************************************
+    // First time sound is played, it takes a few seconds and gets de-sync'ed with the display
+    // So here is a function to play an empty sound for 1/10 s to "init" rodio
+    play::init_sound();
 
-    let (_stream, stream_handle) = OutputStream::try_default().unwrap();
-    let channel_1 = Sink::try_new(&stream_handle).unwrap();
-    let channel_2 = Sink::try_new(&stream_handle).unwrap();
-    //let channel_3 = Sink::try_new(&stream_handle).unwrap();
-    //let channel_4 = Sink::try_new(&stream_handle).unwrap();
-
-    let mut melody_1: Vec<Option<(f32, f32)>> = Vec::new();
-    melody_1.push(Some((0.0, 10.0)));
-    melody_1.push(Some((C5, 1.0)));
-    melody_1.push(None);
-    melody_1.push(Some((C5, 1.0)));
-    melody_1.push(Some((F5, 2.0)));
-
-    let mut melody_2: Vec<Option<(f32, f32)>> = Vec::new();
-    melody_2.push(Some((0.0, 10.0)));
-    melody_2.push(Some((0.0, 3.0)));
-    melody_2.push(Some((A5, 2.0)));
-
-    let _handle = thread::Builder::new().name("sound".to_string()).spawn(move || {
-        play(480.0, &melody_1, &melody_2, &channel_1, &channel_2);
-    });
-    
     // ************************************************ DISPLAY SETUP *********************************************
     // winit setup
-    // For best effect, should display in border-less full-screen and native resolution on high DPI screen
-    // This project was conceived with a recycled QHD iPAD pannel in mind
-    // But winit can be set-up anyway you want.
     let event_loop = EventLoop::new();
     let window_builder = WindowBuilder::new()
         .with_decorations(true)
@@ -99,8 +77,6 @@ fn main() -> Result<(), Error> {
     window.set_cursor_visible(true);
 
     // pixels set-up 
-    // with the same goal in mind as winit's setup above, it is set to the exact same resolution as the window's 
-    // inner size to avoid any scaling.
     let mut pixels = {
         let surface_texture = SurfaceTexture::new(config::WIDTH as u32, config::HEIGHT as u32, &window);
         PixelsBuilder::new(

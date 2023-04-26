@@ -4,6 +4,8 @@ use app_macro::AppResponse;
 use display_controller::DisplayController;
 use winit_input_helper::WinitInputHelper;
 
+use crate::sound::{play::play, notes::*};
+
 #[derive(AppMacro)]
 pub struct Boot {
     enable_auto_escape: bool,
@@ -32,6 +34,20 @@ impl Boot {
         dc.get_console_mut().display = false;
         self.frame_count = 0;
         self.starting_time = clock.total_running_time;
+
+        // ************************************************* SOUND TEST **********************************************    
+        let mut melody_1: Vec<(Option<f32>, f32)> = Vec::new();
+        melody_1.push((None, 1.0));
+        melody_1.push((Some(C5), 1.0));
+        melody_1.push((None, 1.0));
+        melody_1.push((Some(C5), 1.0));
+        melody_1.push((Some(F5), 3.0));
+
+        let mut melody_2: Vec<(Option<f32>, f32)> = Vec::new();
+        melody_2.push((None, 4.0));
+        melody_2.push((Some(A5), 3.0));
+
+        play(480.0, melody_1, melody_2);
     }
 
     pub fn update_app(
@@ -51,14 +67,6 @@ impl Boot {
         return None;
     }
 
-    fn quit_app(&mut self, dc: &mut DisplayController) {
-        self.set_state(false, false);
-        self.initialized = false;
-        dc.set_brightness(255);
-        dc.clear(BLUE);
-        dc.get_text_layer_mut().clear();
-    }
-
     pub fn draw_app(
         &mut self,
         clock: &Clock,
@@ -72,41 +80,6 @@ impl Boot {
         } else {
             ((clock.total_running_time - self.starting_time).as_millis() * 255 / 2000) as u8
         };
-
-        // if message == String::from("dist 0") {
-        //     shader_variables.horiz_distortion = 0.0;
-        //     shader_variables.vert_distortion = 0.0;
-        // }
-
-        // if message == String::from("dist 1") {
-        //     shader_variables.horiz_distortion = 32.0*(4.0/3.0);
-        //     shader_variables.vert_distortion = 32.0;
-        // }
-
-        // if message == String::from("dist 2") {
-        //     shader_variables.horiz_distortion = 16.0*(4.0/3.0);
-        //     shader_variables.vert_distortion = 16.0;
-        // }
-
-        // if message == String::from("dist 3") {
-        //     shader_variables.horiz_distortion = 8.0*(4.0/3.0);
-        //     shader_variables.vert_distortion = 8.0;
-        // }
-
-        // if message == String::from("dist 4") {
-        //     shader_variables.horiz_distortion = 2.0*(4.0/3.0);
-        //     shader_variables.vert_distortion = 2.0;
-        // }
-
-        // if message == String::from("dist 5") {
-        //     shader_variables.horiz_distortion = 1.0*(4.0/3.0);
-        //     shader_variables.vert_distortion = 1.0;
-        // }
-
-        // if message == String::from("dist 6") {
-        //     shader_variables.horiz_distortion = 0.5*(4.0/3.0);
-        //     shader_variables.vert_distortion = 0.5;
-        // }
 
         dc.set_brightness(brigthness);
 
@@ -127,5 +100,13 @@ impl Boot {
             dc.draw_loading_overscan_artefacts();
         }
         self.frame_count += 1;
+    }
+
+    fn quit_app(&mut self, dc: &mut DisplayController) {
+        self.set_state(false, false);
+        self.initialized = false;
+        dc.set_brightness(255);
+        dc.clear(BLUE);
+        dc.get_text_layer_mut().clear();
     }
 }

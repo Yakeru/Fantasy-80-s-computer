@@ -7,34 +7,31 @@ use crate::Source;
 ///
 /// Always has a rate of 48kHz and one channel.
 #[derive(Clone, Debug)]
-pub struct SquareWave {
-    freq: f32,
+pub struct Silence {
     num_sample: usize,
 }
 
-impl SquareWave {
+impl Silence {
     /// The frequency of the sine.
     #[inline]
-    pub fn new(freq: f32) -> SquareWave {
-        SquareWave {
-            freq: freq,
+    pub fn new() -> Silence {
+        Silence {
             num_sample: 0,
         }
     }
 }
 
-impl Iterator for SquareWave {
+impl Iterator for Silence {
     type Item = f32;
 
     #[inline]
     fn next(&mut self) -> Option<f32> {
         self.num_sample = self.num_sample.wrapping_add(1);
-        let value = 2.0 * PI * self.freq * self.num_sample as f32 / 48000.0;
-        Some(if value.sin() >= 0.0 { 1.0 } else { -1.0 })
+        Some(0.0)
     }
 }
 
-impl Source for SquareWave {
+impl Source for Silence {
     #[inline]
     fn current_frame_len(&self) -> Option<usize> {
         None
