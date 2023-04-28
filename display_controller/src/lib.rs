@@ -1,4 +1,4 @@
-use std::ops::{Range, RangeBounds, Bound};
+use std::{ops::{Range, RangeBounds, Bound}, cmp::{min, max}};
 use characters_rom::*;
 use clock::Clock;
 use color_palettes::*;
@@ -428,6 +428,21 @@ impl DisplayController {
     }
     
     pub fn line(&mut self, x1: usize, y1: usize, x2: usize, y2: usize, color: u8) {
+
+        if y1 == y2 {
+            for x in x1..=x2 {
+                self.set_pixel(x as usize, y1 as usize, color);
+            }
+            return
+        }
+
+        if x1 == x2 {
+            for y in y1..=y2 {
+                self.set_pixel(x1 as usize, y as usize, color);
+            }
+            return
+        }
+
         let dx: isize = (x2 as isize - x1 as isize).abs();
         let dy: isize = -(y2 as isize - y1 as isize).abs();
         let sx: isize = if x1 < x2 { 1 } else { -1 };
@@ -440,10 +455,7 @@ impl DisplayController {
         let y1 = y2 as isize;
     
         loop {
-            let index = frame_coord_to_index(x0 as usize, y0 as usize);
-            if index.is_some() {
-                self.frame[index.unwrap()] = color;
-            }
+            self.set_pixel(x0 as usize, y0 as usize, color);
     
             if x0 == x1 && y0 == y1 {
                 break;
@@ -497,93 +509,56 @@ impl DisplayController {
         return (x2, y2)
     }
     
-    pub fn square(&mut self, x: usize, y: usize, width: usize, height: usize, color: u8, fill: bool) {
-        let mut current_line: usize = 0;
-        let line_range: Range<usize> = y..(y + height + 1);
-    
-        for virtual_frame_row in self.frame.chunks_exact_mut(VIRTUAL_WIDTH) { // TODO use advance_by once it's stable
-            if line_range.contains(&current_line) {
-                if current_line == y || current_line == y + height {
-                    for pixel_index in x..(x + width + 1) {
-                        if pixel_index < VIRTUAL_WIDTH {
-                            virtual_frame_row[pixel_index] = color;
-                        }
-                    }
-                } else {
-                    if fill {
-                        for pixel_index in x..(x + width + 1) {
-                            if pixel_index < VIRTUAL_WIDTH {
-                                virtual_frame_row[pixel_index] = color;
-                            }
-                        }
-                    } else {
-                        if x < VIRTUAL_WIDTH {
-                            virtual_frame_row[x] = color;
-                        }
-    
-                        if x + width < VIRTUAL_WIDTH {
-                            virtual_frame_row[x + width] = color;
-                        }
-                    }
-                }
+    pub fn square(&mut self, x: usize, y: usize, width: usize, height: usize, color: u8, fill_color: u8, fill: bool) {
+        self.line(x, y, x + width - 1, y, color);
+        self.line(x + width - 1, y, x + width - 1, y + height - 1, color);
+        self.line(x + width - 1, y + height - 1, x, y + height - 1, color);
+        self.line(x, y + height - 1, x, y, color);
+
+        if fill {
+            for y in (y + 1)..(y + height - 1) {
+                self.line(x + 1, y, x + width - 2, y, fill_color);
             }
-            current_line += 1;
-            if current_line == y + height + 1 { break };
+        }
+    }
+
+    pub fn draw_circle(&mut self,  xc: usize, yc: usize, x: usize, y: usize, color: u8, fill_color: u8, fill: bool) {
+        self.set_pixel(xc + x, yc + y, color);
+        self.set_pixel(xc - x, yc + y, color);
+        self.set_pixel(xc + x, yc - y, color);
+        self.set_pixel(xc - x, yc - y, color);
+        self.set_pixel(xc + y, yc + x, color);
+        self.set_pixel(xc - y, yc + x, color);
+        self.set_pixel(xc + y, yc - x, color);
+        self.set_pixel(xc - y, yc - x, color);
+
+        if fill {
+            self.line(xc - x, yc + y - 1 , xc + x, yc + y - 1, fill_color);
+            self.line(xc - x, yc - y + 1, xc + x, yc - y + 1, fill_color);
+            self.line(xc - y + 1, yc + x, xc + y - 1, yc + x, fill_color);
+            self.line(xc - y + 1, yc - x, xc + y - 1, yc - x, fill_color);
         }
     }
     
-    pub fn circle(&mut self, x: usize, y: usize, r: usize, color: u8, fill: bool) {
-    
-        for b in 0..(r * 3/4  + 1) {
-            let a: f64 = (((r * r) - (b * b)) as f64).sqrt();
-    
-            let point1 = (x + b, y + a.round() as usize);
-            let point2 = (x + b, y - a.round() as usize);
-            let point3 = (x - b, y + a.round() as usize);
-            let point4 = (x - b, y - a.round() as usize);
-    
-            if !fill {
-                let point = frame_coord_to_index(point1.0, point1.1);
-                if point.is_some() {self.frame[point.unwrap()] = color};
-        
-                let point = frame_coord_to_index(point2.0, point2.1);
-                if point.is_some() {self.frame[point.unwrap()] = color};
-        
-                let point = frame_coord_to_index(point3.0, point4.1);
-                if point.is_some() {self.frame[point.unwrap()] = color};
-        
-                let point = frame_coord_to_index(point4.0, point4.1);
-                if point.is_some() {self.frame[point.unwrap()] = color};
+    pub fn circle(&mut self, xc: usize, yc: usize, r: usize, color: u8, fill_color: u8, fill: bool) {
+
+        let mut x: usize = 0;
+        let mut y: usize = r;
+        let mut d: isize = 3 - 2 * r as isize;
+
+        self.draw_circle(xc, yc, x, y, color, fill_color, fill);
+
+        while y >= x {
+            x += 1;
+
+            if d > 0 {
+                d = d + 4 * (x as isize - y as isize) + 10;
+                y -= 1;
             } else {
-                self.line(point1.0, point1.1, point3.0, point3.1, color);
-                self.line(point2.0, point2.1, point4.0, point4.1, color);
+                d = d + 4 * x as isize + 6;
             }
-        }
-    
-        for a in 0..(r * 3/4 + 1) {
-            let b: f64 = (((r * r) - (a * a)) as f64).sqrt();
-    
-            let point1 = (x + b.round() as usize, y + a);
-            let point2 = (x + b.round() as usize, y - a);
-            let point3 = (x - b.round() as usize, y + a);
-            let point4 = (x - b.round() as usize, y - a);
-            
-            if !fill {
-                let point = frame_coord_to_index(point1.0, point1.1);
-                if point.is_some() {self.frame[point.unwrap()] = color};
-    
-                let point = frame_coord_to_index(point2.0, point2.1);
-                if point.is_some() {self.frame[point.unwrap()] = color};
-    
-                let point = frame_coord_to_index(point3.0, point4.1);
-                if point.is_some() {self.frame[point.unwrap()] = color};
-    
-                let point = frame_coord_to_index(point4.0, point4.1);
-                if point.is_some() {self.frame[point.unwrap()] = color};
-            } else {
-                self.line(point1.0, point1.1, point3.0, point3.1, color);
-                self.line(point2.0, point2.1, point4.0, point4.1, color);
-            }
+
+            self.draw_circle(xc, yc, x, y, color, fill_color, fill);
         }
     }
 

@@ -98,39 +98,39 @@ impl WeatherApp {
         let clock_radius: usize = 50;
 
         //Clock face
-        dc.circle(clock_x+1, clock_y-1, clock_radius, WHITE, true);
-        dc.circle(clock_x-1, clock_y+1, clock_radius, BLACK, true);
-        dc.circle(clock_x, clock_y, clock_radius, YELLOW, true);
-        dc.circle(clock_x+1, clock_y-1, clock_radius-5, BLACK, true);
-        dc.circle(clock_x-1, clock_y+1, clock_radius-5, WHITE, true);
-        dc.circle(clock_x, clock_y, clock_radius-5, LIGHT_GREY, true);
+        dc.circle(clock_x+1, clock_y-1, clock_radius, WHITE, WHITE, true);
+        dc.circle(clock_x-1, clock_y+1, clock_radius, BLACK, BLACK, true);
+        dc.circle(clock_x, clock_y, clock_radius, YELLOW, YELLOW, true);
+        dc.circle(clock_x+1, clock_y-1, clock_radius-5, BLACK, BLACK, true);
+        dc.circle(clock_x-1, clock_y+1, clock_radius-5, WHITE, WHITE, true);
+        dc.circle(clock_x, clock_y, clock_radius-5, LIGHT_GREY, LIGHT_GREY, true);
 
         let mut index_angle: f32 = 0.0;
 
         while index_angle < 2.0 * PI {
             let index_position = dc.vector(clock_x, clock_y, 40, LIGHT_GREY, index_angle);
-            dc.circle(index_position.0, index_position.1, 1, BLACK, true);
+            dc.circle(index_position.0, index_position.1, 1, BLACK, BLACK, true);
             index_angle += PI/6.0;
         }
         
         //Hour hand
         let hour_decoration_coord = dc.vector(clock_x, clock_y, 20, TRUE_BLUE, hand_angles.0);
         dc.vector(hour_decoration_coord.0, hour_decoration_coord.1, 5, TRUE_BLUE, hand_angles.0);
-        dc.circle(hour_decoration_coord.0, hour_decoration_coord.1, 2, TRUE_BLUE, true);
-        dc.circle(hour_decoration_coord.0, hour_decoration_coord.1, 1, LIGHT_GREY, true);
+        dc.circle(hour_decoration_coord.0, hour_decoration_coord.1, 2, TRUE_BLUE, TRUE_BLUE, true);
+        dc.circle(hour_decoration_coord.0, hour_decoration_coord.1, 1, LIGHT_GREY, LIGHT_GREY, true);
         
         //Minute hand
         let minute_decoration_coord = dc.vector(clock_x, clock_y, 25, TRUE_BLUE, hand_angles.1);
         dc.vector(minute_decoration_coord.0, minute_decoration_coord.1, 7, TRUE_BLUE, hand_angles.1);
-        dc.circle(minute_decoration_coord.0, minute_decoration_coord.1, 3, TRUE_BLUE, true);
-        dc.circle(minute_decoration_coord.0, minute_decoration_coord.1, 2, LIGHT_GREY, true);
+        dc.circle(minute_decoration_coord.0, minute_decoration_coord.1, 3, TRUE_BLUE, TRUE_BLUE, true);
+        dc.circle(minute_decoration_coord.0, minute_decoration_coord.1, 2, LIGHT_GREY, LIGHT_GREY, true);
 
         //Second hand
         dc.vector(clock_x, clock_y, 38, DARK_ORANGE, hand_angles.2);
 
         //center
-        dc.circle(clock_x, clock_y, 3, TRUE_BLUE, true);
-        dc.circle(clock_x, clock_y, 2, WHITE, true);
+        dc.circle(clock_x, clock_y, 3, TRUE_BLUE, TRUE_BLUE, true);
+        dc.circle(clock_x, clock_y, 2, WHITE, WHITE, true);
 
         // Draw clock Digital
         if now.hour() < 10 {

@@ -179,34 +179,9 @@ impl Mandelbrot {
         &mut self,
         inputs: Option<&WinitInputHelper>,
         _clock: &Clock,
-        dc: &mut DisplayController,
-    ) -> Option<AppResponse> {
-        // if self.welcome_screen {
-        //     self.update_welcome_screen(inputs, virtual_frame_buffer);
-        // } else if self.game {
-        //     self.update_game(inputs, virtual_frame_buffer);
-        // } else {
-        //     self.update_menu(inputs, virtual_frame_buffer);
-        // }
-        self.update_welcome_screen(inputs, dc);
-        return None;
-    }
-
-    pub fn draw_app(
-        &mut self,
-        clock: &Clock,
-        dc: &mut DisplayController,
-    ) {
-        self.draw_welcome_screen(clock, dc);
-    }
-
-    fn update_welcome_screen(
-        &mut self,
-        inputs: Option<&WinitInputHelper>,
         _dc: &mut DisplayController,
-    ) {
-
-        if inputs.is_none() {return}
+    ) -> Option<AppResponse> {
+        if inputs.is_none() {return None}
 
         let user_inputs = inputs.unwrap();
         
@@ -340,9 +315,10 @@ impl Mandelbrot {
             println!("x: {}, y: {}", self.mandel_x_center, self.mandel_y_center);
         }
 
+        return None;
     }
 
-    fn draw_welcome_screen(
+    pub fn draw_app(
         &mut self,
         clock: &Clock,
         dc: &mut DisplayController,
@@ -479,7 +455,6 @@ impl Mandelbrot {
         if self.mandel_y_range <= MIN_RANGE {
             self.reset();
         }
-
     }
 
     fn reset(&mut self) {
