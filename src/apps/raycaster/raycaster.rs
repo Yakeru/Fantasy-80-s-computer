@@ -131,6 +131,10 @@ impl Raycaster {
          dc.clear(BLACK);
          dc.get_text_layer_mut().clear();
 
+        // Sky and ground
+        dc.square(0, 0, VIRTUAL_WIDTH as isize, (VIRTUAL_HEIGHT/2) as isize, BLUE, BLUE, true);
+        dc.square(0, (VIRTUAL_HEIGHT/2) as isize, VIRTUAL_WIDTH as isize, VIRTUAL_HEIGHT as isize, DARK_GREEN, DARK_GREEN, true);
+
         //The menu is drawn over the game, to see changes in real time
         if self.show_menu {
             self.draw_menu(clock, dc);
@@ -138,9 +142,9 @@ impl Raycaster {
 
         //Cast rays and find intersections
         let view_angle = (self.player.direction + self.settings.fov / 2.0) - (self.player.direction - self.settings.fov / 2.0);
-        let step = view_angle / 320.0;
+        let step = view_angle / VIRTUAL_WIDTH as f32;
 
-        for ray_count in 0..320 {
+        for ray_count in 0..VIRTUAL_WIDTH {
             let ray_angle = self.player.direction - self.settings.fov / 2.0 + ray_count as f32 * step;
             let ray = vector(self.player.x, self.player.y, ray_angle, 1000);
             let mut closest_intersection: Option<(isize, isize, isize)> = None;
@@ -167,7 +171,7 @@ impl Raycaster {
                     let color = LIGHT_GREY;
 
                     // Draw line
-                    dc.line(ray_count, (VIRTUAL_HEIGHT/2) as isize - height/2 as isize, ray_count, (VIRTUAL_HEIGHT/2) as isize + height/2, color);
+                    dc.line(ray_count as isize, (VIRTUAL_HEIGHT/2) as isize - height/2 as isize, ray_count as isize, (VIRTUAL_HEIGHT/2) as isize + height/2, color);
                 }
             }
         }
@@ -275,9 +279,9 @@ impl Raycaster {
 
         //Draw intersection points
         let view_angle = (self.player.direction + self.settings.fov / 2.0) - (self.player.direction - self.settings.fov / 2.0);
-        let step = view_angle / 320.0;
+        let step = view_angle / VIRTUAL_WIDTH as f32;
 
-        for ray_count in 0..320 {
+        for ray_count in 0..VIRTUAL_WIDTH {
             let ray_angle = self.player.direction - self.settings.fov / 2.0 + ray_count as f32 * step;
             let ray = vector(self.player.x, self.player.y, ray_angle, 1000);
             let mut closest_intersection: Option<(isize, isize, isize)> = None;
