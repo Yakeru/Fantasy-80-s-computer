@@ -110,7 +110,7 @@ impl DisplayController {
     }
 
     pub fn get_pixel(&mut self, x: usize, y: usize) -> Option<u8> {
-        let index = frame_coord_to_index(x, y);
+        let index = frame_coord_to_index(x as isize, y as isize);
         if index.is_some() {
             return Some(self.frame[index.unwrap()])
         } else {
@@ -118,7 +118,7 @@ impl DisplayController {
         }
     }
 
-    pub fn set_pixel(&mut self, x: usize, y: usize, color: u8) {
+    pub fn set_pixel(&mut self, x: isize, y: isize, color: u8) {
         let index = frame_coord_to_index(x, y);
         if index.is_some() {
             self.frame[index.unwrap()] = color
@@ -427,18 +427,18 @@ impl DisplayController {
         }
     }
     
-    pub fn line(&mut self, x1: usize, y1: usize, x2: usize, y2: usize, color: u8) {
+    pub fn line(&mut self, x1: isize, y1: isize, x2: isize, y2: isize, color: u8) {
 
         if y1 == y2 {
-            for x in x1..=x2 {
-                self.set_pixel(x as usize, y1 as usize, color);
+            for x in min(x1, x2)..=max(x1, x2) {
+                self.set_pixel(x, y1, color);
             }
             return
         }
 
         if x1 == x2 {
-            for y in y1..=y2 {
-                self.set_pixel(x1 as usize, y as usize, color);
+            for y in min(y1, y2)..=max(y1, y2) {
+                self.set_pixel(x1, y, color);
             }
             return
         }
@@ -455,7 +455,7 @@ impl DisplayController {
         let y1 = y2 as isize;
     
         loop {
-            self.set_pixel(x0 as usize, y0 as usize, color);
+            self.set_pixel(x0, y0, color);
     
             if x0 == x1 && y0 == y1 {
                 break;
@@ -480,7 +480,7 @@ impl DisplayController {
         }
     }
     
-    pub fn vector(&mut self, x: usize, y: usize, l: usize, color: u8, a:f32) -> (usize, usize) {
+    pub fn vector(&mut self, x: isize, y: isize, l: isize, color: u8, a:f32) -> (isize, isize) {
     
         let x1 = x;
         let y1 = y;
@@ -488,20 +488,20 @@ impl DisplayController {
         let x_move = a.cos() * l as f32;
         let y_move = a.sin() * l as f32;
     
-        let x2: usize;
+        let x2: isize;
         
         if x_move < 0.0 {
-            x2 = x1 - (-x_move).round() as usize;
+            x2 = x1 - (-x_move).round() as isize;
         } else {
-            x2 = x1 + x_move.round() as usize;
+            x2 = x1 + x_move.round() as isize;
         }
     
-        let y2: usize;
+        let y2: isize;
        
         if y_move < 0.0 {
-            y2 = y1 - (-y_move).round() as usize;
+            y2 = y1 - (-y_move).round() as isize;
         } else {
-            y2 = y1 + y_move.round() as usize;
+            y2 = y1 + y_move.round() as isize;
         }
     
         self.line(x1, y1, x2, y2, color);
@@ -509,7 +509,7 @@ impl DisplayController {
         return (x2, y2)
     }
     
-    pub fn square(&mut self, x: usize, y: usize, width: usize, height: usize, color: u8, fill_color: u8, fill: bool) {
+    pub fn square(&mut self, x: isize, y: isize, width: isize, height: isize, color: u8, fill_color: u8, fill: bool) {
         self.line(x, y, x + width - 1, y, color);
         self.line(x + width - 1, y, x + width - 1, y + height - 1, color);
         self.line(x + width - 1, y + height - 1, x, y + height - 1, color);
@@ -522,7 +522,7 @@ impl DisplayController {
         }
     }
 
-    pub fn draw_circle(&mut self,  xc: usize, yc: usize, x: usize, y: usize, color: u8, fill_color: u8, fill: bool) {
+    fn draw_circle(&mut self,  xc: isize, yc: isize, x: isize, y: isize, color: u8, fill_color: u8, fill: bool) {
         self.set_pixel(xc + x, yc + y, color);
         self.set_pixel(xc - x, yc + y, color);
         self.set_pixel(xc + x, yc - y, color);
@@ -540,11 +540,24 @@ impl DisplayController {
         }
     }
     
-    pub fn circle(&mut self, xc: usize, yc: usize, r: usize, color: u8, fill_color: u8, fill: bool) {
+    pub fn circle(&mut self, xc: isize, yc: isize, r: usize, color: u8, fill_color: u8, mut fill: bool) {
 
-        let mut x: usize = 0;
-        let mut y: usize = r;
+        let mut x: isize = 0;
+        let mut y: isize = r as isize;
         let mut d: isize = 3 - 2 * r as isize;
+
+        //Special case for r = 1
+        if r == 1 {
+
+            self.set_pixel(xc, yc + 1, color);
+            self.set_pixel(xc, yc - 1, color);
+            self.set_pixel(xc + 1, yc, color);
+            self.set_pixel(xc - 1, yc, color);
+
+            if fill {self.set_pixel(xc, yc, fill_color)}
+
+            return
+        }
 
         self.draw_circle(xc, yc, x, y, color, fill_color, fill);
 
@@ -608,10 +621,22 @@ impl DisplayController {
     }
 }
 
-pub const fn frame_coord_to_index(x: usize, y: usize) -> Option<usize> {
-    if x < VIRTUAL_WIDTH && y < VIRTUAL_HEIGHT {
-        Some(y * VIRTUAL_WIDTH + x)
-    } else {
-        None
+pub const fn frame_coord_to_index(x: isize, y: isize) -> Option<usize> {
+    if x < 0 {
+        return None
     }
+
+    if x >= VIRTUAL_WIDTH as isize {
+        return None
+    }
+
+    if y < 0 {
+        return None
+    }
+
+    if y >= VIRTUAL_HEIGHT as isize {
+        return None
+    }
+
+    Some(y as usize * VIRTUAL_WIDTH + x as usize)
 }

@@ -2,8 +2,8 @@ use std::fs;
 
 pub struct Sprite {
     pub id: String,
-    pub pos_x: usize,
-    pub pos_y: usize,
+    pub pos_x: isize,
+    pub pos_y: isize,
     pub size: SpriteSize,
     pub visible: bool,
     pub h_flipp: bool,

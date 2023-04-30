@@ -1,12 +1,12 @@
-use rodio::{OutputStream, Sink, Source};
+use apps::raycaster::raycaster::Raycaster;
+use rodio::Source;
 use crt_shader_renderer::CrtRenderer;
 use shader_variables::ShaderVariables;
-use sound::{notes::*, play};
+use sound::play;
 use display_controller::{*, config::*};
 use app_macro::*;
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use winit_input_helper::WinitInputHelper;
-use std::thread;
 use winit::{
     dpi::{PhysicalSize, Position, PhysicalPosition},
     event_loop::{ControlFlow, EventLoop},
@@ -28,7 +28,6 @@ use crate::apps::mandelbrot::*;
 
 //Sound
 mod sound;
-use crate::play::play;
 
 fn main() -> Result<(), Error> {
 
@@ -143,6 +142,10 @@ fn main() -> Result<(), Error> {
     // MANDELBROT
     let mandelbrot = Box::new(Mandelbrot::new());
     app_list.push(mandelbrot);
+
+    // RAYCASTER
+    let raycaster = Box::new(Raycaster::new());
+    app_list.push(raycaster);
 
     // ****************************************************** MAIN WINIT EVENT LOOP ***********************************************
     

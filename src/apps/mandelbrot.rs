@@ -396,7 +396,7 @@ impl Mandelbrot {
                     }
                 };
 
-                dc.set_pixel(px, py, color);
+                dc.set_pixel(px as isize, py as isize, color);
             }
         }
 

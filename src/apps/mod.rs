@@ -4,3 +4,4 @@ pub mod life;
 pub mod weather_app;
 pub mod mandelbrot;
 pub mod boot;
+pub mod raycaster;
