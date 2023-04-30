@@ -1,4 +1,4 @@
-const MAP_SCALE: isize = 100;
+use std::f32::consts::PI;
 
 pub struct Wall {
     pub x1: isize,
@@ -23,56 +23,60 @@ impl Map {
     pub fn new() -> Self {
         Map {
             width: 6,
-            height: 6,
-            map: Vec::from(['▛', '▀', '▀', '▀', '▀', '▜',
-                            '▌', ' ', ' ', ' ', ' ', '▐',
-                            '▌', ' ', '█', '▜', ' ', '▐',
-                            '▌', ' ', ' ', '█', ' ', '▐',
-                            '▌', ' ', ' ', ' ', ' ', '▐',
-                            '▙', '▄', '▄', '▄', '▄', '▟']),
+            height: 10,
+            map: Vec::from(['▛','▀','▀','▀','▀','▜',
+                            '▌',' ',' ',' ',' ','▐',
+                            '▌',' ','▛','▜',' ','▐',
+                            '▌',' ','▙','▟',' ','▐',
+                            '▌',' ',' ',' ',' ','▐',
+                            '▌',' ',' ',' ',' ','▐',
+                            '█',' ','█','█','▄','▟',
+                            '▌',' ',' ','▐',' ',' ',
+                            '▌',' ',' ','▐',' ',' ',
+                            '▙','▄','▄','▟',' ',' ']),
             walls: Vec::new(),
-            player_start_x: 150,
-            player_start_y: 450,
-            player_start_dir: 0.0
+            player_start_x: 3,
+            player_start_y: 8,
+            player_start_dir: PI // in radians 0 is right, PI is left
         }
     }
 
     pub fn transform_map_into_list_of_walls(&mut self) {
-        for y in 0..(self.width) {
-            for x in 0..(self.height) {
+        for y in 0..(self.height) {
+            for x in 0..(self.width) {
                 let index = x + y * self.width;
                 let cell_code = self.map[index];
 
-                //4 lines surrounding the bloc, each wall is of length MAP_SCALE
+                //4 lines surrounding the bloc, each wall is of length SCALE
                 let wall_N: Wall = Wall {
-                    x1: x as isize * MAP_SCALE,
-                    y1: y as isize * MAP_SCALE,
-                    x2: x as isize * MAP_SCALE + MAP_SCALE,
-                    y2: y as isize * MAP_SCALE,
+                    x1: x as isize,
+                    y1: y as isize,
+                    x2: x as isize + 1,
+                    y2: y as isize,
                     texture: 1
                 };
 
                 let wall_E: Wall = Wall {
-                    x1: x as isize * MAP_SCALE + MAP_SCALE,
-                    y1: y as isize * MAP_SCALE,
-                    x2: x as isize * MAP_SCALE + MAP_SCALE,
-                    y2: y as isize * MAP_SCALE + MAP_SCALE,
+                    x1: x as isize + 1,
+                    y1: y as isize,
+                    x2: x as isize + 1,
+                    y2: y as isize + 1,
                     texture: 1
                 };
 
                 let wall_S: Wall = Wall {
-                    x1: x as isize * MAP_SCALE + MAP_SCALE,
-                    y1: y as isize * MAP_SCALE + MAP_SCALE,
-                    x2: x as isize * MAP_SCALE,
-                    y2: y as isize * MAP_SCALE + MAP_SCALE,
+                    x1: x as isize + 1,
+                    y1: y as isize + 1,
+                    x2: x as isize,
+                    y2: y as isize + 1,
                     texture: 1
                 };
 
                 let wall_W: Wall = Wall {
-                    x1: x as isize * MAP_SCALE,
-                    y1: y as isize * MAP_SCALE + MAP_SCALE,
-                    x2: x as isize * MAP_SCALE,
-                    y2: y as isize * MAP_SCALE,
+                    x1: x as isize,
+                    y1: y as isize + 1,
+                    x2: x as isize,
+                    y2: y as isize,
                     texture: 1
                 };
 
