@@ -8,6 +8,18 @@ pub struct Wall {
     pub texture: u8
 }
 
+impl Wall {
+    pub fn new() -> Self {
+        Wall {
+            x1: 0,
+            y1: 0,
+            x2: 0,
+            y2: 0,
+            texture: 0
+        }
+    }
+}
+
 pub struct Map {
     pub width: usize,
     pub height: usize,
@@ -22,22 +34,22 @@ impl Map {
 
     pub fn new() -> Self {
         Map {
-            width: 6,
+            width: 9,
             height: 10,
-            map: Vec::from(['▛','▀','▀','▀','▀','▜',
-                            '▌',' ',' ',' ',' ','▐',
-                            '▌',' ','▛','▜',' ','▐',
-                            '▌',' ','▙','▟',' ','▐',
-                            '▌',' ',' ',' ',' ','▐',
-                            '▌',' ',' ',' ',' ','▐',
-                            '█',' ','█','█','▄','▟',
-                            '▌',' ',' ','▐',' ',' ',
-                            '▌',' ',' ','▐',' ',' ',
-                            '▙','▄','▄','▟',' ',' ']),
+            map: Vec::from(['▛','▀','▀','▀','▀','▀','▜','▀','▜',
+                            '▌',' ',' ',' ',' ',' ','▐',' ','▐',
+                            '▌',' ','█',' ','█',' ','▐',' ','▐',
+                            '▌',' ',' ',' ',' ',' ','▐',' ','▐',
+                            '▌',' ','█',' ','█',' ','▐',' ','▐',
+                            '▌',' ',' ',' ',' ',' ','▐',' ','█',
+                            '█',' ','█','█','▄','▄','▟',' ','▐',
+                            '▌',' ',' ','█',' ',' ','█',' ','▐',
+                            '▌',' ',' ',' ',' ',' ',' ',' ','▐',
+                            '▙','▄','▄','█','▄','▄','█','▄','▟']),
             walls: Vec::new(),
-            player_start_x: 3,
-            player_start_y: 8,
-            player_start_dir: PI // in radians 0 is right, PI is left
+            player_start_x: 7,
+            player_start_y: 1,
+            player_start_dir: PI/2.0 // in radians 0 is right, PI is left
         }
     }
 
@@ -48,7 +60,7 @@ impl Map {
                 let cell_code = self.map[index];
 
                 //4 lines surrounding the bloc, each wall is of length SCALE
-                let wall_N: Wall = Wall {
+                let wall_n: Wall = Wall {
                     x1: x as isize,
                     y1: y as isize,
                     x2: x as isize + 1,
@@ -56,7 +68,7 @@ impl Map {
                     texture: 1
                 };
 
-                let wall_E: Wall = Wall {
+                let wall_e: Wall = Wall {
                     x1: x as isize + 1,
                     y1: y as isize,
                     x2: x as isize + 1,
@@ -64,7 +76,7 @@ impl Map {
                     texture: 1
                 };
 
-                let wall_S: Wall = Wall {
+                let wall_s: Wall = Wall {
                     x1: x as isize + 1,
                     y1: y as isize + 1,
                     x2: x as isize,
@@ -72,7 +84,7 @@ impl Map {
                     texture: 1
                 };
 
-                let wall_W: Wall = Wall {
+                let wall_w: Wall = Wall {
                     x1: x as isize,
                     y1: y as isize + 1,
                     x2: x as isize,
@@ -83,19 +95,19 @@ impl Map {
                 match cell_code {
                     ' ' => (),
                     '█' => { 
-                        self.walls.push(wall_N);
-                        self.walls.push(wall_E);
-                        self.walls.push(wall_S);
-                        self.walls.push(wall_W);
+                        self.walls.push(wall_n);
+                        self.walls.push(wall_e);
+                        self.walls.push(wall_s);
+                        self.walls.push(wall_w);
                     },
-                    '▛' => { self.walls.push(wall_W); self.walls.push(wall_N)},
-                    '▀' => self.walls.push(wall_N),
-                    '▜' => { self.walls.push(wall_N); self.walls.push(wall_E)},
-                    '▐' => self.walls.push(wall_E),
-                    '▟' => { self.walls.push(wall_E); self.walls.push(wall_S)},
-                    '▄' => self.walls.push(wall_S),
-                    '▙' => { self.walls.push(wall_W); self.walls.push(wall_S)},
-                    '▌' => self.walls.push(wall_W),
+                    '▛' => { self.walls.push(wall_w); self.walls.push(wall_n)},
+                    '▀' => self.walls.push(wall_n),
+                    '▜' => { self.walls.push(wall_n); self.walls.push(wall_e)},
+                    '▐' => self.walls.push(wall_e),
+                    '▟' => { self.walls.push(wall_e); self.walls.push(wall_s)},
+                    '▄' => self.walls.push(wall_s),
+                    '▙' => { self.walls.push(wall_w); self.walls.push(wall_s)},
+                    '▌' => self.walls.push(wall_w),
                     _ => ()
                 }
             }

@@ -6,8 +6,8 @@ const palette = ["#000000", "#1D2B53", "#7E2553", "#008751",
   "#29ADFF", "#83769C", "#FF77A8", "#FFCCAA"]
 
 //Sprite canvas pixel size 16x16
-const editor_width_px = 16;
-const editor_height_px = 16;
+const editor_width_px = 64;
+const editor_height_px = 64;
 
 const log = true;
 
