@@ -156,7 +156,7 @@ impl Raycaster {
             let col_test = cast_ray(
                 self.player.x,
                 self.player.y,
-                self.player.direction,
+                self.player.direction + PI,
                 50,
             );
 
