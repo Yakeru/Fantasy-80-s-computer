@@ -109,7 +109,7 @@ impl WeatherApp {
         return Some(response);
     }
 
-    fn draw_app(&mut self, clock: &Clock, dc: &mut DisplayController) {
+    fn draw_app(&mut self, _clock: &Clock, dc: &mut DisplayController) {
         dc.get_text_layer_mut().clear();
         dc.clear(BLACK);
         dc.get_console_mut().display = false;

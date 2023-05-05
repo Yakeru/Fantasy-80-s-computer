@@ -1,11 +1,11 @@
 use super::{
     map::Map,
-    math::ray,
     player::Player,
-    renderer::{Renderer, GAME_SCALE}
+    renderer::{Renderer, GAME_SCALE}, monster::Monster, math::cast_ray
 };
 use app_macro::AppMacro;
 use app_macro_derive::AppMacro;
+use fast_math::atan2;
 use std::{f32::consts::PI,};
 
 const PLAYER_SPEED: isize = 8;
@@ -20,6 +20,7 @@ pub struct Raycaster {
     map: Map,
     renderer: Renderer,
     player: Player,
+    monster: Monster,
     show_menu: bool,
     draw_minimap: bool,
     menu_item_selected: usize,
@@ -39,6 +40,7 @@ impl Raycaster {
                 y: 0,
                 direction: 0.0,
             },
+            monster: Monster::new(),
             show_menu: false,
             draw_minimap: false,
             renderer: Renderer::new(),
@@ -105,33 +107,72 @@ impl Raycaster {
 
         if inputs.key_held(VirtualKeyCode::Left) {
             self.player.direction -= 0.05;
+
+            if self.player.direction < - PI {
+                self.player.direction += 2.0 * PI;
+            }
         }
 
         if inputs.key_held(VirtualKeyCode::Right) {
             self.player.direction += 0.05;
+
+            if self.player.direction > PI {
+                self.player.direction -= 2.0 * PI;
+            }
         }
 
         if inputs.key_held(VirtualKeyCode::Up) {
-            let move_to = ray(
+            let move_to = cast_ray(
                 self.player.x,
                 self.player.y,
                 self.player.direction,
                 PLAYER_SPEED,
             );
-            self.player.x = move_to.0;
-            self.player.y = move_to.1;
+
+            let col_test = cast_ray(
+                self.player.x,
+                self.player.y,
+                self.player.direction,
+                50,
+            );
+
+            if self.map.get_cell_from_coord(self.player.x, col_test.1) == 0 {
+                self.player.y = move_to.1;
+            }
+
+            if self.map.get_cell_from_coord(col_test.0, self.player.y) == 0 {
+                self.player.x = move_to.0;
+            }
         }
 
         if inputs.key_held(VirtualKeyCode::Down) {
-            let move_to = ray(
+            let move_to = cast_ray(
                 self.player.x,
                 self.player.y,
                 self.player.direction + PI,
                 PLAYER_SPEED,
             );
-            self.player.x = move_to.0;
-            self.player.y = move_to.1;
+
+            let col_test = cast_ray(
+                self.player.x,
+                self.player.y,
+                self.player.direction,
+                50,
+            );
+
+            if self.map.get_cell_from_coord(self.player.x, col_test.1) == 0 {
+                self.player.y = move_to.1;
+            }
+
+            if self.map.get_cell_from_coord(col_test.0, self.player.y) == 0 {
+                self.player.x = move_to.0;
+            }
         }
+
+        // See monster ?
+        let monster_angle: f32 = atan2((self.monster.y - self.player.y)as f32, (self.monster.x - self.player.x) as f32);
+        self.monster.angle_to_player = monster_angle;
+
     }
 
     pub fn draw_app(&mut self, clock: &Clock, dc: &mut DisplayController) {
@@ -141,11 +182,11 @@ impl Raycaster {
         }
 
         // Ray casting renderer
-        self.renderer.render(dc, &self.map, &self.player);
+        self.renderer.render(dc, &self.map, &self.player, &self.monster);
 
         //Draw minimap
         if self.draw_minimap {
-            self.renderer.draw_top_view_map(dc, &self.map, &self.player);
+            self.renderer.draw_top_view_map(dc, &self.map, &self.player, &self.monster);
         }
     }
 

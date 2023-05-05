@@ -1,4 +1,4 @@
-use std::{ops::{Range, RangeBounds, Bound}, cmp::{min, max}};
+use std::{ops::{RangeBounds, Bound}, cmp::{min, max}};
 use characters_rom::*;
 use clock::Clock;
 use color_palettes::*;
@@ -540,7 +540,7 @@ impl DisplayController {
         }
     }
     
-    pub fn circle(&mut self, xc: isize, yc: isize, r: usize, color: u8, fill_color: u8, mut fill: bool) {
+    pub fn circle(&mut self, xc: isize, yc: isize, r: usize, color: u8, fill_color: u8, fill: bool) {
 
         let mut x: isize = 0;
         let mut y: isize = r as isize;

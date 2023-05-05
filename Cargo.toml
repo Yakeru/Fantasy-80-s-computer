@@ -21,3 +21,4 @@ app_macro_derive = { path = "./app_macro/app_macro_derive" }
 display_controller = { path = "./display_controller" }
 unicode = { path = "./unicode" }
 clock = { path = "./clock" }
+fast-math = "0.1.1"

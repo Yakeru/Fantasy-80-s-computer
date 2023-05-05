@@ -3,7 +3,11 @@
 const palette = ["#000000", "#1D2B53", "#7E2553", "#008751",
   "#AB5236", "#5F574F", "#C2C3C7", "#FFF1E8",
   "#FF004D", "#FFA300", "#FFEC27", "#00E436",
-  "#29ADFF", "#83769C", "#FF77A8", "#FFCCAA"]
+  "#29ADFF", "#83769C", "#FF77A8", "#FFCCAA",
+  "#291814", "#111D35", "#422136" , "#125359",
+  "#742F29", "#49333B", "#A28879", "#F3EF7D", 
+  "#BE1250", "#FF6C24", "#A8E72E", "#00B543", 
+  "#065AB5", "#754665", "#FF6E59", "#FF9D81" ]
 
 //Sprite canvas pixel size 16x16
 const editor_width_px = 64;
@@ -92,12 +96,12 @@ function drawSpriteGrid(color) {
 function drawColorPalette() {
   let paletteWidth = paletteContext.canvas.clientWidth;
   let paletteHeight = paletteContext.canvas.clientHeight;
-  let square_width = paletteWidth / 4;
+  let square_width = paletteWidth / 8;
   let square_height = paletteHeight / 4;
   let paletteIndex = 0;
 
   for (row_count = 0; row_count < 4; row_count++) {
-    for (column_count = 0; column_count < 4; column_count++) {
+    for (column_count = 0; column_count < 8; column_count++) {
       let square_x = square_width * column_count;
       let square_y = square_height * row_count;
       paletteContext.fillStyle = palette[paletteIndex];
@@ -244,16 +248,15 @@ function generate() {
 }
 
 function printDrawingMatrixTuRustArray() {
-  let text = "16,16,";
+  let text = "[";
 
   for (var y = 0; y < editor_height_px; y++) {
     for (var x = 0; x < editor_width_px; x++) {
       text += drawingMatrix[x][y] + ",";
     }
   }
-
   text = text.slice(0, text.length - 1);
-
+  text += "]";
   if (log) console.log(text);
   return text;
 }

@@ -33,7 +33,7 @@ pub fn get_distance_between_points(x1: isize, y1: isize, x2: isize, y2: isize) -
     distance as isize
 }
 
-pub fn ray(x: isize, y: isize, angle_rad:f32, lenght: isize) -> (isize, isize) {
+pub fn cast_ray(x: isize, y: isize, angle_rad:f32, lenght: isize) -> (isize, isize) {
     
     let x1 = x;
     let y1 = y;
@@ -58,4 +58,10 @@ pub fn ray(x: isize, y: isize, angle_rad:f32, lenght: isize) -> (isize, isize) {
     }
 
     return (x2, y2)
+}
+
+pub fn range_conversion(old_min: f32, old_max: f32, old_value: f32, new_min: f32, new_max: f32) -> f32 {
+    let old_range = old_max - old_min;
+    let new_range = new_max - new_min;
+    return (((old_value - old_min) * new_range) / old_range) + new_min;
 }
