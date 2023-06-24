@@ -82,7 +82,7 @@ impl DisplayController {
     }
 
     pub fn get_window_size(&self) -> (usize, usize) {
-        (WIDTH, HEIGHT)
+        (SCREEN_WIDTH, SCREEN_HEIGHT)
     }
 
     pub fn get_virtual_fb_size(&self) -> (usize, usize) {

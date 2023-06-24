@@ -1,4 +1,4 @@
-use display_controller::config::{WIDTH, HEIGHT};
+use display_controller::config::{SCREEN_WIDTH, SCREEN_HEIGHT};
 
 pub struct ShaderVariables {
     pub screen_width: f32,
@@ -14,8 +14,8 @@ pub struct ShaderVariables {
 impl ShaderVariables {
     pub fn new() -> Self {
         Self {
-            screen_width: WIDTH as f32,
-            screen_height: HEIGHT as f32,
+            screen_width: SCREEN_WIDTH as f32,
+            screen_height: SCREEN_HEIGHT as f32,
             mode: 0.0,
             scanline_interval: 6.0 as f32,
             mask_size: 3.0 as f32,

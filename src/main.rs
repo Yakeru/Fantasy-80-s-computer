@@ -42,8 +42,8 @@ fn main() -> Result<(), Error> {
     let window_builder = WindowBuilder::new()
         .with_decorations(true)
         .with_inner_size(PhysicalSize::new(
-            config::WIDTH as i32,
-            config::HEIGHT as i32,
+            config::SCREEN_WIDTH as i32,
+            config::SCREEN_HEIGHT as i32,
         ))
         .with_title("Fantasy CPC")
         .with_resizable(false)
@@ -77,7 +77,7 @@ fn main() -> Result<(), Error> {
 
     // pixels set-up 
     let mut pixels = {
-        let surface_texture = SurfaceTexture::new(config::WIDTH as u32, config::HEIGHT as u32, &window);
+        let surface_texture = SurfaceTexture::new(config::SCREEN_WIDTH as u32, config::SCREEN_HEIGHT as u32, &window);
         PixelsBuilder::new(
             config::VIRTUAL_WIDTH as u32,
             config::VIRTUAL_HEIGHT as u32,
