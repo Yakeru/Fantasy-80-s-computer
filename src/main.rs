@@ -56,20 +56,13 @@ fn main() -> Result<(), Error> {
         .set_cursor_grab(winit::window::CursorGrabMode::None)
         .unwrap();
 
-    if FULLSCREEN { 
-        window.set_decorations(false);
-        window.set_fullscreen(Some(Fullscreen::Borderless(None)));
-    }
-
     for monitor in window.available_monitors() {
-        if monitor.name().is_some() {
-            if monitor.name().unwrap().contains("DISPLAY2") {
-                if FULLSCREEN { 
-                    window.set_decorations(false);
-                    window.set_fullscreen(Some(Fullscreen::Borderless(Some(monitor))));
-                }
-                break;
+        if monitor.size().width >= SCREEN_WIDTH as u32 && monitor.size().height >= SCREEN_HEIGHT as u32 {
+            if FULLSCREEN {
+                window.set_decorations(false);
+                window.set_fullscreen(Some(Fullscreen::Borderless(Some(monitor))));
             }
+            break;
         }
     }
 
