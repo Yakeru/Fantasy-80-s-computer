@@ -36,33 +36,33 @@ pub struct DisplayController {
     clock: Clock
 }
 
-#[derive(Copy, Clone)]
-pub struct Square {
-    pub x: usize,
-    pub y: usize,
-    pub width: usize,
-    pub height: usize,
-    pub color: u8,
-    pub fill: bool,
-}
+// #[derive(Copy, Clone)]
+// pub struct Square {
+//     pub x: usize,
+//     pub y: usize,
+//     pub width: usize,
+//     pub height: usize,
+//     pub color: u8,
+//     pub fill: bool,
+// }
 
-#[derive(Copy, Clone)]
-pub struct Line {
-    pub x1: usize,
-    pub y1: usize,
-    pub x2: usize,
-    pub y2: usize,
-    pub color: u8
-}
+// #[derive(Copy, Clone)]
+// pub struct Line {
+//     pub x1: usize,
+//     pub y1: usize,
+//     pub x2: usize,
+//     pub y2: usize,
+//     pub color: u8
+// }
 
-#[derive(Copy, Clone)]
-pub struct Circle {
-    pub x: usize,
-    pub y: usize,
-    pub r: usize,
-    pub color: u8,
-    pub fill: bool
-}
+// #[derive(Copy, Clone)]
+// pub struct Circle {
+//     pub x: usize,
+//     pub y: usize,
+//     pub r: usize,
+//     pub color: u8,
+//     pub fill: bool
+// }
 
 impl DisplayController {
     pub fn new() -> DisplayController {

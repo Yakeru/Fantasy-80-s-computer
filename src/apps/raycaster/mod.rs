@@ -1,5 +1,5 @@
 pub mod map;
-pub mod raycaster;
+pub mod game;
 pub mod texture;
 pub mod renderer;
 pub mod math;

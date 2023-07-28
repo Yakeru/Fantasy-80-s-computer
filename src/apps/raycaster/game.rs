@@ -1,12 +1,14 @@
 use super::{
     map::Map,
+    math::cast_ray,
+    monster::Monster,
     player::Player,
-    renderer::{Renderer, GAME_SCALE}, monster::Monster, math::cast_ray
+    renderer::{Renderer, GAME_SCALE},
 };
 use app_macro::AppMacro;
 use app_macro_derive::AppMacro;
 use fast_math::atan2;
-use std::{f32::consts::PI,};
+use std::f32::consts::PI;
 
 const PLAYER_SPEED: isize = 8;
 
@@ -78,7 +80,7 @@ impl Raycaster {
             self.update_game(inputs, clock, dc);
         }
 
-        return None;
+        None
     }
 
     //***************************************************************************************************************** */
@@ -108,7 +110,7 @@ impl Raycaster {
         if inputs.key_held(VirtualKeyCode::Left) {
             self.player.direction -= 0.05;
 
-            if self.player.direction < - PI {
+            if self.player.direction < -PI {
                 self.player.direction += 2.0 * PI;
             }
         }
@@ -129,12 +131,7 @@ impl Raycaster {
                 PLAYER_SPEED,
             );
 
-            let col_test = cast_ray(
-                self.player.x,
-                self.player.y,
-                self.player.direction,
-                50,
-            );
+            let col_test = cast_ray(self.player.x, self.player.y, self.player.direction, 50);
 
             if self.map.get_cell_from_coord(self.player.x, col_test.1) == 0 {
                 self.player.y = move_to.1;
@@ -153,12 +150,7 @@ impl Raycaster {
                 PLAYER_SPEED,
             );
 
-            let col_test = cast_ray(
-                self.player.x,
-                self.player.y,
-                self.player.direction + PI,
-                50,
-            );
+            let col_test = cast_ray(self.player.x, self.player.y, self.player.direction + PI, 50);
 
             if self.map.get_cell_from_coord(self.player.x, col_test.1) == 0 {
                 self.player.y = move_to.1;
@@ -170,9 +162,11 @@ impl Raycaster {
         }
 
         // See monster ?
-        let monster_angle: f32 = atan2((self.monster.y - self.player.y)as f32, (self.monster.x - self.player.x) as f32);
+        let monster_angle: f32 = atan2(
+            (self.monster.y - self.player.y) as f32,
+            (self.monster.x - self.player.x) as f32,
+        );
         self.monster.angle_to_player = monster_angle;
-
     }
 
     pub fn draw_app(&mut self, clock: &Clock, dc: &mut DisplayController) {
@@ -182,11 +176,13 @@ impl Raycaster {
         }
 
         // Ray casting renderer
-        self.renderer.render(dc, &self.map, &self.player, &self.monster);
+        self.renderer
+            .render(dc, &self.map, &self.player, &self.monster);
 
         //Draw minimap
         if self.draw_minimap {
-            self.renderer.draw_top_view_map(dc, &self.map, &self.player, &self.monster);
+            self.renderer
+                .draw_top_view_map(dc, &self.map, &self.player, &self.monster);
         }
     }
 
@@ -245,16 +241,12 @@ impl Raycaster {
             }
         }
 
-        if inputs.key_pressed_os(VirtualKeyCode::Up) {
-            if self.menu_item_selected > 0 {
-                self.menu_item_selected -= 1
-            }
+        if inputs.key_pressed_os(VirtualKeyCode::Up) && self.menu_item_selected > 0 {
+            self.menu_item_selected -= 1
         }
 
-        if inputs.key_pressed_os(VirtualKeyCode::Down) {
-            if self.menu_item_selected < 4 {
-                self.menu_item_selected += 1
-            }
+        if inputs.key_pressed_os(VirtualKeyCode::Down) && self.menu_item_selected < 4 {
+            self.menu_item_selected += 1
         }
     }
 

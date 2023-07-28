@@ -9,7 +9,7 @@ chrono = "0.4.24"
 rand = "0.8.5"
 winit = "0.28.3"
 winit_input_helper = "0.14.1"
-pixels = "0.12.1"
+pixels = "0.13.0"
 bytemuck = "1.12"
 ultraviolet = "0.9"
 openweathermap = "0.2.4"
@@ -22,3 +22,4 @@ display_controller = { path = "./display_controller" }
 unicode = { path = "./unicode" }
 clock = { path = "./clock" }
 fast-math = "0.1.1"
+cargo-watch = "8.4.0"

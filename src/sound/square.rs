@@ -17,7 +17,7 @@ impl SquareWave {
     #[inline]
     pub fn new(freq: f32) -> SquareWave {
         SquareWave {
-            freq: freq,
+            freq,
             num_sample: 0,
         }
     }

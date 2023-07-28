@@ -1,36 +1,30 @@
-use apps::raycaster::raycaster::Raycaster;
-use rodio::Source;
+use app_macro::*;
+use apps::{
+    boot::Boot, life::Life, mandelbrot::game::Mandelbrot, raycaster::game::Raycaster, shell::Shell,
+    weather_app::WeatherApp,
+};
 use crt_shader_renderer::CrtRenderer;
+use display_controller::{config::*, *};
+use pixels::{Error, PixelsBuilder, SurfaceTexture};
+use rodio::Source;
 use shader_variables::ShaderVariables;
 use sound::play;
-use display_controller::{*, config::*};
-use app_macro::*;
-use pixels::{Error, PixelsBuilder, SurfaceTexture};
-use winit_input_helper::WinitInputHelper;
 use winit::{
-    dpi::{PhysicalSize, Position, PhysicalPosition},
+    dpi::{PhysicalPosition, PhysicalSize, Position},
+    event::Event,
     event_loop::{ControlFlow, EventLoop},
-    window::{WindowBuilder, Fullscreen}, event::Event
+    window::{Fullscreen, WindowBuilder},
 };
+use winit_input_helper::WinitInputHelper;
 
 use clock::Clock;
 
+mod apps;
 mod crt_shader_renderer;
 mod shader_variables;
-
-//Apps
-mod apps;
-use crate::apps::boot::*;
-use crate::apps::shell::*;
-use crate::apps::life::*;
-use crate::apps::weather_app::*;
-use crate::apps::mandelbrot::*;
-
-//Sound
 mod sound;
 
 fn main() -> Result<(), Error> {
-
     // ************************************************ SOUND INIT ************************************************
     // First time sound is played, it takes a few seconds and gets de-sync'ed with the display
     // So here is a function to play an empty sound for 1/10 s to "init" rodio
@@ -42,8 +36,8 @@ fn main() -> Result<(), Error> {
     let window_builder = WindowBuilder::new()
         .with_decorations(true)
         .with_inner_size(PhysicalSize::new(
-            config::SCREEN_WIDTH as i32,
-            config::SCREEN_HEIGHT as i32,
+            display_controller::config::SCREEN_WIDTH as i32,
+            display_controller::config::SCREEN_HEIGHT as i32,
         ))
         .with_title("Fantasy CPC")
         .with_resizable(false)
@@ -57,7 +51,9 @@ fn main() -> Result<(), Error> {
         .unwrap();
 
     for monitor in window.available_monitors() {
-        if monitor.size().width >= SCREEN_WIDTH as u32 && monitor.size().height >= SCREEN_HEIGHT as u32 {
+        if monitor.size().width >= SCREEN_WIDTH as u32
+            && monitor.size().height >= SCREEN_HEIGHT as u32
+        {
             if FULLSCREEN {
                 window.set_decorations(false);
                 window.set_fullscreen(Some(Fullscreen::Borderless(Some(monitor))));
@@ -68,12 +64,16 @@ fn main() -> Result<(), Error> {
 
     window.set_cursor_visible(true);
 
-    // pixels set-up 
+    // pixels set-up
     let mut pixels = {
-        let surface_texture = SurfaceTexture::new(config::SCREEN_WIDTH as u32, config::SCREEN_HEIGHT as u32, &window);
+        let surface_texture = SurfaceTexture::new(
+            display_controller::config::SCREEN_WIDTH as u32,
+            display_controller::config::SCREEN_HEIGHT as u32,
+            &window,
+        );
         PixelsBuilder::new(
-            config::VIRTUAL_WIDTH as u32,
-            config::VIRTUAL_HEIGHT as u32,
+            display_controller::config::VIRTUAL_WIDTH as u32,
+            display_controller::config::VIRTUAL_HEIGHT as u32,
             surface_texture,
         )
         .enable_vsync(true)
@@ -102,14 +102,14 @@ fn main() -> Result<(), Error> {
     let crt_renderer = CrtRenderer::new(&pixels, &shader_variables)?;
 
     // ****************************************************** APPS SETUP ***********************************************
-    
+
     // The Shell is the command line interpreter app.
-    // It is launched at startup after the boot animation. 
+    // It is launched at startup after the boot animation.
     // The winit event loop will update and render the shell by default if
     // no other process is running or has the focus.
     // The Shell uses the console as default output.
     // When closing/quitting an app, it should always fall back to the shell.
-    let mut shell = Box::new(Shell::new()); 
+    let mut shell = Box::new(Shell::new());
     shell.set_state(true, true);
 
     // ********* //
@@ -141,7 +141,7 @@ fn main() -> Result<(), Error> {
     app_list.push(raycaster);
 
     // ****************************************************** MAIN WINIT EVENT LOOP ***********************************************
-    
+
     let mut input = WinitInputHelper::new();
 
     //The event loop here can be seen as the "bios + boot rom + console" part of the Fantasy computer.
@@ -151,7 +151,6 @@ fn main() -> Result<(), Error> {
     //It goes through app_list and renders the appa that have their render flag and focus flag to true. Should be just one, so it stops at the first one it finds.
     //It reads the messages returned by the apps and displays them to Console 0.
     event_loop.run(move |event, _, control_flow| {
-
         *control_flow = ControlFlow::Poll; //Poll is synchronized with V-Sync
 
         if let Event::RedrawRequested(_) = event {
@@ -170,7 +169,6 @@ fn main() -> Result<(), Error> {
         }
 
         if input.update(&event) {
-
             system_clock.update();
 
             // If user clicks on cross to close window for example
@@ -183,11 +181,11 @@ fn main() -> Result<(), Error> {
             let mut app_response: Option<AppResponse> = None;
             //let app_inputs: AppInputs = AppInputs { keyboard_input, char_received, mouse_move_delta, system_clock };
             for app in app_list.chunks_exact_mut(1) {
-                
                 // If app is running and drawing (in focus), call update with keyboard inputs and dont render shell.
                 if app[0].get_state().0 && app[0].get_state().1 {
                     show_shell = false;
-                    app_response = app[0].update(Some(&input), &system_clock, &mut display_controller);
+                    app_response =
+                        app[0].update(Some(&input), &system_clock, &mut display_controller);
 
                     // Check again if app is drawing : if the app update just above stops the app,
                     // we don't want to draw
@@ -195,7 +193,6 @@ fn main() -> Result<(), Error> {
                         app[0].draw(&system_clock, &mut display_controller);
                     }
                 }
-                
                 // If app is running but not drawing (running in the background), call update without keyboard inputs.
                 // dont draw.
                 else if app[0].get_state().0 && !app[0].get_state().1 {
@@ -225,7 +222,7 @@ fn main() -> Result<(), Error> {
                                 if app[0].get_name() == message {
                                     app[0].set_state(true, true);
                                 }
-                            };
+                            }
 
                             if message == String::from("reboot") {
                                 shell.init_app(&system_clock, &mut display_controller);
@@ -249,46 +246,46 @@ fn main() -> Result<(), Error> {
                             }
 
                             if message == String::from("dist 1") {
-                                shader_variables.horiz_distortion = 32.0*(4.0/3.0);
+                                shader_variables.horiz_distortion = 32.0 * (4.0 / 3.0);
                                 shader_variables.vert_distortion = 32.0;
                             }
 
                             if message == String::from("dist 2") {
-                                shader_variables.horiz_distortion = 16.0*(4.0/3.0);
+                                shader_variables.horiz_distortion = 16.0 * (4.0 / 3.0);
                                 shader_variables.vert_distortion = 16.0;
                             }
 
                             if message == String::from("dist 3") {
-                                shader_variables.horiz_distortion = 8.0*(4.0/3.0);
+                                shader_variables.horiz_distortion = 8.0 * (4.0 / 3.0);
                                 shader_variables.vert_distortion = 8.0;
                             }
 
                             if message == String::from("dist 4") {
-                                shader_variables.horiz_distortion = 2.0*(4.0/3.0);
+                                shader_variables.horiz_distortion = 2.0 * (4.0 / 3.0);
                                 shader_variables.vert_distortion = 2.0;
                             }
 
                             if message == String::from("dist 5") {
-                                shader_variables.horiz_distortion = 1.0*(4.0/3.0);
+                                shader_variables.horiz_distortion = 1.0 * (4.0 / 3.0);
                                 shader_variables.vert_distortion = 1.0;
                             }
 
                             if message == String::from("dist 6") {
-                                shader_variables.horiz_distortion = 0.5*(4.0/3.0);
+                                shader_variables.horiz_distortion = 0.5 * (4.0 / 3.0);
                                 shader_variables.vert_distortion = 0.5;
                             }
                         }
-                        
+
                         None => (),
                     }
-                },
-                None => ()
+                }
+                None => (),
             }
 
             //Combine all the layers, render text, render sprites, etc...
             //into pixel's frame buffer
             display_controller.render(pixels.frame_mut());
-            
+
             window.request_redraw();
             system_clock.count_frame();
 

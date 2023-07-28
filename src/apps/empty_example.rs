@@ -24,7 +24,7 @@ impl Empty {
         _display_controller: &mut DisplayController,
     ) -> Option<AppResponse> {
 
-        return None;
+        None
     }
 
     pub fn draw_app(

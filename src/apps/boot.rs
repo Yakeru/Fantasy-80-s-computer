@@ -64,7 +64,7 @@ impl Boot {
             self.quit_app(dc);
         }
 
-        return None;
+        None
     }
 
     pub fn draw_app(
