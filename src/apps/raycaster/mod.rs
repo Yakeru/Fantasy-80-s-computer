@@ -1,7 +1,8 @@
-pub mod map;
 pub mod game;
-pub mod texture;
-pub mod renderer;
+pub mod map;
 pub mod math;
-pub mod player;
 pub mod monster;
+pub mod player;
+pub mod renderer;
+pub mod texture;
+pub mod textures;

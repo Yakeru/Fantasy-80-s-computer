@@ -1,41 +1,39 @@
 use std::cmp::{max, min};
 
+pub struct Segment {
+    pub x1: isize,
+    pub y1: isize,
+    pub x2: isize,
+    pub y2: isize
+}
+
 /// Returns the intersection of two segments, and the distance between ray origin
 /// and the interecting point. None if no interesction.
 /// See https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
-pub fn find_intersection(
-    x1: isize,
-    y1: isize,
-    x2: isize,
-    y2: isize,
-    x3: isize,
-    y3: isize,
-    x4: isize,
-    y4: isize,
-) -> Option<(isize, isize, isize)> {
-    let denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+pub fn find_intersection(seg_1: Segment, seg_2: Segment) -> Option<(isize, isize, isize)> {
+    let denom = (seg_1.x1 - seg_1.x2) * (seg_2.y1 - seg_2.y2) - (seg_1.y1 - seg_1.y2) * (seg_2.x1 - seg_2.x2);
     if denom == 0 {
         return None;
     }
 
-    let t_num = (x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4);
+    let t_num = (seg_1.x1 - seg_2.x1) * (seg_2.y1 - seg_2.y2) - (seg_1.y1 - seg_2.y1) * (seg_2.x1 - seg_2.x2);
     let t: f32 = t_num as f32 / denom as f32;
 
     if !(0.0..=1.0).contains(&t) {
         return None;
     }
 
-    let u_num = (x1 - x3) * (y1 - y2) - (y1 - y3) * (x1 - x2);
+    let u_num = (seg_1.x1 - seg_2.x1) * (seg_1.y1 - seg_1.y2) - (seg_1.y1 - seg_2.y1) * (seg_1.x1 - seg_1.x2);
     let u: f32 = u_num as f32 / denom as f32;
 
     if !(0.0..=1.0).contains(&u) {
         return None;
     }
 
-    let result_x = (x3 as f32 + u * (x4 - x3) as f32) as isize;
-    let result_y = (y3 as f32 + u * (y4 - y3) as f32) as isize;
+    let result_x = (seg_2.x1 as f32 + u * (seg_2.x2 - seg_2.x1) as f32) as isize;
+    let result_y = (seg_2.y1 as f32 + u * (seg_2.y2 - seg_2.y1) as f32) as isize;
 
-    let distance = get_distance_between_points(x3, y3, result_x, result_y);
+    let distance = get_distance_between_points(seg_2.x1, seg_2.y1, result_x, result_y);
 
     Some((result_x, result_y, distance))
 }

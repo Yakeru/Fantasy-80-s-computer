@@ -117,7 +117,7 @@ fn main() -> Result<(), Error> {
     // ********* //
 
     // To be managed properly, apps must be added to that list.
-    // The main goes through the list and updates/renders the apps according to their statuses.
+    // The main loop goes through the list and updates/renders the apps according to their statuses.
     let mut app_list: Vec<Box<dyn AppMacro>> = Vec::new();
 
     // BOOT APP, not really an app, just plays the animation at startup, and when "reboot" command is sent
@@ -148,8 +148,9 @@ fn main() -> Result<(), Error> {
     //It initialises the display_controller, Console 0 and Shell.
     //If no app is running/rendering, it defaults back to running/rendering the Console 0 and Shell.
     //It goes through app_list and updates all apps that have their update flag to true.
-    //It goes through app_list and renders the appa that have their render flag and focus flag to true. Should be just one, so it stops at the first one it finds.
-    //It reads the messages returned by the apps and displays them to Console 0.
+    //It goes through app_list and renders the apps that have their render flag and focus flag to true. Should be just one, so it stops at the first one it finds.
+    //It reads the messages returned by the apps displays them to Console 0 and interpets them.
+    //TODO It sends messages to apps
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll; //Poll is synchronized with V-Sync
 
@@ -207,79 +208,81 @@ fn main() -> Result<(), Error> {
             }
 
             // Process app response
-            match app_response {
-                Some(response) => {
-                    match response.event {
-                        Some(event) => *control_flow = event,
-                        None => (),
+            //TODO make smarter command line tokenizer and interpreter
+            //TODO make enum of available commands
+            //TODO add support for command line parameters
+            if let Some(response) = app_response {
+                //If app response contains a winit event, send it directly to winit's control flow
+                if let Some(app_event) = response.event {
+                    *control_flow = app_event
+                }
+
+                //If app_response contains a message, interpret it with command line interpreter.
+                //ex: when pressing enter in console app, the message will contain the command from the console
+                //that command can then be interpreted to run another app, or change settings.
+                if let Some(app_message) = response.message {
+                    println!("App message: {}", app_message);
+
+                    //Tests if message is name of an available app. If so, switches to that app.
+                    for app in app_list.chunks_exact_mut(1) {
+                        if app[0].get_name() == app_message {
+                            app[0].set_state(true, true);
+                        }
                     }
 
-                    match response.message {
-                        Some(message) => {
-                            println!("App message: {}", message);
+                    //Reboot (resets app statuses to default state and plays boot animation)
+                    if app_message == "reboot" {
+                        shell.init_app(&system_clock, &mut display_controller);
+                    }
 
-                            for app in app_list.chunks_exact_mut(1) {
-                                if app[0].get_name() == message {
-                                    app[0].set_state(true, true);
-                                }
-                            }
+                    //Shader settings
+                    if app_message == "mode 0" {
+                        shader_variables.mode = 0.0;
+                    }
 
-                            if message == String::from("reboot") {
-                                shell.init_app(&system_clock, &mut display_controller);
-                            }
+                    if app_message == "mode 1" {
+                        shader_variables.mode = 1.0;
+                    }
 
-                            if message == String::from("mode 0") {
-                                shader_variables.mode = 0.0;
-                            }
+                    if app_message == "mode 2" {
+                        shader_variables.mode = 2.0;
+                    }
 
-                            if message == String::from("mode 1") {
-                                shader_variables.mode = 1.0;
-                            }
+                    if app_message == "dist 0" {
+                        shader_variables.horiz_distortion = 0.0;
+                        shader_variables.vert_distortion = 0.0;
+                    }
 
-                            if message == String::from("mode 2") {
-                                shader_variables.mode = 2.0;
-                            }
+                    if app_message == "dist 1" {
+                        shader_variables.horiz_distortion = 32.0 * (4.0 / 3.0);
+                        shader_variables.vert_distortion = 32.0;
+                    }
 
-                            if message == String::from("dist 0") {
-                                shader_variables.horiz_distortion = 0.0;
-                                shader_variables.vert_distortion = 0.0;
-                            }
+                    if app_message == "dist 2" {
+                        shader_variables.horiz_distortion = 16.0 * (4.0 / 3.0);
+                        shader_variables.vert_distortion = 16.0;
+                    }
 
-                            if message == String::from("dist 1") {
-                                shader_variables.horiz_distortion = 32.0 * (4.0 / 3.0);
-                                shader_variables.vert_distortion = 32.0;
-                            }
+                    if app_message == "dist 3" {
+                        shader_variables.horiz_distortion = 8.0 * (4.0 / 3.0);
+                        shader_variables.vert_distortion = 8.0;
+                    }
 
-                            if message == String::from("dist 2") {
-                                shader_variables.horiz_distortion = 16.0 * (4.0 / 3.0);
-                                shader_variables.vert_distortion = 16.0;
-                            }
+                    if app_message == "dist 4" {
+                        shader_variables.horiz_distortion = 2.0 * (4.0 / 3.0);
+                        shader_variables.vert_distortion = 2.0;
+                    }
 
-                            if message == String::from("dist 3") {
-                                shader_variables.horiz_distortion = 8.0 * (4.0 / 3.0);
-                                shader_variables.vert_distortion = 8.0;
-                            }
+                    if app_message == "dist 5" {
+                        shader_variables.horiz_distortion = 1.0 * (4.0 / 3.0);
+                        shader_variables.vert_distortion = 1.0;
+                    }
 
-                            if message == String::from("dist 4") {
-                                shader_variables.horiz_distortion = 2.0 * (4.0 / 3.0);
-                                shader_variables.vert_distortion = 2.0;
-                            }
-
-                            if message == String::from("dist 5") {
-                                shader_variables.horiz_distortion = 1.0 * (4.0 / 3.0);
-                                shader_variables.vert_distortion = 1.0;
-                            }
-
-                            if message == String::from("dist 6") {
-                                shader_variables.horiz_distortion = 0.5 * (4.0 / 3.0);
-                                shader_variables.vert_distortion = 0.5;
-                            }
-                        }
-
-                        None => (),
+                    if app_message == "dist 6" {
+                        shader_variables.horiz_distortion = 0.5 * (4.0 / 3.0);
+                        shader_variables.vert_distortion = 0.5;
                     }
                 }
-                None => (),
             }
 
             //Combine all the layers, render text, render sprites, etc...

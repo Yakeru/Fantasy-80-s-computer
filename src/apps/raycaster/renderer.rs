@@ -10,10 +10,11 @@ use crate::apps::raycaster::math::range_conversion;
 
 use super::{
     map::{Map, Wall},
-    math::{cast_ray, find_intersection, get_distance_between_points},
+    math::{cast_ray, find_intersection, get_distance_between_points, Segment},
     monster::Monster,
     player::Player,
-    texture::{Texture, STONE_64X64},
+    texture::Texture,
+    textures::stone_wall::STONE_64X64,
 };
 
 pub const FOV: f32 = 1.0;
@@ -182,7 +183,7 @@ impl Renderer {
         scaled
     }
 
-    pub fn shade_texture_column(&self, column: &mut Vec<u8>, map: &Map, dist: isize, x: isize) {
+    pub fn shade_texture_column(&self, column: &mut [u8], map: &Map, dist: isize, x: isize) {
         if dist > self.render_distance {
             column.fill(map.fog_color);
             return;
@@ -207,90 +208,64 @@ impl Renderer {
         }
     }
 
-    fn apply_level_1_shade(&self, column: &mut Vec<u8>, x: isize) {
+    fn apply_level_1_shade(&self, column: &mut [u8], x: isize) {
         for pixel in column.iter_mut().enumerate() {
-            if x % 2 == 0 && x % 4 == 0 {
-                if pixel.0 % 4 == 0 {
-                    *pixel.1 = 0;
-                }
-            } else if x % 2 == 0 && (pixel.0 + 2) % 4 == 0 {
+            if (x % 2 == 0 && x % 4 == 0 && pixel.0 % 4 == 0)
+                || (x % 2 == 0 && (pixel.0 + 2) % 4 == 0)
+            {
                 *pixel.1 = 0;
             }
         }
     }
 
-    fn apply_level_2_shade(&self, column: &mut Vec<u8>, x: isize) {
+    fn apply_level_2_shade(&self, column: &mut [u8], x: isize) {
         for pixel in column.iter_mut().enumerate() {
-            if x % 2 == 0 && x % 4 == 0 {
-                if pixel.0 % 2 == 0 {
-                    *pixel.1 = 0;
-                }
-            }
-        }
-    }
-
-    fn apply_level_3_shade(&self, column: &mut Vec<u8>, x: isize) {
-        for pixel in column.iter_mut().enumerate() {
-            if x % 2 == 0 && x % 4 == 0 {
-                if pixel.0 % 4 == 0 {
-                    *pixel.1 = 0;
-                }
-            } else if (x + 2) % 2 == 0 {
-                if pixel.0 % 2 == 0 {
-                    *pixel.1 = 0;
-                }
-            }
-        }
-    }
-
-    fn apply_level_4_shade(&self, column: &mut Vec<u8>, x: isize) {
-        for pixel in column.iter_mut().enumerate() {
-            if x % 2 == 0 {
-                if pixel.0 % 2 == 0 {
-                    *pixel.1 = 0;
-                }
-            } else {
-                if (pixel.0 + 1) % 2 == 0 {
-                    *pixel.1 = 0;
-                }
-            }
-        }
-    }
-
-    fn apply_level_5_shade(&self, column: &mut Vec<u8>, x: isize) {
-        for pixel in column.iter_mut().enumerate() {
-            if x % 2 == 0 && x % 4 == 0 {
-                if pixel.0 % 4 == 0 {
-                    *pixel.1 = 0;
-                }
-            } else if (x + 1) % 2 == 0 {
-                if pixel.0 % 2 == 0 {
-                    *pixel.1 = 0;
-                }
-            }
-        }
-    }
-
-    fn apply_level_6_shade(&self, column: &mut Vec<u8>, x: isize) {
-        for pixel in column.iter_mut().enumerate() {
-            if x % 2 == 0 && x % 4 == 0 {
+            if x % 2 == 0 && x % 4 == 0 && pixel.0 % 2 == 0 {
                 *pixel.1 = 0;
-            } else if x % 2 == 0 {
-                if pixel.0 % 2 == 0 {
-                    *pixel.1 = 0;
-                }
             }
         }
     }
 
-    fn apply_level_7_shade(&self, column: &mut Vec<u8>, x: isize) {
+    fn apply_level_3_shade(&self, column: &mut [u8], x: isize) {
         for pixel in column.iter_mut().enumerate() {
-            if x % 2 == 0 && x % 4 == 0 {
+            if (x % 2 == 0 && x % 4 == 0 && pixel.0 % 4 == 0)
+                || ((x + 2) % 2 == 0 && pixel.0 % 2 == 0)
+            {
                 *pixel.1 = 0;
-            } else if x % 2 == 0 {
-                if pixel.0 % 4 != 0 {
-                    *pixel.1 = 0;
-                }
+            }
+        }
+    }
+
+    fn apply_level_4_shade(&self, column: &mut [u8], x: isize) {
+        for pixel in column.iter_mut().enumerate() {
+            if (x % 2 == 0 && pixel.0 % 2 == 0) || ((pixel.0 + 1) % 2 == 0) {
+                *pixel.1 = 0;
+            }
+        }
+    }
+
+    fn apply_level_5_shade(&self, column: &mut [u8], x: isize) {
+        for pixel in column.iter_mut().enumerate() {
+            if (x % 2 == 0 && x % 4 == 0 && pixel.0 % 4 == 0)
+                || ((x + 1) % 2 == 0 && pixel.0 % 2 == 0)
+            {
+                *pixel.1 = 0;
+            }
+        }
+    }
+
+    fn apply_level_6_shade(&self, column: &mut [u8], x: isize) {
+        for pixel in column.iter_mut().enumerate() {
+            if x % 2 == 0 && (x % 4 == 0 || pixel.0 % 2 == 0) {
+                *pixel.1 = 0;
+            }
+        }
+    }
+
+    fn apply_level_7_shade(&self, column: &mut [u8], x: isize) {
+        for pixel in column.iter_mut().enumerate() {
+            if x % 2 == 0 && (x % 4 == 0 || pixel.0 % 4 != 0) {
+                *pixel.1 = 0;
             }
         }
     }
@@ -379,10 +354,19 @@ impl Renderer {
 
             //Check each wall against ray, keep closest intersection
             for wall in map.walls.chunks_exact(1) {
-                let intersection = find_intersection(
-                    wall[0].x1, wall[0].y1, wall[0].x2, wall[0].y2, player.x, player.y, ray.0,
-                    ray.1,
-                );
+                let seg_1: Segment = Segment {
+                    x1: wall[0].x1,
+                    y1: wall[0].y1,
+                    x2: wall[0].x2,
+                    y2: wall[0].y2,
+                };
+                let seg_2: Segment = Segment {
+                    x1: player.x,
+                    y1: player.y,
+                    x2: ray.0,
+                    y2: ray.1,
+                };
+                let intersection = find_intersection(seg_1, seg_2);
 
                 if intersection.is_some()
                     && (closest_intersection.is_none()
