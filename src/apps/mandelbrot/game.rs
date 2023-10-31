@@ -223,7 +223,6 @@ impl Mandelbrot {
 
     pub fn draw_app(&mut self, clock: &Clock, dc: &mut DisplayController) {
         dc.get_text_layer_mut().clear();
-        dc.get_console_mut().display = false;
         dc.clear(BLACK);
 
         if self.palette_rotation && clock.get_frame_count() % 2 == 0 {
@@ -293,7 +292,7 @@ impl Mandelbrot {
                 } else {
                     temp_color_1
                 };
-                let color: u8 = if iteration == self.max_iteration {
+                let color: usize = if iteration == self.max_iteration {
                     max_iteration_count += 1;
                     empty_color
                 } else if color_swap && random.gen_bool(0.5) {

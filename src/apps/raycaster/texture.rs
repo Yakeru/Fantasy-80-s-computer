@@ -4,14 +4,14 @@ use display_controller::color_palettes::LIGHT_GREY;
 pub struct Texture {
     width: usize,
     height: usize,
-    color: u8,
-    columns: Vec<Vec<u8>>,
+    color: usize,
+    columns: Vec<Vec<usize>>,
 }
 
 #[allow(dead_code)]
 impl Texture {
-    pub fn new(data: &[u8], width: usize, height: usize) -> Self {
-        let mut columns: Vec<Vec<u8>> = Vec::new();
+    pub fn new(data: &[usize], width: usize, height: usize) -> Self {
+        let mut columns: Vec<Vec<usize>> = Vec::new();
 
         for texture_row in data.chunks_exact(width) {
             for pixel in texture_row.chunks_exact(1).enumerate() {
@@ -20,7 +20,7 @@ impl Texture {
                         column.push(pixel.1[0]);
                     }
                     None => {
-                        let column: Vec<u8> = vec![pixel.1[0]];
+                        let column: Vec<usize> = vec![pixel.1[0]];
                         columns.push(column);
                     }
                 }
@@ -43,11 +43,11 @@ impl Texture {
         self.height
     }
 
-    pub fn get_color(&self) -> u8 {
+    pub fn get_color(&self) -> usize {
         self.color
     }
 
-    pub fn get_column(&self, index: usize) -> &Vec<u8> {
+    pub fn get_column(&self, index: usize) -> &Vec<usize> {
         &self.columns[index]
     }
 }

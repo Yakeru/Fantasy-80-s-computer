@@ -118,7 +118,6 @@ impl WeatherApp {
     fn draw_app(&mut self, _clock: &Clock, dc: &mut DisplayController) {
         dc.get_text_layer_mut().clear();
         dc.clear(BLACK);
-        dc.get_console_mut().display = false;
 
         self.draw_analogue_clock(
             dc,

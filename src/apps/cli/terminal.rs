@@ -1,12 +1,15 @@
+use display_controller::DisplayController;
+
 use crate::{text_layer::TextLayerChar, config::{TEXT_COLUMNS, TEXT_ROWS}, color_palettes::{YELLOW, TRUE_BLUE}};
 
-pub struct Console {
+/// The terminal is the text window in which the Shell is displayed
+pub struct Terminal {
     pub display: bool,
     screen_coordinates: (usize, usize), 
     screen_size: (usize, usize),
     max_buffer_size: usize,
-    pub default_color: u8,
-    pub default_bkg_color: u8,
+    pub default_color: usize,
+    pub default_bkg_color: usize,
     pub cursor: char,
     pub show_border: bool,
     pub show_title_bar: bool,
@@ -14,10 +17,10 @@ pub struct Console {
     formatted_buffer: Vec<TextLayerChar>
 }
 
-impl Console {
+impl Terminal {
 
-    pub const fn new() -> Console {
-            Console {
+    pub const fn new() -> Terminal {
+        Terminal {
                 display: true,
                 screen_coordinates: (0, 0),
                 screen_size: (TEXT_COLUMNS, TEXT_ROWS),
@@ -161,5 +164,11 @@ impl Console {
         while self.formatted_buffer.len() < (self.screen_size.0 * self.screen_size.1) {
             self.formatted_buffer.push(self.get_empty_cell());
         }
+    }
+
+    ///
+    fn render(&mut self,
+        dc: &mut DisplayController) {
+
     }
 }

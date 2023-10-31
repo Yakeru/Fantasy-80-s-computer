@@ -54,7 +54,6 @@ impl Raycaster {
     //                                                    APP
     //***************************************************************************************************************** */
     pub fn init_app(&mut self, _clock: &Clock, dc: &mut DisplayController) {
-        dc.get_console_mut().display = false;
         dc.get_text_layer_mut().clear();
         self.map.walls.clear();
         self.show_menu = false;

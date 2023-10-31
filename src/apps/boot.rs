@@ -31,7 +31,6 @@ impl Boot {
     }
 
     pub fn init_app(&mut self, clock: &Clock, dc: &mut DisplayController) {
-        dc.get_console_mut().display = false;
         self.frame_count = 0;
         self.starting_time = clock.total_running_time;
 
@@ -65,7 +64,6 @@ impl Boot {
     }
 
     pub fn draw_app(&mut self, clock: &Clock, dc: &mut DisplayController) {
-        dc.get_console_mut().display = false;
 
         //CRT warm up, brightness increases from 0 to 255 and un-distord picture
         let brigthness = if clock.total_running_time - self.starting_time >= Duration::new(2, 0) {

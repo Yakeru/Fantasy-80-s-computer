@@ -8,7 +8,7 @@ pub struct Sprite {
     pub visible: bool,
     pub h_flipp: bool,
     pub v_flipp: bool,
-    pub image: Vec<u8>,
+    pub image: Vec<usize>,
 }
 
 pub enum SpriteSize {
@@ -18,7 +18,7 @@ pub enum SpriteSize {
 }
 
 impl SpriteSize {
-    pub fn size(&self) -> (u8, u8) {
+    pub fn size(&self) -> (usize, usize) {
         match *self {
             SpriteSize::_8x8 => (8, 8),
             SpriteSize::_16x16 => (16, 16),
@@ -55,10 +55,10 @@ impl Sprite {
         //let size_x = split_text[0].parse::<usize>().unwrap();
         //let size_y = split_text[1].parse::<usize>().unwrap();
 
-        let mut data: Vec<u8> = Vec::new();
+        let mut data: Vec<usize> = Vec::new();
 
         for i in 2..split_text.len() {
-            data.push(split_text[i].parse::<u8>().unwrap());
+            data.push(split_text[i].parse::<usize>().unwrap());
         }
 
         Sprite {

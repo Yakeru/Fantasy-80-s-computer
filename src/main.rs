@@ -1,7 +1,7 @@
 use app_macro::*;
 use apps::{
-    boot::Boot, life::Life, mandelbrot::game::Mandelbrot, raycaster::game::Raycaster, shell::Shell,
-    weather_app::WeatherApp,
+    boot::Boot, cli::shell::Shell, life::Life, mandelbrot::game::Mandelbrot,
+    raycaster::game::Raycaster, weather_app::WeatherApp,
 };
 use crt_shader_renderer::CrtRenderer;
 use display_controller::{config::*, *};

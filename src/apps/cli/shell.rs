@@ -1,24 +1,27 @@
 use app_macro_derive::AppMacro;
 use display_controller::characters_rom::CHAR_TABLE;
 
+use super::terminal::Terminal;
+
 const SPLASH: &str = "\u{000D} Fantasy CPC Microcomputer V(0.3.0)\u{000D}\u{000D} 2023 Damien Torreilles\u{000D}\u{000D}";
 const SHELL_START_MESSAGE: &str = "SHELL 0.1\u{000D}Ready\u{000D}";
 
-const DEFAULT_BKG_COLOR: u8 = TRUE_BLUE;
-const DEFAULT_COLOR: u8 = YELLOW;
+const DEFAULT_BKG_COLOR: usize = TRUE_BLUE;
+const DEFAULT_COLOR: usize = YELLOW;
 
 #[derive(AppMacro)]
 pub struct Shell {
     enable_auto_escape: bool,
     name: String,
-    color: u8,
-    bkg_color: u8,
+    color: usize,
+    bkg_color: usize,
     clear_text_layer: bool,
     command: Vec<char>,
     // command_history: Vec<String>,
     updating: bool,
     drawing: bool,
     initialized: bool,
+    terminal: Terminal,
 }
 
 #[derive(Copy, Clone)]
@@ -53,6 +56,7 @@ impl Shell {
             updating: false,
             drawing: false,
             initialized: false,
+            terminal: Terminal::new(),
         }
     }
 
@@ -112,12 +116,12 @@ impl Shell {
     }
 
     pub fn init_app(&mut self, _clock: &Clock, dc: &mut DisplayController) {
-        dc.get_console_mut().set_coordinates((0, 0));
-        dc.get_console_mut().set_size((TEXT_COLUMNS, TEXT_ROWS));
-        dc.get_console_mut().clear();
-        dc.get_console_mut().push_string(SPLASH);
-        dc.get_console_mut().push_string(SHELL_START_MESSAGE);
-        dc.get_console_mut().push_char('>');
+        self.terminal.set_coordinates((0, 0));
+        self.terminal.set_size((TEXT_COLUMNS, TEXT_ROWS));
+        self.terminal.clear();
+        self.terminal.push_string(SPLASH);
+        self.terminal.push_string(SHELL_START_MESSAGE);
+        self.terminal.push_char('>');
     }
 
     pub fn update_app(
@@ -130,8 +134,8 @@ impl Shell {
         inputs?;
 
         if self.clear_text_layer {
-            dc.get_console_mut().clear();
-            dc.get_console_mut().push_char('>');
+            self.terminal.clear();
+            self.terminal.push_char('>');
             self.clear_text_layer = false;
         }
 
@@ -139,15 +143,15 @@ impl Shell {
             match inputs.unwrap().text().get(0) {
                 Some(TextChar::Char(c)) => {
                     if *c == unicode::ESCAPE {
-                        dc.get_console_mut().push_char('\u{000D}');
-                        dc.get_console_mut()
+                        self.terminal.push_char('\u{000D}');
+                        self.terminal
                             .push_string("Type 'quit' or 'exit' to quit Fantasy CPC.");
-                        dc.get_console_mut().push_char('\u{000D}');
-                        dc.get_console_mut().push_char('>');
+                        self.terminal.push_char('\u{000D}');
+                        self.terminal.push_char('>');
                         self.command.clear();
                     } else {
                         self.command.push(*c);
-                        dc.get_console_mut().push_text_layer_char(
+                        self.terminal.push_text_layer_char(
                             self.get_text_layer_char_from_style(
                                 self.style_a_char(*c, Style::Default),
                             ),
@@ -157,7 +161,7 @@ impl Shell {
                 Some(TextChar::Back) => {
                     if !self.command.is_empty() {
                         self.command.pop();
-                        dc.get_console_mut().push_char(unicode::BACKSPACE);
+                        self.terminal.push_char(unicode::BACKSPACE);
                     }
                 }
                 None => (),
@@ -168,13 +172,13 @@ impl Shell {
             let response = self.interpret_command(self.command.iter().cloned().collect::<String>());
             let message_string = response.get_message().clone();
             if let Some(content) = message_string {
-                dc.get_console_mut().push_char('\u{000D}');
-                dc.get_console_mut().push_string(&content);
-                dc.get_console_mut().push_char('\u{000D}');
-                dc.get_console_mut().push_char('>');
+                self.terminal.push_char('\u{000D}');
+                self.terminal.push_string(&content);
+                self.terminal.push_char('\u{000D}');
+                self.terminal.push_char('>');
             } else {
-                dc.get_console_mut().push_char('\u{000D}');
-                dc.get_console_mut().push_char('>');
+                self.terminal.push_char('\u{000D}');
+                self.terminal.push_char('>');
             }
             self.command.clear();
             return Some(response);
@@ -184,6 +188,6 @@ impl Shell {
     }
 
     pub fn draw_app(&mut self, _clock: &Clock, dc: &mut DisplayController) {
-        dc.get_console_mut().display = true;
+        self.terminal.display = true;
     }
 }

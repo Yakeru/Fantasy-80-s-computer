@@ -24,10 +24,10 @@ pub struct Life {
     game: bool,
     menu: bool,
     alive: bool,
-    team_a_color: u8,
-    team_b_color: u8,
+    team_a_color: usize,
+    team_b_color: usize,
     random_game_mode: bool,
-    color_themes: Vec<Vec<u8>>,
+    color_themes: Vec<Vec<usize>>,
     current_theme: usize,
 }
 
@@ -209,7 +209,6 @@ impl Life {
 
     fn draw_welcome_screen(&mut self, clock: &Clock, display_controller: &mut DisplayController) {
         display_controller.get_text_layer_mut().clear();
-        display_controller.get_console_mut().display = false;
         display_controller.clear(BLACK);
         if clock.second_latch && clock.half_second_latch {
             display_controller.get_text_layer_mut().insert_string_xy(
@@ -380,7 +379,6 @@ impl Life {
 
     fn draw_game(&mut self, display_controller: &mut DisplayController) {
         display_controller.get_text_layer_mut().clear();
-        display_controller.get_console_mut().display = false;
         display_controller.clear(WHITE);
 
         let bkg_color = Some(BLACK);
@@ -397,7 +395,7 @@ impl Life {
                 };
 
                 if cell.alive {
-                    let color: Option<u8>;
+                    let color: Option<usize>;
                     if self.random_game_mode {
                         let theme = self.color_themes.get(self.current_theme).unwrap();
                         let color_index = self.gen_a[row][col].age % theme.len() as u8;

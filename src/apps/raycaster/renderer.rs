@@ -57,7 +57,7 @@ impl Renderer {
         }
     }
 
-    pub fn draw_sky(&self, dc: &mut DisplayController, _color: u8, _fog_color: u8) {
+    pub fn draw_sky(&self, dc: &mut DisplayController, _color: usize, _fog_color: usize) {
         dc.clear(DARK_GREY);
         dc.square(
             0,
@@ -114,7 +114,7 @@ impl Renderer {
         }
     }
 
-    pub fn draw_ground(&self, dc: &mut DisplayController, _color: u8, _fog_color: u8) {
+    pub fn draw_ground(&self, dc: &mut DisplayController, _color: usize, _fog_color: usize) {
         dc.square(
             0,
             (VIRTUAL_HEIGHT / 2) as isize,
@@ -171,8 +171,8 @@ impl Renderer {
         );
     }
 
-    pub fn scale_texture_column(&self, column: &Vec<u8>, new_height: isize) -> Vec<u8> {
-        let mut scaled: Vec<u8> = Vec::new();
+    pub fn scale_texture_column(&self, column: &Vec<usize>, new_height: isize) -> Vec<usize> {
+        let mut scaled: Vec<usize> = Vec::new();
 
         for pixel in 0..new_height as usize {
             let texture_pixel_index: usize = (pixel * column.len()) / new_height as usize;
@@ -183,7 +183,7 @@ impl Renderer {
         scaled
     }
 
-    pub fn shade_texture_column(&self, column: &mut [u8], map: &Map, dist: isize, x: isize) {
+    pub fn shade_texture_column(&self, column: &mut [usize], map: &Map, dist: isize, x: isize) {
         if dist > self.render_distance {
             column.fill(map.fog_color);
             return;
@@ -208,7 +208,7 @@ impl Renderer {
         }
     }
 
-    fn apply_level_1_shade(&self, column: &mut [u8], x: isize) {
+    fn apply_level_1_shade(&self, column: &mut [usize], x: isize) {
         for pixel in column.iter_mut().enumerate() {
             if (x % 2 == 0 && x % 4 == 0 && pixel.0 % 4 == 0)
                 || (x % 2 == 0 && (pixel.0 + 2) % 4 == 0)
@@ -218,7 +218,7 @@ impl Renderer {
         }
     }
 
-    fn apply_level_2_shade(&self, column: &mut [u8], x: isize) {
+    fn apply_level_2_shade(&self, column: &mut [usize], x: isize) {
         for pixel in column.iter_mut().enumerate() {
             if x % 2 == 0 && x % 4 == 0 && pixel.0 % 2 == 0 {
                 *pixel.1 = 0;
@@ -226,7 +226,7 @@ impl Renderer {
         }
     }
 
-    fn apply_level_3_shade(&self, column: &mut [u8], x: isize) {
+    fn apply_level_3_shade(&self, column: &mut [usize], x: isize) {
         for pixel in column.iter_mut().enumerate() {
             if (x % 2 == 0 && x % 4 == 0 && pixel.0 % 4 == 0)
                 || ((x + 2) % 2 == 0 && pixel.0 % 2 == 0)
@@ -236,7 +236,7 @@ impl Renderer {
         }
     }
 
-    fn apply_level_4_shade(&self, column: &mut [u8], x: isize) {
+    fn apply_level_4_shade(&self, column: &mut [usize], x: isize) {
         for pixel in column.iter_mut().enumerate() {
             if (x % 2 == 0 && pixel.0 % 2 == 0) || ((pixel.0 + 1) % 2 == 0) {
                 *pixel.1 = 0;
@@ -244,7 +244,7 @@ impl Renderer {
         }
     }
 
-    fn apply_level_5_shade(&self, column: &mut [u8], x: isize) {
+    fn apply_level_5_shade(&self, column: &mut [usize], x: isize) {
         for pixel in column.iter_mut().enumerate() {
             if (x % 2 == 0 && x % 4 == 0 && pixel.0 % 4 == 0)
                 || ((x + 1) % 2 == 0 && pixel.0 % 2 == 0)
@@ -254,7 +254,7 @@ impl Renderer {
         }
     }
 
-    fn apply_level_6_shade(&self, column: &mut [u8], x: isize) {
+    fn apply_level_6_shade(&self, column: &mut [usize], x: isize) {
         for pixel in column.iter_mut().enumerate() {
             if x % 2 == 0 && (x % 4 == 0 || pixel.0 % 2 == 0) {
                 *pixel.1 = 0;
@@ -262,7 +262,7 @@ impl Renderer {
         }
     }
 
-    fn apply_level_7_shade(&self, column: &mut [u8], x: isize) {
+    fn apply_level_7_shade(&self, column: &mut [usize], x: isize) {
         for pixel in column.iter_mut().enumerate() {
             if x % 2 == 0 && (x % 4 == 0 || pixel.0 % 4 != 0) {
                 *pixel.1 = 0;
@@ -274,8 +274,8 @@ impl Renderer {
         &self,
         dc: &mut DisplayController,
         x: isize,
-        data: &Vec<u8>,
-        transparent_color: u8,
+        data: &Vec<usize>,
+        transparent_color: usize,
     ) {
         let line_y_start = (VIRTUAL_HEIGHT / 2) as isize - data.len() as isize / 2;
         for pix_in_line in 0..data.len() as isize {
