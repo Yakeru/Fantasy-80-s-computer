@@ -30,7 +30,7 @@ impl Boot {
         }
     }
 
-    pub fn init_app(&mut self, clock: &Clock, dc: &mut DisplayController) {
+    pub fn init_app(&mut self, clock: &Clock, _dc: &mut DisplayController) {
         self.frame_count = 0;
         self.starting_time = clock.total_running_time;
 

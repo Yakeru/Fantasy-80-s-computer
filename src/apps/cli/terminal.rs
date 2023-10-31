@@ -1,11 +1,14 @@
 use display_controller::DisplayController;
 
-use crate::{text_layer::TextLayerChar, config::{TEXT_COLUMNS, TEXT_ROWS}, color_palettes::{YELLOW, TRUE_BLUE}};
+use crate::{
+    color_palettes::{TRUE_BLUE, YELLOW},
+    config::{TEXT_COLUMNS, TEXT_ROWS},
+    text_layer::TextLayerChar,
+};
 
 /// The terminal is the text window in which the Shell is displayed
 pub struct Terminal {
-    pub display: bool,
-    screen_coordinates: (usize, usize), 
+    screen_coordinates: (usize, usize),
     screen_size: (usize, usize),
     max_buffer_size: usize,
     pub default_color: usize,
@@ -14,25 +17,23 @@ pub struct Terminal {
     pub show_border: bool,
     pub show_title_bar: bool,
     buffer: Vec<TextLayerChar>,
-    formatted_buffer: Vec<TextLayerChar>
+    formatted_buffer: Vec<TextLayerChar>,
 }
 
 impl Terminal {
-
     pub const fn new() -> Terminal {
         Terminal {
-                display: true,
-                screen_coordinates: (0, 0),
-                screen_size: (TEXT_COLUMNS, TEXT_ROWS),
-                max_buffer_size: 1000,
-                default_color: YELLOW, 
-                default_bkg_color: TRUE_BLUE,
-                cursor: '\u{25AE}', // filled square
-                show_border: false, 
-                show_title_bar: false, 
-                buffer: Vec::new(),
-                formatted_buffer: Vec::new()
-            }
+            screen_coordinates: (0, 0),
+            screen_size: (TEXT_COLUMNS, TEXT_ROWS),
+            max_buffer_size: 1000,
+            default_color: YELLOW,
+            default_bkg_color: TRUE_BLUE,
+            cursor: '\u{25AE}', // filled square
+            show_border: false,
+            show_title_bar: false,
+            buffer: Vec::new(),
+            formatted_buffer: Vec::new(),
+        }
     }
 
     pub fn clear(&mut self) {
@@ -40,14 +41,14 @@ impl Terminal {
         self.formatted_buffer.clear();
     }
 
-    /// Size in columns (x) and rows (y), used by format_buffer() and 
+    /// Size in columns (x) and rows (y), used by format_buffer() and
     /// the text layer renderer to format and display the console on screen
-    pub fn get_size(&self) -> (usize, usize) {
+    pub fn _get_size(&self) -> (usize, usize) {
         self.screen_size
     }
 
     /// Top-Left corner, used by the text layer renderer to show the console at the right place on the screen
-    pub fn get_coordinates(&self) -> (usize, usize) {
+    pub fn _get_coordinates(&self) -> (usize, usize) {
         self.screen_coordinates
     }
 
@@ -74,7 +75,14 @@ impl Terminal {
     /// will convert it to a TextLayerChar with the console's default
     /// attributes and then call push_text_layer_char()
     pub fn push_char(&mut self, c: char) {
-        let text_layer_char = TextLayerChar {c, color: self.default_color, bkg_color: self.default_bkg_color, swap: false, blink: false, shadowed: false};
+        let text_layer_char = TextLayerChar {
+            c,
+            color: self.default_color,
+            bkg_color: self.default_bkg_color,
+            swap: false,
+            blink: false,
+            shadowed: false,
+        };
         self.push_text_layer_char(text_layer_char);
     }
 
@@ -92,7 +100,7 @@ impl Terminal {
         match text_layer_char.c {
             unicode::BACKSPACE => {
                 self.pop_char();
-            },
+            }
             _ => {
                 self.buffer.push(text_layer_char);
             }
@@ -105,9 +113,9 @@ impl Terminal {
         self.format_buffer();
     }
 
-    /// Returns the raw Vec<TextLayerChar> of characters 
+    /// Returns the raw Vec<TextLayerChar> of characters
     /// contained in the console's buffer
-    pub fn get_buffer(&self) -> &Vec<TextLayerChar> {
+    pub fn _get_buffer(&self) -> &Vec<TextLayerChar> {
         &self.buffer
     }
 
@@ -123,15 +131,23 @@ impl Terminal {
 
     pub fn get_empty_cell(&self) -> TextLayerChar {
         TextLayerChar {
-            c: ' ', color: self.default_color, bkg_color: self.default_bkg_color, 
-            swap: false, blink: false, shadowed: false
+            c: ' ',
+            color: self.default_color,
+            bkg_color: self.default_bkg_color,
+            swap: false,
+            blink: false,
+            shadowed: false,
         }
     }
 
     pub fn get_cursor(&self) -> TextLayerChar {
         TextLayerChar {
-            c: self.cursor, color: self.default_color, bkg_color: self.default_bkg_color, 
-            swap: false, blink: true, shadowed: false
+            c: self.cursor,
+            color: self.default_color,
+            bkg_color: self.default_bkg_color,
+            swap: false,
+            blink: true,
+            shadowed: false,
         }
     }
 
@@ -146,11 +162,13 @@ impl Terminal {
         for console_char in &self.buffer {
             match console_char.c {
                 unicode::ENTER => {
-                    for _i in 0..(self.screen_size.0 - self.formatted_buffer.len() % self.screen_size.0) {
+                    for _i in
+                        0..(self.screen_size.0 - self.formatted_buffer.len() % self.screen_size.0)
+                    {
                         self.formatted_buffer.push(self.get_empty_cell())
                     }
-                },
-                _ => self.formatted_buffer.push(*console_char)
+                }
+                _ => self.formatted_buffer.push(*console_char),
             }
         }
         self.formatted_buffer.push(self.get_cursor());
@@ -167,8 +185,12 @@ impl Terminal {
     }
 
     ///
-    fn render(&mut self,
-        dc: &mut DisplayController) {
+    pub fn render(&mut self, dc: &mut DisplayController) {
+        dc.clear_text_layer();
 
+        for (index, tlchar) in self.get_formatted_buffer().iter().enumerate() {
+            dc.get_text_layer_mut()
+                .insert_text_layer_char(index, *tlchar);
+        }
     }
 }

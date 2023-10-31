@@ -115,7 +115,7 @@ impl Shell {
         response
     }
 
-    pub fn init_app(&mut self, _clock: &Clock, dc: &mut DisplayController) {
+    pub fn init_app(&mut self, _clock: &Clock, _dc: &mut DisplayController) {
         self.terminal.set_coordinates((0, 0));
         self.terminal.set_size((TEXT_COLUMNS, TEXT_ROWS));
         self.terminal.clear();
@@ -128,7 +128,7 @@ impl Shell {
         &mut self,
         inputs: Option<&WinitInputHelper>,
         _clock: &Clock,
-        dc: &mut DisplayController,
+        _dc: &mut DisplayController,
     ) -> Option<AppResponse> {
         //if inputs.is_none() {return None};
         inputs?;
@@ -188,6 +188,6 @@ impl Shell {
     }
 
     pub fn draw_app(&mut self, _clock: &Clock, dc: &mut DisplayController) {
-        self.terminal.display = true;
+        self.terminal.render(dc);
     }
 }
