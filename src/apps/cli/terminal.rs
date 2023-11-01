@@ -115,7 +115,7 @@ impl Terminal {
 
     /// Returns the raw Vec<TextLayerChar> of characters
     /// contained in the console's buffer
-    pub fn _get_buffer(&self) -> &Vec<TextLayerChar> {
+    fn _get_buffer(&self) -> &Vec<TextLayerChar> {
         &self.buffer
     }
 
@@ -125,11 +125,11 @@ impl Terminal {
     /// the ENTER char, but get_formatted_buffer() fills the rest of the line with empty chars
     /// to automatically move to the next line.
     /// If you want to apply your own formatting, use get_buffer() instead.
-    pub fn get_formatted_buffer(&self) -> &Vec<TextLayerChar> {
+    fn get_formatted_buffer(&self) -> &Vec<TextLayerChar> {
         &self.formatted_buffer
     }
 
-    pub fn get_empty_cell(&self) -> TextLayerChar {
+    fn get_empty_cell(&self) -> TextLayerChar {
         TextLayerChar {
             c: ' ',
             color: self.default_color,
@@ -186,8 +186,6 @@ impl Terminal {
 
     ///
     pub fn render(&mut self, dc: &mut DisplayController) {
-        dc.clear_text_layer();
-
         for (index, tlchar) in self.get_formatted_buffer().iter().enumerate() {
             dc.get_text_layer_mut()
                 .insert_text_layer_char(index, *tlchar);
