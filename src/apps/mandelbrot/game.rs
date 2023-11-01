@@ -153,8 +153,8 @@ impl Mandelbrot {
 
         if user_inputs.key_pressed(VirtualKeyCode::Key9) {
             self.reset();
-            self.mandel_x_center = 0.3514237590616519;
-            self.mandel_y_center = -0.06386655970753488;
+            self.mandel_x_center = 0.35069648168066503;
+            self.mandel_y_center = -0.06386659763624122;
             self.current_theme = 4; //?
         }
 
