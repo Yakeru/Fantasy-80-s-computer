@@ -8,8 +8,8 @@ use crate::shader_variables::ShaderVariables;
 
 pub(crate) struct CrtRenderer {
     texture_view: wgpu::TextureView,
-    sampler: wgpu::Sampler,
-    bind_group_layout: wgpu::BindGroupLayout,
+    _sampler: wgpu::Sampler,
+    _bind_group_layout: wgpu::BindGroupLayout,
     bind_group: wgpu::BindGroup,
     render_pipeline: wgpu::RenderPipeline,
     variables_buffer: wgpu::Buffer,
@@ -27,7 +27,11 @@ impl CrtRenderer {
 
         // Create a texture view that will be used as input
         // This will be used as the render target for the default scaling renderer
-        let texture_view = create_texture_view(pixels, variables.screen_width as u32, variables.screen_height as u32)?;
+        let texture_view = create_texture_view(
+            pixels,
+            variables.screen_width as u32,
+            variables.screen_height as u32,
+        )?;
 
         // Create a texture sampler with nearest neighbor
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
@@ -41,7 +45,7 @@ impl CrtRenderer {
             lod_min_clamp: 0.0,
             lod_max_clamp: 1.0,
             compare: None,
-            anisotropy_clamp: None,
+            anisotropy_clamp: 1,
             border_color: None,
         });
 
@@ -102,7 +106,9 @@ impl CrtRenderer {
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new((std::mem::size_of::<ShaderVariables>()) as u64),
+                        min_binding_size: wgpu::BufferSize::new(
+                            (std::mem::size_of::<ShaderVariables>()) as u64,
+                        ),
                     },
                     count: None,
                 },
@@ -113,7 +119,7 @@ impl CrtRenderer {
             &bind_group_layout,
             &texture_view,
             &sampler,
-            &variables_buffer
+            &variables_buffer,
         );
 
         // Create pipeline
@@ -150,8 +156,8 @@ impl CrtRenderer {
 
         Ok(Self {
             texture_view,
-            sampler,
-            bind_group_layout,
+            _sampler: sampler,
+            _bind_group_layout: bind_group_layout,
             bind_group,
             render_pipeline,
             variables_buffer,
@@ -163,17 +169,21 @@ impl CrtRenderer {
         &self.texture_view
     }
 
-    pub(crate) fn resize(
+    pub(crate) fn _resize(
         &mut self,
         pixels: &pixels::Pixels,
         variables: &ShaderVariables,
     ) -> Result<(), TextureError> {
-        self.texture_view = create_texture_view(pixels, variables.screen_width as u32, variables.screen_height as u32)?;
+        self.texture_view = create_texture_view(
+            pixels,
+            variables.screen_width as u32,
+            variables.screen_height as u32,
+        )?;
         self.bind_group = create_bind_group(
             pixels.device(),
-            &self.bind_group_layout,
+            &self._bind_group_layout,
             &self.texture_view,
-            &self.sampler,
+            &self._sampler,
             &self.variables_buffer,
         );
 
@@ -181,14 +191,42 @@ impl CrtRenderer {
     }
 
     pub(crate) fn update(&self, queue: &wgpu::Queue, variables: &ShaderVariables) {
-        queue.write_buffer(&self.variables_buffer, 0, &variables.screen_width.to_ne_bytes());
-        queue.write_buffer(&self.variables_buffer, 4, &variables.screen_height.to_ne_bytes());
+        queue.write_buffer(
+            &self.variables_buffer,
+            0,
+            &variables.screen_width.to_ne_bytes(),
+        );
+        queue.write_buffer(
+            &self.variables_buffer,
+            4,
+            &variables.screen_height.to_ne_bytes(),
+        );
         queue.write_buffer(&self.variables_buffer, 8, &variables.mode.to_ne_bytes());
-        queue.write_buffer(&self.variables_buffer, 12, &variables.scanline_interval.to_ne_bytes());
-        queue.write_buffer(&self.variables_buffer, 16, &variables.mask_size.to_ne_bytes());
-        queue.write_buffer(&self.variables_buffer, 20, &variables.mask_type.to_ne_bytes());
-        queue.write_buffer(&self.variables_buffer, 24, &variables.horiz_distortion.to_ne_bytes());
-        queue.write_buffer(&self.variables_buffer, 28, &variables.vert_distortion.to_ne_bytes());
+        queue.write_buffer(
+            &self.variables_buffer,
+            12,
+            &variables.scanline_interval.to_ne_bytes(),
+        );
+        queue.write_buffer(
+            &self.variables_buffer,
+            16,
+            &variables.mask_size.to_ne_bytes(),
+        );
+        queue.write_buffer(
+            &self.variables_buffer,
+            20,
+            &variables.mask_type.to_ne_bytes(),
+        );
+        queue.write_buffer(
+            &self.variables_buffer,
+            24,
+            &variables.horiz_distortion.to_ne_bytes(),
+        );
+        queue.write_buffer(
+            &self.variables_buffer,
+            28,
+            &variables.vert_distortion.to_ne_bytes(),
+        );
     }
 
     pub(crate) fn render(
@@ -266,7 +304,7 @@ fn create_bind_group(
             wgpu::BindGroupEntry {
                 binding: 2,
                 resource: variables.as_entire_binding(),
-            }
+            },
         ],
     })
 }

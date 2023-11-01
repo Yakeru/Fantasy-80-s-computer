@@ -17,7 +17,7 @@ impl SquareWave {
     #[inline]
     pub fn new(freq: f32) -> SquareWave {
         SquareWave {
-            freq: freq,
+            freq,
             num_sample: 0,
         }
     }
@@ -29,7 +29,6 @@ impl Iterator for SquareWave {
     #[inline]
     fn next(&mut self) -> Option<f32> {
         self.num_sample = self.num_sample.wrapping_add(1);
-
         let value = 2.0 * PI * self.freq * self.num_sample as f32 / 48000.0;
         Some(if value.sin() >= 0.0 { 1.0 } else { -1.0 })
     }

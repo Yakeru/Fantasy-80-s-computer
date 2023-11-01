@@ -1,12 +1,12 @@
 use std::time::Instant;
 
 use app_macro_derive::AppMacro;
-use rand::Rng;
 use display_controller::{
     color_palettes::*,
     config::{TEXT_COLUMNS, TEXT_ROWS},
     DisplayController,
 };
+use rand::Rng;
 
 #[derive(AppMacro)]
 pub struct Life {
@@ -24,11 +24,11 @@ pub struct Life {
     game: bool,
     menu: bool,
     alive: bool,
-    team_a_color: u8,
-    team_b_color: u8,
+    team_a_color: usize,
+    team_b_color: usize,
     random_game_mode: bool,
-    color_themes: Vec<Vec<u8>>,
-    current_theme: usize
+    color_themes: Vec<Vec<usize>>,
+    current_theme: usize,
 }
 
 #[derive(Clone, Copy)]
@@ -85,7 +85,7 @@ impl Life {
             team_b_color: 28,
             random_game_mode: true,
             color_themes: vec![fire, ice, nature, brazil, france, crazy],
-            current_theme: 0
+            current_theme: 0,
         }
     }
 
@@ -97,7 +97,7 @@ impl Life {
 
     pub fn update_app(
         &mut self,
-        inputs: &WinitInputHelper,
+        inputs: Option<&WinitInputHelper>,
         clock: &Clock,
         display_controller: &mut DisplayController,
     ) -> Option<AppResponse> {
@@ -109,17 +109,12 @@ impl Life {
             self.update_menu(inputs, display_controller);
         }
 
-        return None;
+        None
     }
 
-    pub fn draw_app(
-        &mut self,
-        inputs: &WinitInputHelper,
-        clock: &Clock,
-        display_controller: &mut DisplayController,
-    ) {
+    pub fn draw_app(&mut self, clock: &Clock, display_controller: &mut DisplayController) {
         if self.welcome_screen {
-            self.draw_welcome_screen(inputs, clock, display_controller);
+            self.draw_welcome_screen(clock, display_controller);
         } else if self.game {
             self.draw_game(display_controller);
         } else if self.menu {
@@ -153,20 +148,19 @@ impl Life {
                         team: Team::NA,
                     };
                 } else {
-                    let cell: Cell;
-                    if col < TEXT_COLUMNS / 2 {
-                        cell = Cell {
+                    let cell: Cell = if col < TEXT_COLUMNS / 2 {
+                        Cell {
                             alive: random.gen_range(0..2) != 0,
                             age: 0,
                             team: Team::A,
-                        };
+                        }
                     } else {
-                        cell = Cell {
+                        Cell {
                             alive: random.gen_range(0..2) != 0,
                             age: 0,
                             team: Team::B,
-                        };
-                    }
+                        }
+                    };
                     self.gen_a[row][col] = cell;
                 }
             }
@@ -184,18 +178,27 @@ impl Life {
 
     fn update_welcome_screen(
         &mut self,
-        inputs: &WinitInputHelper,
+        inputs: Option<&WinitInputHelper>,
         _display_controller: &mut DisplayController,
     ) {
-        if inputs.key_pressed(VirtualKeyCode::Escape) {
+        if inputs.is_none() {
+            return;
+        }
+        let user_inputs = inputs.unwrap();
+
+        if user_inputs.key_pressed(VirtualKeyCode::Escape) {
             self.set_state(false, false);
-        } else if inputs.key_pressed(VirtualKeyCode::Key1) {
+        }
+
+        if user_inputs.key_pressed(VirtualKeyCode::Key1) {
             self.welcome_screen = false;
             self.menu = false;
             self.game = true;
             self.random_game_mode = true;
             self.restart_sim();
-        } else if inputs.key_pressed(VirtualKeyCode::Key2) {
+        }
+
+        if user_inputs.key_pressed(VirtualKeyCode::Key2) {
             self.welcome_screen = false;
             self.menu = true;
             self.game = false;
@@ -204,14 +207,8 @@ impl Life {
         }
     }
 
-    fn draw_welcome_screen(
-        &mut self,
-        _inputs: &WinitInputHelper,
-        clock: &Clock,
-        display_controller: &mut DisplayController,
-    ) {
+    fn draw_welcome_screen(&mut self, clock: &Clock, display_controller: &mut DisplayController) {
         display_controller.get_text_layer_mut().clear();
-        display_controller.get_console_mut().display = false;
         display_controller.clear(BLACK);
         if clock.second_latch && clock.half_second_latch {
             display_controller.get_text_layer_mut().insert_string_xy(
@@ -338,15 +335,15 @@ impl Life {
 
     fn update_game(
         &mut self,
-        inputs: &WinitInputHelper,
+        inputs: Option<&WinitInputHelper>,
         clock: &Clock,
         display_controller: &mut DisplayController,
     ) {
-        if inputs.key_released(VirtualKeyCode::C) {
+        if inputs.is_some() && inputs.unwrap().key_pressed(VirtualKeyCode::C) {
             self.restart_sim();
         }
 
-        if inputs.key_released(VirtualKeyCode::Escape) {
+        if inputs.is_some() && inputs.unwrap().key_pressed(VirtualKeyCode::Escape) {
             self.init_app(clock, display_controller);
         }
 
@@ -355,12 +352,20 @@ impl Life {
         if now.duration_since(self.last_update).as_millis() >= 50 {
             // Calculate gen_b from gen_a, else calculate gen_b from gen_a
             if self.toggle_gen {
-                self.alive =
-                    calculate_life(&mut self.gen_past, &mut self.gen_a, &mut self.gen_b, self.random_game_mode);
+                self.alive = calculate_life(
+                    &mut self.gen_past,
+                    &mut self.gen_a,
+                    &mut self.gen_b,
+                    self.random_game_mode,
+                );
                 self.toggle_gen = !self.toggle_gen;
             } else {
-                self.alive =
-                    calculate_life(&mut self.gen_past, &mut self.gen_b, &mut self.gen_a, self.random_game_mode);
+                self.alive = calculate_life(
+                    &mut self.gen_past,
+                    &mut self.gen_b,
+                    &mut self.gen_a,
+                    self.random_game_mode,
+                );
                 self.toggle_gen = !self.toggle_gen;
             }
 
@@ -374,7 +379,6 @@ impl Life {
 
     fn draw_game(&mut self, display_controller: &mut DisplayController) {
         display_controller.get_text_layer_mut().clear();
-        display_controller.get_console_mut().display = false;
         display_controller.clear(WHITE);
 
         let bkg_color = Some(BLACK);
@@ -383,19 +387,17 @@ impl Life {
 
         for col in 0..TEXT_COLUMNS {
             for row in 0..TEXT_ROWS {
-                let cell: Cell;
-
                 //render gen_a else render gen_b
-                if self.toggle_gen {
-                    cell = self.gen_a[row][col];
+                let cell: Cell = if self.toggle_gen {
+                    self.gen_a[row][col]
                 } else {
-                    cell = self.gen_b[row][col];
-                }
+                    self.gen_b[row][col]
+                };
 
                 if cell.alive {
-                    let color: Option<u8>;
+                    let color: Option<usize>;
                     if self.random_game_mode {
-                        let theme = self.color_themes.get(self.current_theme as usize).unwrap();
+                        let theme = self.color_themes.get(self.current_theme).unwrap();
                         let color_index = self.gen_a[row][col].age % theme.len() as u8;
                         color = Some(*theme.get(color_index as usize).unwrap());
                     } else {
@@ -427,22 +429,37 @@ impl Life {
 
     fn update_menu(
         &mut self,
-        inputs: &WinitInputHelper,
+        inputs: Option<&WinitInputHelper>,
         _display_controller: &mut DisplayController,
     ) {
-        if inputs.key_released(VirtualKeyCode::Escape) {
+        if inputs.is_none() {
+            return;
+        }
+        let user_inputs = inputs.unwrap();
+
+        if user_inputs.key_pressed(VirtualKeyCode::Escape) {
             self.welcome_screen = true;
             self.menu = false;
             self.game = false;
-        } else if inputs.key_released(VirtualKeyCode::Left) {
+        }
+
+        if user_inputs.key_pressed(VirtualKeyCode::Left) {
             self.team_a_color -= 1;
-        } else if inputs.key_released(VirtualKeyCode::Right) {
+        }
+
+        if user_inputs.key_pressed(VirtualKeyCode::Right) {
             self.team_a_color += 1;
-        } else if inputs.key_released(VirtualKeyCode::Up) {
+        }
+
+        if user_inputs.key_pressed(VirtualKeyCode::Up) {
             self.team_b_color += 1;
-        } else if inputs.key_released(VirtualKeyCode::Down) {
+        }
+
+        if user_inputs.key_pressed(VirtualKeyCode::Down) {
             self.team_b_color -= 1;
-        } else if inputs.key_released(VirtualKeyCode::Return) {
+        }
+
+        if user_inputs.key_pressed(VirtualKeyCode::Return) {
             self.welcome_screen = false;
             self.menu = false;
             self.game = true;
@@ -505,13 +522,13 @@ impl Life {
 /*************************************************************************************************************
 **************************************************************************************************************
                                                 VARIOUS FUNCTIONS
-*************************************************************************************************************
+**************************************************************************************************************
 **************************************************************************************************************/
 
 /// Conway's Game of Life
 /// Returns false if stuck in infinite loop, true if things are still dying and birthing
 fn calculate_life(
-    previous_gen: &mut [[bool; TEXT_COLUMNS]; TEXT_ROWS], 
+    previous_gen: &mut [[bool; TEXT_COLUMNS]; TEXT_ROWS],
     current_gen: &mut [[Cell; TEXT_COLUMNS]; TEXT_ROWS],
     next_gen: &mut [[Cell; TEXT_COLUMNS]; TEXT_ROWS],
     random_game_mode: bool,
@@ -534,6 +551,7 @@ fn calculate_life(
             let mut next_gen_cell = current_cell;
 
             //For each of the 8 cells arround current_gen[row][col]
+            #[allow(clippy::needless_range_loop)]
             for row_test in (if row == 0 { 0 } else { row - 1 })..(if row == TEXT_ROWS - 1 {
                 TEXT_ROWS - 1
             } else {
@@ -544,8 +562,7 @@ fn calculate_life(
                 } else {
                     col + 2
                 }) {
-                    if !(col_test == col && row_test == row)
-                    {
+                    if !(col_test == col && row_test == row) {
                         let neighbour_cell = current_gen[row_test][col_test];
                         if neighbour_cell.alive {
                             total_count += 1;
@@ -560,7 +577,7 @@ fn calculate_life(
                 }
             }
 
-            if current_cell.alive && (total_count < 2 || total_count > 3) {
+            if current_cell.alive && !(2..=3).contains(&total_count) {
                 next_gen_cell = dead_cell;
                 if current_cell.age == 0 {
                     _stillborn_count += 1;
@@ -571,13 +588,12 @@ fn calculate_life(
                 next_gen_cell.age = 0;
                 if random_game_mode {
                     next_gen_cell.team = Team::NA;
+                } else if a_team_count > b_team_count {
+                    next_gen_cell.team = Team::A;
                 } else {
-                    if a_team_count > b_team_count {
-                        next_gen_cell.team = Team::A;
-                    } else {
-                        next_gen_cell.team = Team::B;
-                    }
+                    next_gen_cell.team = Team::B;
                 }
+
                 _birth_count += 1;
             } else if current_cell.alive {
                 if current_cell.age == 255 {
@@ -610,5 +626,5 @@ fn calculate_life(
         }
     }
 
-    return continue_game;
+    continue_game
 }

@@ -19,17 +19,16 @@ impl Empty {
 
     pub fn update_app(
         &mut self,
-        _inputs: &WinitInputHelper,
+        _inputs: Option<&WinitInputHelper>,
         _clock: &Clock,
         _display_controller: &mut DisplayController,
     ) -> Option<AppResponse> {
 
-        return None;
+        None
     }
 
     pub fn draw_app(
         &mut self,
-        _inputs: &WinitInputHelper,
         _clock: &Clock,
         _display_controller: &mut DisplayController,
     ) {}
