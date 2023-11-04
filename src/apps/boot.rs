@@ -10,8 +10,7 @@ use crate::sound::{notes::*, play::play};
 pub struct Boot {
     enable_auto_escape: bool,
     name: String,
-    updating: bool,
-    drawing: bool,
+    status: AppStatus,
     initialized: bool,
     frame_count: u128,
     starting_time: Duration,
@@ -22,8 +21,7 @@ impl Boot {
         Self {
             enable_auto_escape: true,
             name: "reboot".to_string(),
-            updating: true,
-            drawing: true,
+            status: AppStatus::Running,
             initialized: false,
             frame_count: 0,
             starting_time: Duration::new(0, 0),
@@ -50,21 +48,21 @@ impl Boot {
         &mut self,
         inputs: Option<&WinitInputHelper>,
         clock: &Clock,
-        dc: &mut DisplayController,
     ) -> Option<AppResponse> {
         if clock.total_running_time - self.starting_time >= Duration::new(6, 0) {
-            self.quit_app(dc);
+            self.initialized = false;
+            self.status = AppStatus::Stopped;
         }
 
         if inputs.is_some() && inputs.unwrap().key_pressed(VirtualKeyCode::Escape) {
-            self.quit_app(dc);
+            self.initialized = false;
+            self.status = AppStatus::Stopped;
         }
 
         None
     }
 
     pub fn draw_app(&mut self, clock: &Clock, dc: &mut DisplayController) {
-
         //CRT warm up, brightness increases from 0 to 255 and un-distord picture
         let brigthness = if clock.total_running_time - self.starting_time >= Duration::new(2, 0) {
             255
@@ -102,13 +100,5 @@ impl Boot {
             dc.draw_loading_overscan_artefacts();
         }
         self.frame_count += 1;
-    }
-
-    fn quit_app(&mut self, dc: &mut DisplayController) {
-        self.set_state(false, false);
-        self.initialized = false;
-        dc.set_brightness(255);
-        dc.clear(BLUE);
-        dc.get_text_layer_mut().clear();
     }
 }
