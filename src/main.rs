@@ -182,9 +182,8 @@ fn main() -> Result<(), Error> {
             let mut app_response: Option<AppResponse> = None;
             //let app_inputs: AppInputs = AppInputs { keyboard_input, char_received, mouse_move_delta, system_clock };
             for app in app_list.chunks_exact_mut(1) {
-                match app[0].get_state() {
-                    AppStatus::Running => show_shell = false,
-                    _ => (),
+                if *app[0].get_state() == AppStatus::Running {
+                    show_shell = false;
                 };
 
                 app[0].exec_app(Some(&input), &system_clock, &mut display_controller);

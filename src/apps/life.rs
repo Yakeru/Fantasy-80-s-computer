@@ -98,7 +98,7 @@ impl Life {
     fn update_app(
         &mut self,
         inputs: Option<&WinitInputHelper>,
-        clock: &Clock,
+        _clock: &Clock,
     ) -> Option<AppResponse> {
         if self.welcome_screen {
             self.update_welcome_screen(inputs);
