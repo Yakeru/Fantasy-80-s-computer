@@ -1,4 +1,3 @@
-use app_macro::AppStatus;
 use app_macro_derive::AppMacro;
 use chrono::{Local, Timelike};
 use display_controller::{color_palettes::*, DisplayController};
@@ -13,7 +12,8 @@ use std::{
 pub struct WeatherApp {
     enable_auto_escape: bool,
     name: String,
-    status: AppStatus,
+    updating: bool,
+    drawing: bool,
     initialized: bool,
     receiver: Receiver,
     update_appinterval: Duration,
@@ -58,7 +58,8 @@ impl WeatherApp {
         WeatherApp {
             enable_auto_escape: true,
             name: String::from("weather"),
-            status: AppStatus::Stopped,
+            updating: false,
+            drawing: false,
             initialized: false,
             receiver: openweathermap::init("45.4874487,-73.5745913", "metric", "fr", key, 10),
             update_appinterval: Duration::from_secs(5),
@@ -85,6 +86,7 @@ impl WeatherApp {
         &mut self,
         _inputs: Option<&WinitInputHelper>,
         clock: &Clock,
+        _dc: &mut DisplayController,
     ) -> Option<AppResponse> {
         let response = AppResponse::new();
 

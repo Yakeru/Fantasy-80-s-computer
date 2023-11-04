@@ -3,7 +3,7 @@ use display_controller::characters_rom::CHAR_TABLE;
 
 use super::terminal::Terminal;
 
-const SPLASH: &str = "\u{000D} Fantasy CPC Microcomputer V(0.4.0)\u{000D}\u{000D} 2023 Damien Torreilles\u{000D}\u{000D}";
+const SPLASH: &str = "\u{000D} Fantasy CPC Microcomputer V(0.3.0)\u{000D}\u{000D} 2023 Damien Torreilles\u{000D}\u{000D}";
 const SHELL_START_MESSAGE: &str = "SHELL 0.1\u{000D}Ready\u{000D}";
 
 const DEFAULT_BKG_COLOR: usize = TRUE_BLUE;
@@ -18,7 +18,8 @@ pub struct Shell {
     clear_text_layer: bool,
     command: Vec<char>,
     // command_history: Vec<String>,
-    status: AppStatus,
+    updating: bool,
+    drawing: bool,
     initialized: bool,
     terminal: Terminal,
 }
@@ -41,7 +42,9 @@ enum Style {
 
 impl Shell {
     pub fn new() -> Shell {
-        Self {
+        // let command_history: Vec<String> = Vec::new();
+
+        Shell {
             enable_auto_escape: false,
             name: String::from("shell"),
             color: DEFAULT_COLOR,
@@ -50,7 +53,8 @@ impl Shell {
             clear_text_layer: false,
             command: Vec::new(),
             // command_history,
-            status: AppStatus::Running,
+            updating: false,
+            drawing: false,
             initialized: false,
             terminal: Terminal::new(),
         }
@@ -81,7 +85,7 @@ impl Shell {
         }
     }
 
-    fn interpret_command(&mut self, command: String) -> AppResponse {
+    pub fn interpret_command(&mut self, command: String) -> AppResponse {
         let mut response: AppResponse = AppResponse::new();
 
         if !command.is_empty() {
@@ -111,9 +115,7 @@ impl Shell {
         response
     }
 
-    fn init_app(&mut self, _clock: &Clock, dc: &mut DisplayController) {
-        dc.set_brightness(255);
-        dc.clear(BLUE);
+    pub fn init_app(&mut self, _clock: &Clock, _dc: &mut DisplayController) {
         self.terminal.set_coordinates((0, 0));
         self.terminal.set_size((TEXT_COLUMNS, TEXT_ROWS));
         self.terminal.clear();
@@ -122,11 +124,13 @@ impl Shell {
         self.terminal.push_char('>');
     }
 
-    fn update_app(
+    pub fn update_app(
         &mut self,
         inputs: Option<&WinitInputHelper>,
         _clock: &Clock,
+        _dc: &mut DisplayController,
     ) -> Option<AppResponse> {
+        //if inputs.is_none() {return None};
         inputs?;
 
         if self.clear_text_layer {
@@ -183,7 +187,7 @@ impl Shell {
         None
     }
 
-    fn draw_app(&mut self, _clock: &Clock, dc: &mut DisplayController) {
+    pub fn draw_app(&mut self, _clock: &Clock, dc: &mut DisplayController) {
         self.terminal.render(dc);
     }
 }

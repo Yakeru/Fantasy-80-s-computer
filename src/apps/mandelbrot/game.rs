@@ -10,7 +10,8 @@ use super::{
 pub struct Mandelbrot {
     enable_auto_escape: bool,
     name: String,
-    status: AppStatus,
+    updating: bool,
+    drawing: bool,
     initialized: bool,
     welcome_screen: bool,
     game: bool,
@@ -35,7 +36,8 @@ impl Mandelbrot {
         Mandelbrot {
             enable_auto_escape: true,
             name: String::from("mandelbrot"),
-            status: AppStatus::Stopped,
+            updating: false,
+            drawing: false,
             initialized: false,
             welcome_screen: true,
             game: false,
@@ -78,6 +80,7 @@ impl Mandelbrot {
         &mut self,
         inputs: Option<&WinitInputHelper>,
         _clock: &Clock,
+        _dc: &mut DisplayController,
     ) -> Option<AppResponse> {
         inputs?;
 

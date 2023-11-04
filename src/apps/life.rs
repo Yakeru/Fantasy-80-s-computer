@@ -1,6 +1,5 @@
 use std::time::Instant;
 
-use app_macro::AppStatus;
 use app_macro_derive::AppMacro;
 use display_controller::{
     color_palettes::*,
@@ -13,7 +12,8 @@ use rand::Rng;
 pub struct Life {
     enable_auto_escape: bool,
     name: String,
-    status: AppStatus,
+    updating: bool,
+    drawing: bool,
     initialized: bool,
     gen_past: [[bool; TEXT_COLUMNS]; TEXT_ROWS],
     gen_a: Box<[[Cell; TEXT_COLUMNS]; TEXT_ROWS]>,
@@ -57,7 +57,8 @@ impl Life {
         Life {
             enable_auto_escape: false,
             name: String::from("life"),
-            status: AppStatus::Stopped,
+            updating: false,
+            drawing: false,
             initialized: false,
             gen_past: [[false; TEXT_COLUMNS]; TEXT_ROWS],
             gen_a: Box::new(
@@ -88,30 +89,30 @@ impl Life {
         }
     }
 
-    fn init_app(&mut self, _clock: &Clock, dc: &mut DisplayController) {
-        dc.set_brightness(255);
+    pub fn init_app(&mut self, _clock: &Clock, _display_controller: &mut DisplayController) {
         self.welcome_screen = true;
         self.game = false;
         self.menu = false;
     }
 
-    fn update_app(
+    pub fn update_app(
         &mut self,
         inputs: Option<&WinitInputHelper>,
-        _clock: &Clock,
+        clock: &Clock,
+        display_controller: &mut DisplayController,
     ) -> Option<AppResponse> {
         if self.welcome_screen {
-            self.update_welcome_screen(inputs);
+            self.update_welcome_screen(inputs, display_controller);
         } else if self.game {
-            self.update_game(inputs);
+            self.update_game(inputs, clock, display_controller);
         } else {
-            self.update_menu(inputs);
+            self.update_menu(inputs, display_controller);
         }
 
         None
     }
 
-    fn draw_app(&mut self, clock: &Clock, display_controller: &mut DisplayController) {
+    pub fn draw_app(&mut self, clock: &Clock, display_controller: &mut DisplayController) {
         if self.welcome_screen {
             self.draw_welcome_screen(clock, display_controller);
         } else if self.game {
@@ -175,14 +176,18 @@ impl Life {
     *************************************************************************************************************
     **************************************************************************************************************/
 
-    fn update_welcome_screen(&mut self, inputs: Option<&WinitInputHelper>) {
+    fn update_welcome_screen(
+        &mut self,
+        inputs: Option<&WinitInputHelper>,
+        _display_controller: &mut DisplayController,
+    ) {
         if inputs.is_none() {
             return;
         }
         let user_inputs = inputs.unwrap();
 
         if user_inputs.key_pressed(VirtualKeyCode::Escape) {
-            self.set_state(AppStatus::Stopped);
+            self.set_state(false, false);
         }
 
         if user_inputs.key_pressed(VirtualKeyCode::Key1) {
@@ -328,13 +333,18 @@ impl Life {
     *************************************************************************************************************
     **************************************************************************************************************/
 
-    fn update_game(&mut self, inputs: Option<&WinitInputHelper>) {
+    fn update_game(
+        &mut self,
+        inputs: Option<&WinitInputHelper>,
+        clock: &Clock,
+        display_controller: &mut DisplayController,
+    ) {
         if inputs.is_some() && inputs.unwrap().key_pressed(VirtualKeyCode::C) {
             self.restart_sim();
         }
 
         if inputs.is_some() && inputs.unwrap().key_pressed(VirtualKeyCode::Escape) {
-            self.initialized = false;
+            self.init_app(clock, display_controller);
         }
 
         let now = Instant::now();
@@ -417,7 +427,11 @@ impl Life {
     *************************************************************************************************************
     **************************************************************************************************************/
 
-    fn update_menu(&mut self, inputs: Option<&WinitInputHelper>) {
+    fn update_menu(
+        &mut self,
+        inputs: Option<&WinitInputHelper>,
+        _display_controller: &mut DisplayController,
+    ) {
         if inputs.is_none() {
             return;
         }

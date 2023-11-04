@@ -5,7 +5,7 @@ use super::{
     player::Player,
     renderer::{Renderer, GAME_SCALE},
 };
-use app_macro::{AppMacro, AppStatus};
+use app_macro::AppMacro;
 use app_macro_derive::AppMacro;
 use fast_math::atan2;
 use std::f32::consts::PI;
@@ -16,7 +16,8 @@ const PLAYER_SPEED: isize = 8;
 pub struct Raycaster {
     enable_auto_escape: bool,
     name: String,
-    status: AppStatus,
+    updating: bool,
+    drawing: bool,
     initialized: bool,
     map: Map,
     renderer: Renderer,
@@ -32,7 +33,8 @@ impl Raycaster {
         Raycaster {
             enable_auto_escape: false,
             name: "raycaster".to_string(),
-            status: AppStatus::Stopped,
+            updating: false,
+            drawing: false,
             initialized: false,
             map: Map::new(),
             player: Player {
@@ -69,11 +71,12 @@ impl Raycaster {
         &mut self,
         inputs: Option<&WinitInputHelper>,
         clock: &Clock,
+        dc: &mut DisplayController,
     ) -> Option<AppResponse> {
         if self.show_menu {
-            self.update_menu(inputs, clock);
+            self.update_menu(inputs, clock, dc);
         } else {
-            self.update_game(inputs, clock);
+            self.update_game(inputs, clock, dc);
         }
 
         None
@@ -82,7 +85,12 @@ impl Raycaster {
     //***************************************************************************************************************** */
     //                                                    GAME
     //***************************************************************************************************************** */
-    pub fn update_game(&mut self, inputs: Option<&WinitInputHelper>, _clock: &Clock) {
+    pub fn update_game(
+        &mut self,
+        inputs: Option<&WinitInputHelper>,
+        _clock: &Clock,
+        _dc: &mut DisplayController,
+    ) {
         if inputs.is_none() {
             return;
         }
@@ -180,7 +188,12 @@ impl Raycaster {
     //***************************************************************************************************************** */
     //                                                    MENU
     //***************************************************************************************************************** */
-    pub fn update_menu(&mut self, inputs: Option<&WinitInputHelper>, _clock: &Clock) {
+    pub fn update_menu(
+        &mut self,
+        inputs: Option<&WinitInputHelper>,
+        _clock: &Clock,
+        dc: &mut DisplayController,
+    ) {
         if inputs.is_none() {
             return;
         }
@@ -189,12 +202,13 @@ impl Raycaster {
 
         if inputs.key_pressed(VirtualKeyCode::Escape) {
             self.show_menu = false;
+            dc.get_text_layer_mut().clear();
             return;
         }
 
         if inputs.key_pressed(VirtualKeyCode::Return) {
             if self.menu_item_selected == 4 {
-                self.set_state(AppStatus::Stopped);
+                self.set_state(false, false);
                 self.initialized = false;
             } else {
                 self.show_menu = false;

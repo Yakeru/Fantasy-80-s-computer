@@ -4,29 +4,32 @@ use app_macro_derive::AppMacro;
 pub struct Empty {
     enable_auto_escape: bool,
     name: String,
-    status: AppStatus,
+    updating: bool,
+    drawing: bool,
     initialized: bool,
 }
 
 impl Empty {
+
     pub fn _new() -> Empty {
-        Self {
-            enable_auto_escape: true,
-            name: "Empty".to_string(),
-            status: AppStatus::Stopped,
-            initialized: false,
-        }
+        Self { enable_auto_escape: true, name: "Empty".to_string(), updating: false, drawing: false, initialized: false }
     }
+    
+    pub fn init_app(&mut self, _clock: &Clock, _dc: &mut DisplayController) {}
 
-    fn init_app(&mut self, _clock: &Clock, _dc: &mut DisplayController) {}
-
-    fn update_app(
+    pub fn update_app(
         &mut self,
         _inputs: Option<&WinitInputHelper>,
         _clock: &Clock,
+        _display_controller: &mut DisplayController,
     ) -> Option<AppResponse> {
+
         None
     }
 
-    fn draw_app(&mut self, _clock: &Clock, _display_controller: &mut DisplayController) {}
+    pub fn draw_app(
+        &mut self,
+        _clock: &Clock,
+        _display_controller: &mut DisplayController,
+    ) {}
 }
