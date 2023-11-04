@@ -1,6 +1,6 @@
 [package]
 name = "fantasy_cpc"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 authors = ["Damien Torreilles <damien.torreilles@gmail.com>"]
 
