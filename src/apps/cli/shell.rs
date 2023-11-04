@@ -3,7 +3,7 @@ use display_controller::characters_rom::CHAR_TABLE;
 
 use super::terminal::Terminal;
 
-const SPLASH: &str = "\u{000D} Fantasy CPC Microcomputer V(0.4.0)\u{000D}\u{000D} 2023 Damien Torreilles\u{000D}\u{000D}";
+const SPLASH: &str = "\u{000D} Fantasy CPC Microcomputer V(0.5.0)\u{000D}\u{000D} 2023 Damien Torreilles\u{000D}\u{000D}";
 const SHELL_START_MESSAGE: &str = "SHELL 0.1\u{000D}Ready\u{000D}";
 
 const DEFAULT_BKG_COLOR: usize = TRUE_BLUE;
