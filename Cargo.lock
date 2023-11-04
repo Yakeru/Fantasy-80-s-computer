@@ -140,7 +140,7 @@ checksum = "a4668cab20f66d8d020e1fbc0ebe47217433c1b6c8f2040faf858554e394ace6"
 
 [[package]]
 name = "app_macro"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "clock",
  "display_controller",
@@ -1065,7 +1065,7 @@ checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 
 [[package]]
 name = "fantasy_cpc"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "app_macro",
