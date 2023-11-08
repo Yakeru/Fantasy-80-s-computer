@@ -5,11 +5,10 @@ edition = "2021"
 authors = ["Damien Torreilles <damien.torreilles@gmail.com>"]
 
 [dependencies]
-app_macro = { path = "./app_macro" }
-app_macro_derive = { path = "./app_macro/app_macro_derive" }
-display_controller = { path = "./display_controller" }
+fantasy_cpc_display_controller = { path = "./fantasy_cpc_display_controller" }
+fantasy_cpc_clock = { path = "./clock" }
+fantasy_cpc_app_trait = { path = "./fantasy_cpc_app_trait"}
 unicode = { path = "./unicode" }
-clock = { path = "./clock" }
 chrono = "0.4.31"
 rand = "0.8.5"
 winit = "0.28.7"

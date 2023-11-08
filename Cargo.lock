@@ -139,24 +139,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4668cab20f66d8d020e1fbc0ebe47217433c1b6c8f2040faf858554e394ace6"
 
 [[package]]
-name = "app_macro"
-version = "0.3.0"
-dependencies = [
- "clock",
- "display_controller",
- "winit",
- "winit_input_helper",
-]
-
-[[package]]
-name = "app_macro_derive"
-version = "0.3.0"
-dependencies = [
- "quote",
- "syn 2.0.38",
-]
-
-[[package]]
 name = "arrayref"
 version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1068,20 +1050,30 @@ name = "fantasy_cpc"
 version = "0.5.0"
 dependencies = [
  "anyhow",
- "app_macro",
- "app_macro_derive",
  "bytemuck",
  "cargo-watch",
  "chrono",
  "clock",
  "cpal",
  "display_controller",
+ "fantasy_cpc_app_trait",
  "fast-math",
  "openweathermap",
  "pixels",
  "rand",
  "rodio",
  "ultraviolet",
+ "unicode",
+ "winit",
+ "winit_input_helper",
+]
+
+[[package]]
+name = "fantasy_cpc_app_trait"
+version = "0.1.0"
+dependencies = [
+ "clock",
+ "display_controller",
  "unicode",
  "winit",
  "winit_input_helper",

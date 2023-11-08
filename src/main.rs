@@ -1,8 +1,5 @@
-use app_macro::*;
-use apps::{
-    boot::Boot, cli::shell::Shell, life::Life, mandelbrot::game::Mandelbrot,
-    raycaster::game::Raycaster, weather_app::WeatherApp,
-};
+use app_trait::{FantasyCpcApp, AppResponse, AppStatus};
+use apps::life::Life;
 use crt_shader_renderer::CrtRenderer;
 use display_controller::{config::*, *};
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
@@ -109,8 +106,8 @@ fn main() -> Result<(), Error> {
     // no other process is running or has the focus.
     // The Shell uses the console as default output.
     // When closing/quitting an app, it should always fall back to the shell.
-    let mut shell = Box::new(Shell::new());
-    shell.set_state(AppStatus::Running);
+    // let mut shell = Box::new(Shell::new());
+    // shell.set_state(AppStatus::Running);
 
     // ********* //
     // The apps  //
@@ -118,27 +115,27 @@ fn main() -> Result<(), Error> {
 
     // To be managed properly, apps must be added to that list.
     // The main loop goes through the list and updates/renders the apps according to their statuses.
-    let mut app_list: Vec<Box<dyn AppMacro>> = Vec::new();
+    let mut app_list: Vec<Box<dyn FantasyCpcApp>> = Vec::new();
 
     // BOOT APP, not really an app, just plays the animation at startup, and when "reboot" command is sent
-    let boot = Box::new(Boot::new());
-    app_list.push(boot);
+    // let boot = Box::new(Boot::new());
+    // app_list.push(boot);
 
     // CONWAY'S GAME OF LIFE, TEXT MODE
     let life = Box::new(Life::new());
     app_list.push(life);
 
     // WEATHER APP
-    let weather_app = Box::new(WeatherApp::new());
-    app_list.push(weather_app);
+    // let weather_app = Box::new(WeatherApp::new());
+    // app_list.push(weather_app);
 
     // MANDELBROT
-    let mandelbrot = Box::new(Mandelbrot::new());
-    app_list.push(mandelbrot);
+    // let mandelbrot = Box::new(Mandelbrot::new());
+    // app_list.push(mandelbrot);
 
     // RAYCASTER
-    let raycaster = Box::new(Raycaster::new());
-    app_list.push(raycaster);
+    // let raycaster = Box::new(Raycaster::new());
+    // app_list.push(raycaster);
 
     // ****************************************************** MAIN WINIT EVENT LOOP ***********************************************
 
@@ -178,21 +175,21 @@ fn main() -> Result<(), Error> {
             }
 
             //Updating apps
-            let mut show_shell: bool = true;
+            //let mut show_shell: bool = true;
             let mut app_response: Option<AppResponse> = None;
             //let app_inputs: AppInputs = AppInputs { keyboard_input, char_received, mouse_move_delta, system_clock };
             for app in app_list.chunks_exact_mut(1) {
-                if *app[0].get_state() == AppStatus::Running {
-                    show_shell = false;
-                };
+                //if *app[0].get_state() == AppStatus::Running {
+                    //show_shell = false;
+                //};
 
-                app[0].exec_app(Some(&input), &system_clock, &mut display_controller);
+                app_response = app[0].exec_app(Some(&input), &system_clock, &mut display_controller);
             }
 
             // If no app is in focus, run the shell
-            if show_shell {
-                app_response = shell.exec_app(Some(&input), &system_clock, &mut display_controller);
-            }
+            // if show_shell {
+            //     app_response = shell.exec_app(Some(&input), &system_clock, &mut display_controller);
+            // }
 
             // Process app response
             //TODO make smarter command line tokenizer and interpreter
@@ -219,8 +216,8 @@ fn main() -> Result<(), Error> {
 
                     //Reboot (resets app statuses to default state and plays boot animation)
                     if app_message == "reboot" {
-                        shell.set_state(AppStatus::Stopped);
-                        shell.set_state(AppStatus::Running);
+                        // shell.set_state(AppStatus::Stopped);
+                        // shell.set_state(AppStatus::Running);
                     }
 
                     //Shader settings
