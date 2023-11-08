@@ -8,6 +8,6 @@ edition = "2021"
 [dependencies]
 winit = "0.28.3"
 winit_input_helper = "0.14.1"
-display_controller = { path = "../display_controller" }
+fantasy_cpc_display_controller = { path = "../fantasy_cpc_display_controller" }
+fantasy_cpc_clock = { path = "../fantasy_cpc_clock" }
 unicode = { path = "../unicode" }
-clock = { path = "../clock" }

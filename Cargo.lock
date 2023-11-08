@@ -619,10 +619,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "clock"
-version = "0.1.0"
-
-[[package]]
 name = "codespan-reporting"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -947,15 +943,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd0c93bb4b0c6d9b77f4435b0ae98c24d17f1c45b2ff844c6151a07256ca923b"
 
 [[package]]
-name = "display_controller"
-version = "0.1.0"
-dependencies = [
- "clock",
- "rand",
- "unicode",
-]
-
-[[package]]
 name = "dlib"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1053,10 +1040,10 @@ dependencies = [
  "bytemuck",
  "cargo-watch",
  "chrono",
- "clock",
  "cpal",
- "display_controller",
  "fantasy_cpc_app_trait",
+ "fantasy_cpc_clock",
+ "fantasy_cpc_display_controller",
  "fast-math",
  "openweathermap",
  "pixels",
@@ -1072,11 +1059,24 @@ dependencies = [
 name = "fantasy_cpc_app_trait"
 version = "0.1.0"
 dependencies = [
- "clock",
- "display_controller",
+ "fantasy_cpc_clock",
+ "fantasy_cpc_display_controller",
  "unicode",
  "winit",
  "winit_input_helper",
+]
+
+[[package]]
+name = "fantasy_cpc_clock"
+version = "0.1.0"
+
+[[package]]
+name = "fantasy_cpc_display_controller"
+version = "0.1.0"
+dependencies = [
+ "fantasy_cpc_clock",
+ "rand",
+ "unicode",
 ]
 
 [[package]]

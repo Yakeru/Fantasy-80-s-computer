@@ -1,4 +1,6 @@
-use app_trait::{AppStatus, FantasyCpcApp};
+use fantasy_cpc_app_trait::{AppStatus, FantasyCpcApp, AppResponse};
+use fantasy_cpc_clock::Clock;
+use fantasy_cpc_display_controller::DisplayController;
 
 pub struct Empty {
     enable_auto_escape: bool,
@@ -19,15 +21,16 @@ impl Empty {
 }
 
 impl FantasyCpcApp for Empty {
+
     fn get_name(&self) -> &str {
         &self.name
     }
 
-    fn get_state(&self) -> &app_trait::AppStatus {
+    fn get_state(&self) -> &AppStatus {
         &self.status
     }
 
-    fn set_state(&mut self, state: app_trait::AppStatus) {
+    fn set_state(&mut self, state: AppStatus) {
         self.status = state;
     }
 
@@ -43,29 +46,25 @@ impl FantasyCpcApp for Empty {
         self.enable_auto_escape
     }
 
-    fn set_enable_autoescape(&mut self, enable_auto_escape: bool) {
-        self.enable_auto_escape = enable_auto_escape
-    }
-
     fn init_app(
         &mut self,
-        _system_clock: &clock::Clock,
-        _display_controller: &mut display_controller::DisplayController,
+        _system_clock: &Clock,
+        _display_controller: &mut DisplayController,
     ) {
     }
 
     fn update_app(
         &mut self,
         _inputs: Option<&winit_input_helper::WinitInputHelper>,
-        _clock: &clock::Clock,
-    ) -> Option<app_trait::AppResponse> {
+        _clock: &Clock,
+    ) -> Option<AppResponse> {
         None
     }
 
     fn draw_app(
         &mut self,
-        _clock: &clock::Clock,
-        _display_controller: &mut display_controller::DisplayController,
+        _clock: &Clock,
+        _display_controller: &mut DisplayController,
     ) {
     }
 }

@@ -1,7 +1,7 @@
-use app_trait::{FantasyCpcApp, AppResponse, AppStatus};
+use fantasy_cpc_app_trait::{FantasyCpcApp, AppResponse, AppStatus};
 use apps::life::Life;
 use crt_shader_renderer::CrtRenderer;
-use display_controller::{config::*, *};
+use fantasy_cpc_display_controller::{config::*, *};
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rodio::Source;
 use shader_variables::ShaderVariables;
@@ -14,7 +14,7 @@ use winit::{
 };
 use winit_input_helper::WinitInputHelper;
 
-use clock::Clock;
+use fantasy_cpc_clock::Clock;
 
 mod apps;
 mod crt_shader_renderer;
@@ -33,8 +33,8 @@ fn main() -> Result<(), Error> {
     let window_builder = WindowBuilder::new()
         .with_decorations(true)
         .with_inner_size(PhysicalSize::new(
-            display_controller::config::SCREEN_WIDTH as i32,
-            display_controller::config::SCREEN_HEIGHT as i32,
+            fantasy_cpc_display_controller::config::SCREEN_WIDTH as i32,
+            fantasy_cpc_display_controller::config::SCREEN_HEIGHT as i32,
         ))
         .with_title("Fantasy CPC")
         .with_resizable(false)
@@ -64,13 +64,13 @@ fn main() -> Result<(), Error> {
     // pixels set-up
     let mut pixels = {
         let surface_texture = SurfaceTexture::new(
-            display_controller::config::SCREEN_WIDTH as u32,
-            display_controller::config::SCREEN_HEIGHT as u32,
+            fantasy_cpc_display_controller::config::SCREEN_WIDTH as u32,
+            fantasy_cpc_display_controller::config::SCREEN_HEIGHT as u32,
             &window,
         );
         PixelsBuilder::new(
-            display_controller::config::VIRTUAL_WIDTH as u32,
-            display_controller::config::VIRTUAL_HEIGHT as u32,
+            fantasy_cpc_display_controller::config::VIRTUAL_WIDTH as u32,
+            fantasy_cpc_display_controller::config::VIRTUAL_HEIGHT as u32,
             surface_texture,
         )
         .enable_vsync(true)

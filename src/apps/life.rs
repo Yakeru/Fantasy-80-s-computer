@@ -1,8 +1,8 @@
 use std::time::Instant;
 
-use app_trait::{AppStatus, FantasyCpcApp};
-use clock::Clock;
-use display_controller::{
+use fantasy_cpc_app_trait::{AppResponse, AppStatus, FantasyCpcApp};
+use fantasy_cpc_clock::Clock;
+use fantasy_cpc_display_controller::{
     color_palettes::*,
     config::{TEXT_COLUMNS, TEXT_ROWS},
     DisplayController,
@@ -588,11 +588,11 @@ impl FantasyCpcApp for Life {
         &self.name
     }
 
-    fn get_state(&self) -> &app_trait::AppStatus {
+    fn get_state(&self) -> &AppStatus {
         &self.status
     }
 
-    fn set_state(&mut self, state: app_trait::AppStatus) {
+    fn set_state(&mut self, state: AppStatus) {
         self.status = state;
     }
 
@@ -608,15 +608,7 @@ impl FantasyCpcApp for Life {
         self.enable_auto_escape
     }
 
-    fn set_enable_autoescape(&mut self, enable_auto_escape: bool) {
-        self.enable_auto_escape = enable_auto_escape
-    }
-
-    fn init_app(
-        &mut self,
-        system_clock: &clock::Clock,
-        display_controller: &mut display_controller::DisplayController,
-    ) {
+    fn init_app(&mut self, _system_clock: &Clock, display_controller: &mut DisplayController) {
         display_controller.set_brightness(255);
         self.welcome_screen = true;
         self.game = false;
@@ -626,8 +618,8 @@ impl FantasyCpcApp for Life {
     fn update_app(
         &mut self,
         inputs: Option<&winit_input_helper::WinitInputHelper>,
-        clock: &clock::Clock,
-    ) -> Option<app_trait::AppResponse> {
+        _clock: &Clock,
+    ) -> Option<AppResponse> {
         if self.welcome_screen {
             self.update_welcome_screen(inputs);
         } else if self.game {
@@ -639,11 +631,7 @@ impl FantasyCpcApp for Life {
         None
     }
 
-    fn draw_app(
-        &mut self,
-        clock: &clock::Clock,
-        display_controller: &mut display_controller::DisplayController,
-    ) {
+    fn draw_app(&mut self, clock: &Clock, display_controller: &mut DisplayController) {
         if self.welcome_screen {
             self.draw_welcome_screen(clock, display_controller);
         } else if self.game {

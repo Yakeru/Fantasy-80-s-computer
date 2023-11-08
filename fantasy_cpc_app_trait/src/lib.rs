@@ -1,5 +1,5 @@
-use clock::Clock;
-use display_controller::*;
+use fantasy_cpc_clock::Clock;
+use fantasy_cpc_display_controller::DisplayController;
 use winit::{event::VirtualKeyCode, event_loop::ControlFlow};
 use winit_input_helper::WinitInputHelper;
 
@@ -15,21 +15,12 @@ pub trait FantasyCpcApp {
 
     fn get_state(&self) -> &AppStatus;
     fn set_state(&mut self, state: AppStatus);
-    fn change_state(&mut self, new_state: AppStatus) {
-        match new_state {
-            AppStatus::Stopped => {
-                self.set_initialized(false);
-                self.set_state(new_state);
-            }
-            _ => self.set_state(new_state),
-        }
-    }
 
     fn get_initialized(&self) -> bool;
     fn set_initialized(&mut self, is_initialized: bool);
 
     fn get_enable_autoescape(&self) -> bool;
-    fn set_enable_autoescape(&mut self, enable_auto_escape: bool);
+    // fn set_enable_autoescape(&mut self, enable_auto_escape: bool);
 
     fn init_app(&mut self, system_clock: &Clock, display_controller: &mut DisplayController);
 
@@ -40,6 +31,16 @@ pub trait FantasyCpcApp {
     ) -> Option<AppResponse>;
 
     fn draw_app(&mut self, clock: &Clock, display_controller: &mut DisplayController);
+
+    fn change_state(&mut self, new_state: AppStatus) {
+        match new_state {
+            AppStatus::Stopped => {
+                self.set_initialized(false);
+                self.set_state(AppStatus::Stopped);
+            }
+            _ => self.set_state(new_state),
+        }
+    }
 
     fn exec_app(
         &mut self,

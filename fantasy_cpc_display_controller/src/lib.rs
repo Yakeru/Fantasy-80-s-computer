@@ -1,7 +1,7 @@
 use characters_rom::*;
-use clock::Clock;
 use color_palettes::*;
 use config::*;
+use fantasy_cpc_clock::Clock;
 use rand::Rng;
 use sprite::Sprite;
 use std::{

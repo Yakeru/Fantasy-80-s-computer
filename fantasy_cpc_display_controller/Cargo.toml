@@ -8,4 +8,4 @@ edition = "2021"
 [dependencies]
 rand = "0.8.5"
 unicode = { path = "../unicode" }
-clock = { path = "../clock" }
+fantasy_cpc_clock = { path = "../fantasy_cpc_clock" }
