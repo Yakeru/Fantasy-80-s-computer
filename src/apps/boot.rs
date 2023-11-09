@@ -1,4 +1,4 @@
-use fantasy_cpc_app_trait::{AppResponse, AppStatus, FantasyCpcApp, FantasyCppAppDefaultParams};
+use fantasy_cpc_app_trait::{AppStatus, FantasyCpcApp, FantasyCppAppDefaultParams};
 use fantasy_cpc_clock::Clock;
 use fantasy_cpc_display_controller::{
     color_palettes::{BLACK, WHITE},
@@ -31,11 +31,7 @@ impl FantasyCpcApp for Boot {
         &mut self.app_params
     }
 
-    fn init_app(
-        &mut self,
-        system_clock: &fantasy_cpc_clock::Clock,
-        display_controller: &mut DisplayController,
-    ) {
+    fn init_app(&mut self, system_clock: &Clock, _display_controller: &mut DisplayController) {
         self.frame_count = 0;
         self.starting_time = system_clock.total_running_time;
 

@@ -1,5 +1,5 @@
 use chrono::{Local, Timelike};
-use fantasy_cpc_app_trait::{AppResponse, AppStatus, FantasyCpcApp, FantasyCppAppDefaultParams};
+use fantasy_cpc_app_trait::{FantasyCpcApp, FantasyCppAppDefaultParams};
 use fantasy_cpc_display_controller::{
     color_palettes::*,
     config::{VIRTUAL_HEIGHT, VIRTUAL_WIDTH},
@@ -387,8 +387,8 @@ impl FantasyCpcApp for WeatherApp {
 
     fn init_app(
         &mut self,
-        system_clock: &fantasy_cpc_clock::Clock,
-        display_controller: &mut DisplayController,
+        _system_clock: &fantasy_cpc_clock::Clock,
+        _display_controller: &mut DisplayController,
     ) {
         openweathermap::update(&self.receiver);
 
@@ -403,10 +403,10 @@ impl FantasyCpcApp for WeatherApp {
 
     fn update_app(
         &mut self,
-        inputs: Option<&winit_input_helper::WinitInputHelper>,
+        _inputs: Option<&winit_input_helper::WinitInputHelper>,
         clock: &fantasy_cpc_clock::Clock,
     ) -> Option<fantasy_cpc_app_trait::AppResponse> {
-        let response = AppResponse::new();
+        // let response = AppResponse::new();
 
         if Instant::now().duration_since(self.last_weather_update) >= self.update_appinterval {
             let last_weather_update = openweathermap::update(&self.receiver);
@@ -435,7 +435,7 @@ impl FantasyCpcApp for WeatherApp {
 
     fn draw_app(
         &mut self,
-        clock: &fantasy_cpc_clock::Clock,
+        _clock: &fantasy_cpc_clock::Clock,
         display_controller: &mut DisplayController,
     ) {
         display_controller.get_text_layer_mut().clear();

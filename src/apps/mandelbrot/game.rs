@@ -1,6 +1,10 @@
-use fantasy_cpc_app_trait::{AppStatus, AppResponse, FantasyCpcApp, FantasyCppAppDefaultParams};
+use fantasy_cpc_app_trait::{AppResponse, FantasyCpcApp, FantasyCppAppDefaultParams};
 use fantasy_cpc_clock::Clock;
-use fantasy_cpc_display_controller::{DisplayController, color_palettes::BLACK, config::{OVERSCAN_V, VIRTUAL_HEIGHT, OVERSCAN_H, VIRTUAL_WIDTH}};
+use fantasy_cpc_display_controller::{
+    color_palettes::BLACK,
+    config::{OVERSCAN_H, OVERSCAN_V, VIRTUAL_HEIGHT, VIRTUAL_WIDTH},
+    DisplayController,
+};
 use rand::Rng;
 use winit::event::VirtualKeyCode;
 use winit_input_helper::WinitInputHelper;
@@ -73,7 +77,7 @@ impl FantasyCpcApp for Mandelbrot {
         &mut self.app_params
     }
 
-    fn init_app(&mut self, system_clock: &Clock, display_controller: &mut DisplayController) {
+    fn init_app(&mut self, _system_clock: &Clock, _display_controller: &mut DisplayController) {
         self.welcome_screen = true;
         self.game = false;
         self.menu = false;
@@ -94,7 +98,7 @@ impl FantasyCpcApp for Mandelbrot {
     fn update_app(
         &mut self,
         inputs: Option<&WinitInputHelper>,
-        clock: &Clock,
+        _clock: &Clock,
     ) -> Option<AppResponse> {
         inputs?;
 

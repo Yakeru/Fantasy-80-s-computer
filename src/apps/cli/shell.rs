@@ -119,7 +119,7 @@ impl FantasyCpcApp for Shell {
         &mut self.app_params
     }
 
-    fn init_app(&mut self, system_clock: &Clock, display_controller: &mut DisplayController) {
+    fn init_app(&mut self, _system_clock: &Clock, display_controller: &mut DisplayController) {
         display_controller.set_brightness(255);
         display_controller.clear(BLUE);
         self.terminal.set_coordinates((0, 0));
@@ -191,7 +191,7 @@ impl FantasyCpcApp for Shell {
         None
     }
 
-    fn draw_app(&mut self, clock: &Clock, display_controller: &mut DisplayController) {
+    fn draw_app(&mut self, _clock: &Clock, display_controller: &mut DisplayController) {
         self.terminal.render(display_controller);
     }
 }
