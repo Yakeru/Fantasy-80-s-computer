@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use fantasy_cpc_app_trait::{AppResponse, AppStatus, FantasyCpcApp};
+use fantasy_cpc_app_trait::{AppResponse, AppStatus, FantasyCpcApp, FantasyCppAppDefaultParams};
 use fantasy_cpc_clock::Clock;
 use fantasy_cpc_display_controller::{
     color_palettes::*,
@@ -12,10 +12,7 @@ use winit::event::VirtualKeyCode;
 use winit_input_helper::WinitInputHelper;
 
 pub struct Life {
-    enable_auto_escape: bool,
-    name: String,
-    status: AppStatus,
-    initialized: bool,
+    app_params: FantasyCppAppDefaultParams,
     gen_past: [[bool; TEXT_COLUMNS]; TEXT_ROWS],
     gen_a: Box<[[Cell; TEXT_COLUMNS]; TEXT_ROWS]>,
     gen_b: Box<[[Cell; TEXT_COLUMNS]; TEXT_ROWS]>,
@@ -56,10 +53,7 @@ impl Life {
         let crazy = vec![LIME_GREEN, RED, GREEN, BLUE, YELLOW, MAUVE, BLUE_GREEN];
 
         Life {
-            enable_auto_escape: false,
-            name: String::from("life"),
-            status: AppStatus::Stopped,
-            initialized: false,
+            app_params: FantasyCppAppDefaultParams::new(String::from("life"), false),
             gen_past: [[false; TEXT_COLUMNS]; TEXT_ROWS],
             gen_a: Box::new(
                 [[Cell {
@@ -150,7 +144,7 @@ impl Life {
         let user_inputs = inputs.unwrap();
 
         if user_inputs.key_pressed(VirtualKeyCode::Escape) {
-            self.set_state(AppStatus::Stopped);
+            self.get_app_params().change_status(AppStatus::Stopped)
         }
 
         if user_inputs.key_pressed(VirtualKeyCode::Key1) {
@@ -302,7 +296,7 @@ impl Life {
         }
 
         if inputs.is_some() && inputs.unwrap().key_pressed(VirtualKeyCode::Escape) {
-            self.initialized = false;
+            self.get_app_params().set_initialized(false);
         }
 
         let now = Instant::now();
@@ -584,28 +578,8 @@ fn calculate_life(
 }
 
 impl FantasyCpcApp for Life {
-    fn get_name(&self) -> &str {
-        &self.name
-    }
-
-    fn get_state(&self) -> &AppStatus {
-        &self.status
-    }
-
-    fn set_state(&mut self, state: AppStatus) {
-        self.status = state;
-    }
-
-    fn get_initialized(&self) -> bool {
-        self.initialized
-    }
-
-    fn set_initialized(&mut self, is_initialized: bool) {
-        self.initialized = is_initialized
-    }
-
-    fn get_enable_autoescape(&self) -> bool {
-        self.enable_auto_escape
+    fn get_app_params(&mut self) -> &mut FantasyCppAppDefaultParams {
+        &mut self.app_params
     }
 
     fn init_app(&mut self, _system_clock: &Clock, display_controller: &mut DisplayController) {

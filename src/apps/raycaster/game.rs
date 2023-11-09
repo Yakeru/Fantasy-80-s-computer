@@ -5,7 +5,7 @@ use super::{
     player::Player,
     renderer::{Renderer, GAME_SCALE},
 };
-use fantasy_cpc_app_trait::{FantasyCpcApp, AppStatus};
+use fantasy_cpc_app_trait::{FantasyCpcApp, AppStatus, FantasyCppAppDefaultParams};
 use fantasy_cpc_clock::Clock;
 use fantasy_cpc_display_controller::{color_palettes::{YELLOW, BLACK}, DisplayController};
 use fast_math::atan2;
@@ -16,10 +16,7 @@ use std::f32::consts::PI;
 const PLAYER_SPEED: isize = 8;
 
 pub struct Raycaster {
-    enable_auto_escape: bool,
-    name: String,
-    status: AppStatus,
-    initialized: bool,
+    app_params: FantasyCppAppDefaultParams,
     map: Map,
     renderer: Renderer,
     player: Player,
@@ -32,10 +29,7 @@ pub struct Raycaster {
 impl Raycaster {
     pub fn new() -> Raycaster {
         Raycaster {
-            enable_auto_escape: false,
-            name: "raycaster".to_string(),
-            status: AppStatus::Stopped,
-            initialized: false,
+            app_params: FantasyCppAppDefaultParams::new(String::from("raycaster"), false),
             map: Map::new(),
             player: Player {
                 x: 0,
@@ -149,8 +143,7 @@ impl Raycaster {
 
         if inputs.key_pressed(VirtualKeyCode::Return) {
             if self.menu_item_selected == 4 {
-                self.set_state(AppStatus::Stopped);
-                self.initialized = false;
+                self.get_app_params().change_status(AppStatus::Stopped);
             } else {
                 self.show_menu = false;
             }
@@ -267,28 +260,8 @@ impl Raycaster {
 }
 
 impl FantasyCpcApp for Raycaster {
-    fn get_name(&self) -> &str {
-        &self.name
-    }
-
-    fn get_state(&self) -> &AppStatus {
-        &self.status
-    }
-
-    fn set_state(&mut self, state: AppStatus) {
-        self.status = state;
-    }
-
-    fn get_initialized(&self) -> bool {
-        self.initialized
-    }
-
-    fn set_initialized(&mut self, is_initialized: bool) {
-        self.initialized = is_initialized
-    }
-
-    fn get_enable_autoescape(&self) -> bool {
-        self.enable_auto_escape
+    fn get_app_params(&mut self) -> &mut FantasyCppAppDefaultParams {
+        &mut self.app_params
     }
 
     fn init_app(&mut self, system_clock: &fantasy_cpc_clock::Clock, display_controller: &mut fantasy_cpc_display_controller::DisplayController) {

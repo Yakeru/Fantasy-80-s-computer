@@ -1,4 +1,4 @@
-use fantasy_cpc_app_trait::{AppResponse, AppStatus, FantasyCpcApp};
+use fantasy_cpc_app_trait::{AppResponse, FantasyCpcApp, FantasyCppAppDefaultParams};
 use fantasy_cpc_clock::Clock;
 use fantasy_cpc_display_controller::{
     characters_rom::CHAR_TABLE,
@@ -12,22 +12,19 @@ use winit_input_helper::{TextChar, WinitInputHelper};
 
 use super::terminal::Terminal;
 
-const SPLASH: &str = "\u{000D} Fantasy CPC Microcomputer V(0.5.0)\u{000D}\u{000D} 2023 Damien Torreilles\u{000D}\u{000D}";
+const SPLASH: &str = "\u{000D} Fantasy CPC Microcomputer V(0.6.0)\u{000D}\u{000D} 2023 Damien Torreilles\u{000D}\u{000D}";
 const SHELL_START_MESSAGE: &str = "SHELL 0.1\u{000D}Ready\u{000D}";
 
 const DEFAULT_BKG_COLOR: usize = TRUE_BLUE;
 const DEFAULT_COLOR: usize = YELLOW;
 
 pub struct Shell {
-    enable_auto_escape: bool,
-    name: String,
+    app_params: FantasyCppAppDefaultParams,
     color: usize,
     bkg_color: usize,
     clear_text_layer: bool,
     command: Vec<char>,
     // command_history: Vec<String>,
-    status: AppStatus,
-    initialized: bool,
     terminal: Terminal,
 }
 
@@ -50,16 +47,13 @@ enum Style {
 impl Shell {
     pub fn new() -> Shell {
         Self {
-            enable_auto_escape: false,
-            name: String::from("shell"),
+            app_params: FantasyCppAppDefaultParams::new(String::from("shell"), false),
             color: DEFAULT_COLOR,
             bkg_color: DEFAULT_BKG_COLOR,
             //last_character_received: None,
             clear_text_layer: false,
             command: Vec::new(),
             // command_history,
-            status: AppStatus::Running,
-            initialized: false,
             terminal: Terminal::new(),
         }
     }
@@ -121,28 +115,8 @@ impl Shell {
 }
 
 impl FantasyCpcApp for Shell {
-    fn get_name(&self) -> &str {
-        &self.name
-    }
-
-    fn get_state(&self) -> &AppStatus {
-        &self.status
-    }
-
-    fn set_state(&mut self, state: AppStatus) {
-        self.status = state;
-    }
-
-    fn get_initialized(&self) -> bool {
-        self.initialized
-    }
-
-    fn set_initialized(&mut self, is_initialized: bool) {
-        self.initialized = is_initialized
-    }
-
-    fn get_enable_autoescape(&self) -> bool {
-        self.enable_auto_escape
+    fn get_app_params(&mut self) -> &mut fantasy_cpc_app_trait::FantasyCppAppDefaultParams {
+        &mut self.app_params
     }
 
     fn init_app(&mut self, system_clock: &Clock, display_controller: &mut DisplayController) {

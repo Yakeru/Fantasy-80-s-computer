@@ -1,5 +1,5 @@
 use chrono::{Local, Timelike};
-use fantasy_cpc_app_trait::{AppResponse, AppStatus, FantasyCpcApp};
+use fantasy_cpc_app_trait::{AppResponse, AppStatus, FantasyCpcApp, FantasyCppAppDefaultParams};
 use fantasy_cpc_display_controller::{
     color_palettes::*,
     config::{VIRTUAL_HEIGHT, VIRTUAL_WIDTH},
@@ -13,10 +13,7 @@ use std::{
 };
 
 pub struct WeatherApp {
-    enable_auto_escape: bool,
-    name: String,
-    status: AppStatus,
-    initialized: bool,
+    app_params: FantasyCppAppDefaultParams,
     receiver: Receiver,
     update_appinterval: Duration,
     last_weather_update: Instant,
@@ -58,10 +55,7 @@ impl WeatherApp {
         // }
 
         WeatherApp {
-            enable_auto_escape: true,
-            name: String::from("weather"),
-            status: AppStatus::Stopped,
-            initialized: false,
+            app_params: FantasyCppAppDefaultParams::new(String::from("weather"), true),
             receiver: openweathermap::init("45.4874487,-73.5745913", "metric", "fr", key, 10),
             update_appinterval: Duration::from_secs(5),
             last_weather_update: Instant::now(),
@@ -387,28 +381,8 @@ impl WeatherApp {
 }
 
 impl FantasyCpcApp for WeatherApp {
-    fn get_name(&self) -> &str {
-        &self.name
-    }
-
-    fn get_state(&self) -> &AppStatus {
-        &self.status
-    }
-
-    fn set_state(&mut self, state: AppStatus) {
-        self.status = state
-    }
-
-    fn get_initialized(&self) -> bool {
-        self.initialized
-    }
-
-    fn set_initialized(&mut self, is_initialized: bool) {
-        self.initialized = is_initialized
-    }
-
-    fn get_enable_autoescape(&self) -> bool {
-        self.enable_auto_escape
+    fn get_app_params(&mut self) -> &mut FantasyCppAppDefaultParams {
+        &mut self.app_params
     }
 
     fn init_app(

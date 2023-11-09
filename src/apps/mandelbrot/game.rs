@@ -1,4 +1,4 @@
-use fantasy_cpc_app_trait::{AppStatus, AppResponse, FantasyCpcApp};
+use fantasy_cpc_app_trait::{AppStatus, AppResponse, FantasyCpcApp, FantasyCppAppDefaultParams};
 use fantasy_cpc_clock::Clock;
 use fantasy_cpc_display_controller::{DisplayController, color_palettes::BLACK, config::{OVERSCAN_V, VIRTUAL_HEIGHT, OVERSCAN_H, VIRTUAL_WIDTH}};
 use rand::Rng;
@@ -11,10 +11,7 @@ use super::{
 };
 
 pub struct Mandelbrot {
-    enable_auto_escape: bool,
-    name: String,
-    status: AppStatus,
-    initialized: bool,
+    app_params: FantasyCppAppDefaultParams,
     welcome_screen: bool,
     game: bool,
     menu: bool,
@@ -36,10 +33,7 @@ pub struct Mandelbrot {
 impl Mandelbrot {
     pub fn new() -> Mandelbrot {
         Mandelbrot {
-            enable_auto_escape: true,
-            name: String::from("mandelbrot"),
-            status: AppStatus::Stopped,
-            initialized: false,
+            app_params: FantasyCppAppDefaultParams::new(String::from("mandelbrot"), true),
             welcome_screen: true,
             game: false,
             menu: false,
@@ -75,28 +69,8 @@ impl Mandelbrot {
 }
 
 impl FantasyCpcApp for Mandelbrot {
-    fn get_name(&self) -> &str {
-        &self.name
-    }
-
-    fn get_state(&self) -> &AppStatus {
-        &self.status
-    }
-
-    fn set_state(&mut self, state: AppStatus) {
-        self.status = state
-    }
-
-    fn get_initialized(&self) -> bool {
-        self.initialized
-    }
-
-    fn set_initialized(&mut self, is_initialized: bool) {
-        self.initialized = is_initialized
-    }
-
-    fn get_enable_autoescape(&self) -> bool {
-        self.enable_auto_escape
+    fn get_app_params(&mut self) -> &mut FantasyCppAppDefaultParams {
+        &mut self.app_params
     }
 
     fn init_app(&mut self, system_clock: &Clock, display_controller: &mut DisplayController) {

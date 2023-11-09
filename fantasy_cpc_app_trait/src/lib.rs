@@ -10,17 +10,56 @@ pub enum AppStatus {
     Background,
 }
 
+pub struct FantasyCppAppDefaultParams {
+    name: String,
+    status: AppStatus,
+    initialized: bool,
+    autoescape_enabled: bool,
+}
+
+impl FantasyCppAppDefaultParams {
+    pub fn new(name: String, autoescape_enabled: bool) -> FantasyCppAppDefaultParams {
+        FantasyCppAppDefaultParams {
+            name,
+            status: AppStatus::Stopped,
+            initialized: false,
+            autoescape_enabled,
+        }
+    }
+
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn get_status(&self) -> &AppStatus {
+        &self.status
+    }
+
+    pub fn change_status(&mut self, new_state: AppStatus) {
+        match new_state {
+            AppStatus::Stopped => {
+                self.initialized = false;
+                self.status = AppStatus::Stopped;
+            }
+            _ => self.status = new_state,
+        }
+    }
+
+    pub fn get_initialized(&self) -> bool {
+        self.initialized
+    }
+
+    pub fn set_initialized(&mut self, is_initialized: bool) {
+        self.initialized = is_initialized
+    }
+
+    pub fn get_enable_autoescape(&self) -> bool {
+        self.autoescape_enabled
+    }
+}
+
 pub trait FantasyCpcApp {
-    fn get_name(&self) -> &str;
-
-    fn get_state(&self) -> &AppStatus;
-    fn set_state(&mut self, state: AppStatus);
-
-    fn get_initialized(&self) -> bool;
-    fn set_initialized(&mut self, is_initialized: bool);
-
-    fn get_enable_autoescape(&self) -> bool;
-    // fn set_enable_autoescape(&mut self, enable_auto_escape: bool);
+    fn get_app_params(&mut self) -> &mut FantasyCppAppDefaultParams;
 
     fn init_app(&mut self, system_clock: &Clock, display_controller: &mut DisplayController);
 
@@ -32,37 +71,27 @@ pub trait FantasyCpcApp {
 
     fn draw_app(&mut self, clock: &Clock, display_controller: &mut DisplayController);
 
-    fn change_state(&mut self, new_state: AppStatus) {
-        match new_state {
-            AppStatus::Stopped => {
-                self.set_initialized(false);
-                self.set_state(AppStatus::Stopped);
-            }
-            _ => self.set_state(new_state),
-        }
-    }
-
     fn exec_app(
         &mut self,
         inputs: Option<&WinitInputHelper>,
         system_clock: &Clock,
         display_controller: &mut DisplayController,
     ) -> Option<AppResponse> {
-        match self.get_state() {
+        match self.get_app_params().get_status() {
             AppStatus::Stopped => None,
             AppStatus::Running => {
-                if !self.get_initialized() {
+                if !self.get_app_params().get_initialized() {
                     self.init_app(system_clock, display_controller);
-                    self.set_initialized(true);
+                    self.get_app_params().set_initialized(true);
                 }
                 let app_response = self.update(inputs, system_clock);
                 self.draw(system_clock, display_controller);
                 return app_response;
             }
             AppStatus::Background => {
-                if !self.get_initialized() {
+                if !self.get_app_params().get_initialized() {
                     self.init_app(system_clock, display_controller);
-                    self.set_initialized(true);
+                    self.get_app_params().set_initialized(true);
                 }
                 return self.update(None, system_clock);
             }
@@ -76,10 +105,10 @@ pub trait FantasyCpcApp {
     ) -> Option<AppResponse> {
         // Implementing default behaviour when ESCAPE key is pressed in app
         // Applied only if enable_auto_escape is set to true in app.
-        if inputs.is_some() && self.get_enable_autoescape() {
+        if inputs.is_some() && self.get_app_params().get_enable_autoescape() {
             if inputs.unwrap().key_released(VirtualKeyCode::Escape) {
-                self.set_state(AppStatus::Stopped);
-                self.set_initialized(false);
+                self.get_app_params().change_status(AppStatus::Stopped);
+                self.get_app_params().set_initialized(false);
             }
         }
 

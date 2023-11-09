@@ -1,4 +1,4 @@
-use fantasy_cpc_app_trait::{AppResponse, AppStatus, FantasyCpcApp};
+use fantasy_cpc_app_trait::{AppResponse, AppStatus, FantasyCpcApp, FantasyCppAppDefaultParams};
 use fantasy_cpc_clock::Clock;
 use fantasy_cpc_display_controller::{
     color_palettes::{BLACK, WHITE},
@@ -11,10 +11,7 @@ use winit_input_helper::WinitInputHelper;
 use crate::sound::{notes::*, play::play};
 
 pub struct Boot {
-    enable_auto_escape: bool,
-    name: String,
-    status: AppStatus,
-    initialized: bool,
+    app_params: FantasyCppAppDefaultParams,
     frame_count: u128,
     starting_time: Duration,
 }
@@ -22,10 +19,7 @@ pub struct Boot {
 impl Boot {
     pub fn new() -> Boot {
         Self {
-            enable_auto_escape: true,
-            name: "reboot".to_string(),
-            status: AppStatus::Running,
-            initialized: false,
+            app_params: FantasyCppAppDefaultParams::new(String::from("reboot"), true),
             frame_count: 0,
             starting_time: Duration::new(0, 0),
         }
@@ -33,28 +27,8 @@ impl Boot {
 }
 
 impl FantasyCpcApp for Boot {
-    fn get_name(&self) -> &str {
-        &self.name
-    }
-
-    fn get_state(&self) -> &AppStatus {
-        &self.status
-    }
-
-    fn set_state(&mut self, state: AppStatus) {
-        self.status = state;
-    }
-
-    fn get_initialized(&self) -> bool {
-        self.initialized
-    }
-
-    fn set_initialized(&mut self, is_initialized: bool) {
-        self.initialized = is_initialized
-    }
-
-    fn get_enable_autoescape(&self) -> bool {
-        self.enable_auto_escape
+    fn get_app_params(&mut self) -> &mut FantasyCppAppDefaultParams {
+        &mut self.app_params
     }
 
     fn init_app(
@@ -83,13 +57,11 @@ impl FantasyCpcApp for Boot {
         clock: &fantasy_cpc_clock::Clock,
     ) -> Option<fantasy_cpc_app_trait::AppResponse> {
         if clock.total_running_time - self.starting_time >= Duration::new(6, 0) {
-            self.initialized = false;
-            self.status = AppStatus::Stopped;
+            self.get_app_params().change_status(AppStatus::Stopped);
         }
 
         if inputs.is_some() && inputs.unwrap().key_pressed(VirtualKeyCode::Escape) {
-            self.initialized = false;
-            self.status = AppStatus::Stopped;
+            self.get_app_params().change_status(AppStatus::Stopped);
         }
 
         None

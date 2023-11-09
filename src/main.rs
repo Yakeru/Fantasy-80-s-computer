@@ -110,7 +110,7 @@ fn main() -> Result<(), Error> {
     // The Shell uses the console as default output.
     // When closing/quitting an app, it should always fall back to the shell.
     let mut shell = Box::new(Shell::new());
-    shell.set_state(AppStatus::Running);
+    shell.get_app_params().change_status(AppStatus::Running);
 
     // ********* //
     // The apps  //
@@ -121,7 +121,8 @@ fn main() -> Result<(), Error> {
     let mut app_list: Vec<Box<dyn FantasyCpcApp>> = Vec::new();
 
     // BOOT APP, not really an app, just plays the animation at startup, and when "reboot" command is sent
-    let boot = Box::new(Boot::new());
+    let mut boot = Box::new(Boot::new());
+    boot.get_app_params().change_status(AppStatus::Running);
     app_list.push(boot);
 
     // CONWAY'S GAME OF LIFE, TEXT MODE
@@ -182,7 +183,7 @@ fn main() -> Result<(), Error> {
             let mut app_response: Option<AppResponse> = None;
             //let app_inputs: AppInputs = AppInputs { keyboard_input, char_received, mouse_move_delta, system_clock };
             for app in app_list.chunks_exact_mut(1) {
-                if *app[0].get_state() == AppStatus::Running {
+                if *app[0].get_app_params().get_status() == AppStatus::Running {
                     show_shell = false;
                 };
 
@@ -213,8 +214,8 @@ fn main() -> Result<(), Error> {
 
                     //Tests if message is name of an available app. If so, switches to that app.
                     for app in app_list.chunks_exact_mut(1) {
-                        if app[0].get_name() == app_message {
-                            app[0].set_state(AppStatus::Running);
+                        if app[0].get_app_params().get_name() == app_message {
+                            app[0].get_app_params().change_status(AppStatus::Running);
                         }
                     }
 
