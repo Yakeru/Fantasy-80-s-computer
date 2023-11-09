@@ -212,7 +212,7 @@ impl WeatherApp {
     fn draw_digital_clock(&mut self, dc: &mut DisplayController) {
         let now = Local::now();
         if now.hour() < 10 {
-            dc.get_text_layer_mut().insert_string_xy(
+            dc.get_txt_mut().insert_string_xy(
                 17,
                 29,
                 &format!("{}", now.hour()),
@@ -223,7 +223,7 @@ impl WeatherApp {
                 false,
             );
         } else {
-            dc.get_text_layer_mut().insert_string_xy(
+            dc.get_txt_mut().insert_string_xy(
                 16,
                 29,
                 &format!("{}", now.hour()),
@@ -234,18 +234,10 @@ impl WeatherApp {
                 false,
             );
         }
-        dc.get_text_layer_mut().insert_char_xy(
-            18,
-            29,
-            ':',
-            Some(WHITE),
-            Some(BLACK),
-            false,
-            false,
-            false,
-        );
+        dc.get_txt_mut()
+            .insert_char_xy(18, 29, ':', Some(WHITE), Some(BLACK), false, false, false);
         if now.minute() < 10 {
-            dc.get_text_layer_mut().insert_string_xy(
+            dc.get_txt_mut().insert_string_xy(
                 19,
                 29,
                 "0",
@@ -255,7 +247,7 @@ impl WeatherApp {
                 false,
                 false,
             );
-            dc.get_text_layer_mut().insert_string_xy(
+            dc.get_txt_mut().insert_string_xy(
                 20,
                 29,
                 &format!("{}", now.minute()),
@@ -266,7 +258,7 @@ impl WeatherApp {
                 false,
             );
         } else {
-            dc.get_text_layer_mut().insert_string_xy(
+            dc.get_txt_mut().insert_string_xy(
                 19,
                 29,
                 &format!("{}", now.minute()),
@@ -278,18 +270,10 @@ impl WeatherApp {
             );
         }
 
-        dc.get_text_layer_mut().insert_char_xy(
-            21,
-            29,
-            ':',
-            Some(WHITE),
-            Some(BLACK),
-            false,
-            false,
-            false,
-        );
+        dc.get_txt_mut()
+            .insert_char_xy(21, 29, ':', Some(WHITE), Some(BLACK), false, false, false);
         if now.second() < 10 {
-            dc.get_text_layer_mut().insert_string_xy(
+            dc.get_txt_mut().insert_string_xy(
                 22,
                 29,
                 "0",
@@ -299,7 +283,7 @@ impl WeatherApp {
                 false,
                 false,
             );
-            dc.get_text_layer_mut().insert_string_xy(
+            dc.get_txt_mut().insert_string_xy(
                 23,
                 29,
                 &format!("{}", now.second()),
@@ -310,7 +294,7 @@ impl WeatherApp {
                 false,
             );
         } else {
-            dc.get_text_layer_mut().insert_string_xy(
+            dc.get_txt_mut().insert_string_xy(
                 22,
                 29,
                 &format!("{}", now.second()),
@@ -438,7 +422,7 @@ impl FantasyCpcApp for WeatherApp {
         _clock: &fantasy_cpc_clock::Clock,
         display_controller: &mut DisplayController,
     ) {
-        display_controller.get_text_layer_mut().clear();
+        display_controller.get_txt_mut().clear();
         display_controller.clear(BLACK);
 
         self.draw_analogue_clock(
@@ -451,7 +435,7 @@ impl FantasyCpcApp for WeatherApp {
         match &self.current_weather {
             Some(result) => match result {
                 Ok(current_weather) => {
-                    display_controller.get_text_layer_mut().insert_string_xy(
+                    display_controller.get_txt_mut().insert_string_xy(
                         0,
                         0,
                         &format!(
@@ -469,7 +453,7 @@ impl FantasyCpcApp for WeatherApp {
                         false,
                     );
 
-                    display_controller.get_text_layer_mut().insert_string_xy(
+                    display_controller.get_txt_mut().insert_string_xy(
                         0,
                         2,
                         &format!(
@@ -483,7 +467,7 @@ impl FantasyCpcApp for WeatherApp {
                         false,
                     );
 
-                    display_controller.get_text_layer_mut().insert_string_xy(
+                    display_controller.get_txt_mut().insert_string_xy(
                         0,
                         4,
                         &format!("Humidity:    {} %", current_weather.main.humidity),
@@ -494,7 +478,7 @@ impl FantasyCpcApp for WeatherApp {
                         false,
                     );
 
-                    display_controller.get_text_layer_mut().insert_string_xy(
+                    display_controller.get_txt_mut().insert_string_xy(
                         0,
                         6,
                         &format!("Pressure:    {} Kpa", current_weather.main.pressure),
@@ -505,7 +489,7 @@ impl FantasyCpcApp for WeatherApp {
                         false,
                     );
 
-                    display_controller.get_text_layer_mut().insert_string_xy(
+                    display_controller.get_txt_mut().insert_string_xy(
                         0,
                         8,
                         &format!("Wind:        {} m/s", current_weather.wind.speed),
@@ -517,7 +501,7 @@ impl FantasyCpcApp for WeatherApp {
                     );
                 }
                 Err(message) => {
-                    display_controller.get_text_layer_mut().insert_string_xy(
+                    display_controller.get_txt_mut().insert_string_xy(
                         0,
                         0,
                         message,

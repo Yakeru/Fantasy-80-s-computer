@@ -84,18 +84,11 @@ impl FantasyCpcApp for Boot {
 
         //Clear garbage and display Loading...
         if clock.total_running_time - self.starting_time >= Duration::new(3, 0) {
-            display_controller.get_text_layer_mut().clear();
+            display_controller.get_txt_mut().clear();
             display_controller.clear(0);
-            display_controller.get_text_layer_mut().insert_string_xy(
-                0,
-                0,
-                "Loading...",
-                Some(WHITE),
-                Some(BLACK),
-                false,
-                false,
-                false,
-            );
+            display_controller
+                .get_txt_mut()
+                .write_str(0, 0, "Loading...");
         }
 
         //Display loading overscan while "loading"

@@ -164,124 +164,47 @@ impl Life {
         }
     }
 
-    fn draw_welcome_screen(&mut self, clock: &Clock, display_controller: &mut DisplayController) {
-        display_controller.get_text_layer_mut().clear();
-        display_controller.clear(BLACK);
+    fn draw_welcome_screen(&mut self, clock: &Clock, dc: &mut DisplayController) {
+        dc.get_txt_mut().clear();
+        dc.clear(BLACK);
+
+        //Animated title
+        let title_extraa: &str = " 🯆                         🯆 ";
+        let tilte_main_1: &str = " 🯆  Conway's Game Of Life  🯆 ";
+        let tilte_main_2: &str = "🯆🯆🯆 Conway's Game Of Life 🯆🯆🯆";
+        let title_pos_x: usize = (TEXT_COLUMNS - tilte_main_2.chars().count()) / 2;
+
+        dc.get_txt_mut().set_pen_colors(BLUE, BLACK);
+
         if clock.second_latch && clock.half_second_latch {
-            display_controller.get_text_layer_mut().insert_string_xy(
-                (TEXT_COLUMNS - 29) / 2,
-                10,
-                " 🯆                         🯆 ",
-                Some(BLUE),
-                Some(BLACK),
-                false,
-                false,
-                false,
-            );
-            display_controller.get_text_layer_mut().insert_string_xy(
-                (TEXT_COLUMNS - 29) / 2,
-                11,
-                " 🯆  Conway's Game Of Life  🯆 ",
-                Some(BLUE),
-                Some(BLACK),
-                false,
-                false,
-                false,
-            );
-            display_controller.get_text_layer_mut().insert_string_xy(
-                (TEXT_COLUMNS - 29) / 2,
-                12,
-                " 🯆                         🯆 ",
-                Some(BLUE),
-                Some(BLACK),
-                false,
-                false,
-                false,
-            );
+            dc.get_txt_mut().write_str(title_pos_x, 10, title_extraa);
+            dc.get_txt_mut().write_str(title_pos_x, 11, tilte_main_1);
+            dc.get_txt_mut().write_str(title_pos_x, 12, title_extraa);
         } else if clock.second_latch && !clock.half_second_latch {
-            display_controller.get_text_layer_mut().insert_string_xy(
-                (TEXT_COLUMNS - 29) / 2,
-                11,
-                "🯆🯆🯆 Conway's Game Of Life 🯆🯆🯆",
-                Some(BLUE),
-                Some(BLACK),
-                false,
-                false,
-                false,
-            );
+            dc.get_txt_mut().write_str(title_pos_x, 11, tilte_main_2);
         } else if !clock.second_latch && clock.half_second_latch {
-            display_controller.get_text_layer_mut().insert_string_xy(
-                (TEXT_COLUMNS - 29) / 2,
-                10,
-                " 🯆                         🯆 ",
-                Some(BLUE),
-                Some(BLACK),
-                false,
-                false,
-                false,
-            );
-            display_controller.get_text_layer_mut().insert_string_xy(
-                (TEXT_COLUMNS - 29) / 2,
-                11,
-                " 🯆  Conway's Game Of Life  🯆 ",
-                Some(BLUE),
-                Some(BLACK),
-                false,
-                false,
-                false,
-            );
-            display_controller.get_text_layer_mut().insert_string_xy(
-                (TEXT_COLUMNS - 29) / 2,
-                12,
-                " 🯆                         🯆 ",
-                Some(BLUE),
-                Some(BLACK),
-                false,
-                false,
-                false,
-            );
+            dc.get_txt_mut().write_str(title_pos_x, 10, title_extraa);
+            dc.get_txt_mut().write_str(title_pos_x, 11, tilte_main_1);
+            dc.get_txt_mut().write_str(title_pos_x, 12, title_extraa);
         } else {
-            display_controller.get_text_layer_mut().insert_string_xy(
-                (TEXT_COLUMNS - 29) / 2,
-                11,
-                "🯆🯆🯆 Conway's Game Of Life 🯆🯆🯆",
-                Some(BLUE),
-                Some(BLACK),
-                false,
-                false,
-                false,
-            );
+            dc.get_txt_mut().write_str(title_pos_x, 11, tilte_main_2);
         }
-        display_controller.get_text_layer_mut().insert_string_xy(
-            (TEXT_COLUMNS - 20) / 2,
-            20,
-            "1 - Random mode",
-            Some(ORANGE),
-            Some(BLACK),
-            false,
-            false,
-            false,
-        );
-        display_controller.get_text_layer_mut().insert_string_xy(
-            (TEXT_COLUMNS - 20) / 2,
-            21,
-            "2 - Combat mode",
-            Some(ORANGE),
-            Some(BLACK),
-            false,
-            false,
-            false,
-        );
-        display_controller.get_text_layer_mut().insert_string_xy(
-            (TEXT_COLUMNS - 24) / 2,
-            TEXT_ROWS - 1,
-            "2022 - Damien Torreilles",
-            Some(TRUE_BLUE),
-            Some(BLACK),
-            false,
-            false,
-            false,
-        );
+
+        // Menu
+        let menu_1: &str = "1 - Random mode";
+        let menu_2: &str = "2 - Combat mode";
+
+        dc.get_txt_mut().set_pen_color(ORANGE);
+        dc.get_txt_mut()
+            .write_str((TEXT_COLUMNS - menu_1.len()) / 2, 20, menu_1);
+        dc.get_txt_mut()
+            .write_str((TEXT_COLUMNS - menu_2.len()) / 2, 21, menu_2);
+
+        // Credit
+        let credit: &str = "2022 - Damien Torreilles";
+        dc.get_txt_mut().set_pen_color(TRUE_BLUE);
+        dc.get_txt_mut()
+            .write_str((TEXT_COLUMNS - credit.len()) / 2, TEXT_ROWS - 1, credit);
     }
 
     /*************************************************************************************************************
@@ -329,11 +252,11 @@ impl Life {
         }
     }
 
-    fn draw_game(&mut self, display_controller: &mut DisplayController) {
-        display_controller.get_text_layer_mut().clear();
-        display_controller.clear(WHITE);
+    fn draw_game(&mut self, dc: &mut DisplayController) {
+        dc.get_txt_mut().clear();
+        dc.clear(WHITE);
 
-        let bkg_color = Some(BLACK);
+        let bkg_color = BLACK;
 
         let chars = ['🯆', '🯅', '🯇', '🯈'];
 
@@ -347,27 +270,26 @@ impl Life {
                 };
 
                 if cell.alive {
-                    let color: Option<usize>;
+                    let color: usize;
                     if self.random_game_mode {
                         let theme = self.color_themes.get(self.current_theme).unwrap();
                         let color_index = self.gen_a[row][col].age % theme.len() as u8;
-                        color = Some(*theme.get(color_index as usize).unwrap());
+                        color = *theme.get(color_index as usize).unwrap();
                     } else {
                         match cell.team {
-                            Team::NA => color = Some(0),
-                            Team::A => color = Some(self.team_a_color),
-                            Team::B => color = Some(self.team_b_color),
+                            Team::NA => color = 0,
+                            Team::A => color = self.team_a_color,
+                            Team::B => color = self.team_b_color,
                         }
                     }
 
                     let char = chars[(self.gen_a[row][col].age % (chars.len() - 1) as u8) as usize];
-                    display_controller
-                        .get_text_layer_mut()
-                        .insert_char_xy(col, row, char, color, bkg_color, false, false, false);
+                    dc.get_txt_mut().set_pen_colors(color, bkg_color);
+                    dc.get_txt_mut().write(char, col, row);
                 } else {
-                    display_controller
-                        .get_text_layer_mut()
-                        .insert_char_xy(col, row, ' ', bkg_color, bkg_color, false, false, false);
+                    dc.get_txt_mut().set_pen_colors(bkg_color, bkg_color);
+
+                    dc.get_txt_mut().write(' ', col, row);
                 }
             }
         }
@@ -421,49 +343,16 @@ impl Life {
         }
     }
 
-    fn draw_menu(&mut self, display_controller: &mut DisplayController) {
-        display_controller.get_text_layer_mut().clear();
-        display_controller.clear(BLACK);
-        display_controller.get_text_layer_mut().insert_string_xy(
-            5,
-            5,
-            "Team A : ",
-            Some(BLUE),
-            Some(BLACK),
-            false,
-            false,
-            false,
-        );
-        display_controller.get_text_layer_mut().insert_string_xy(
-            5,
-            7,
-            "Team B : ",
-            Some(BLUE),
-            Some(BLACK),
-            false,
-            false,
-            false,
-        );
-        display_controller.get_text_layer_mut().insert_string_xy(
-            14,
-            5,
-            "🯆",
-            Some(self.team_a_color),
-            Some(BLACK),
-            false,
-            false,
-            false,
-        );
-        display_controller.get_text_layer_mut().insert_string_xy(
-            14,
-            7,
-            "🯆",
-            Some(self.team_b_color),
-            Some(BLACK),
-            false,
-            false,
-            false,
-        );
+    fn draw_menu(&mut self, dc: &mut DisplayController) {
+        dc.get_txt_mut().clear();
+        dc.clear(BLACK);
+        dc.get_txt_mut().set_pen_colors(BLUE, BLACK);
+        dc.get_txt_mut().write_str(5, 5, "Team A : ");
+        dc.get_txt_mut().write_str(5, 7, "Team B : ");
+        dc.get_txt_mut().set_pen_colors(self.team_a_color, BLACK);
+        dc.get_txt_mut().write('🯆', 14, 5);
+        dc.get_txt_mut().set_pen_colors(self.team_b_color, BLACK);
+        dc.get_txt_mut().write('🯆', 14, 7);
     }
 }
 

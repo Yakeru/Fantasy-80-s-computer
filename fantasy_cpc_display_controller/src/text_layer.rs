@@ -1,22 +1,43 @@
-use crate::{config::*, color_palettes::*, characters_rom::*};
+use crate::{characters_rom::*, color_palettes::*, config::*};
 
 const DEFAULT_COLOR: usize = WHITE;
 const DEFAULT_BKG_COLOR: usize = BLACK;
 
 #[derive(Clone, Copy)]
-pub struct TextLayerChar {
+pub struct TextLayerCell {
     pub c: char,
+    pub pen: TextLayerPen,
+}
+
+#[derive(Clone, Copy)]
+pub struct TextLayerPen {
     pub color: usize,
     pub bkg_color: usize,
-    pub swap: bool,
+    pub swap_color: bool,
     pub blink: bool,
-    pub shadowed: bool
+    pub shadowed: bool,
+    pub flip_h: bool,
+    pub flip_v: bool,
+}
+
+const fn get_default_pen() -> TextLayerPen {
+    TextLayerPen {
+        color: DEFAULT_COLOR,
+        bkg_color: DEFAULT_BKG_COLOR,
+        swap_color: false,
+        blink: false,
+        shadowed: false,
+        flip_h: false,
+        flip_v: false,
+    }
 }
 
 pub struct TextLayer {
     pub default_color: usize,
     pub default_bkg_color: usize,
-    char_map: [Option<TextLayerChar>; TEXT_COLUMNS * TEXT_ROWS],
+    default_pen: TextLayerPen,
+    current_pen: TextLayerPen,
+    char_map: [[Option<TextLayerCell>; TEXT_COLUMNS]; TEXT_ROWS],
 }
 
 impl TextLayer {
@@ -24,83 +45,88 @@ impl TextLayer {
         TextLayer {
             default_color: DEFAULT_COLOR,
             default_bkg_color: DEFAULT_BKG_COLOR,
-            char_map: [None; TEXT_COLUMNS * TEXT_ROWS]
+            default_pen: get_default_pen(),
+            current_pen: get_default_pen(),
+            char_map: [[None; TEXT_COLUMNS]; TEXT_ROWS],
         }
     }
 
     pub fn clear(&mut self) {
-        self.char_map = [None; TEXT_COLUMNS * TEXT_ROWS];
+        self.char_map = [[None; TEXT_COLUMNS]; TEXT_ROWS];
+    }
+
+    pub fn reset_pen(&mut self) {
+        self.current_pen = get_default_pen();
+    }
+
+    pub fn set_pen_colors(&mut self, color: usize, bkg_color: usize) {
+        self.current_pen.color = color;
+        self.current_pen.bkg_color = bkg_color;
+    }
+
+    pub fn set_pen_color(&mut self, color: usize) {
+        self.current_pen.color = color
+    }
+
+    pub fn set_pen_bkg_color(&mut self, bkg_color: usize) {
+        self.current_pen.bkg_color = bkg_color
+    }
+
+    pub fn set_pen_style_effect(&mut self, swap_color: bool, blink: bool, shadowed: bool) {
+        self.current_pen.swap_color = swap_color;
+        self.current_pen.blink = blink;
+        self.current_pen.shadowed = shadowed;
+    }
+
+    pub fn set_pen_render_effect(&mut self, flip_h: bool, flip_v: bool) {
+        self.current_pen.flip_h = flip_h;
+        self.current_pen.flip_v = flip_v;
     }
 
     /// Returns the dimensions in columns and rowns of the text layer map.
     pub fn get_dimensions_xy(&self) -> (usize, usize) {
-        return (TEXT_COLUMNS, TEXT_ROWS);
+        (TEXT_COLUMNS, TEXT_ROWS)
     }
 
     /// Returns the lenght of the char_map array.
     pub fn get_len(&self) -> usize {
-        return self.char_map.len();
+        TEXT_COLUMNS * TEXT_ROWS
     }
 
-    pub fn get_char_map(&self) -> &[Option<TextLayerChar>] {
-        return &self.char_map;
+    pub fn get_char_map(&self) -> &[[Option<TextLayerCell>; TEXT_COLUMNS]; TEXT_ROWS] {
+        &self.char_map
     }
 
-    pub fn get_char_map_mut(&mut self) -> &mut [Option<TextLayerChar>] {
-        return &mut self.char_map;
-    }
-
-    /// Inserts a TextLayerChar in the char_map at the specified index.
-    /// This is the mother of all text inserting functions, all 
-    /// the insert or push functions end up calling this one. 
-    pub fn insert_text_layer_char(&mut self, index: usize, text_layer_char: TextLayerChar) {
-        let safe_index = index % self.get_len();
-        self.char_map[safe_index] = Some(text_layer_char);
-    }
-
-    /// Inserts a character in the char_map at the specified index.
-    pub fn insert_char(&mut self, index: usize, c: char, color: Option<usize>, bkg_color: Option<usize>, swap: bool, blink: bool, shadowed: bool) {
-        self.insert_text_layer_char(index, TextLayerChar {c, color: color.unwrap_or(DEFAULT_COLOR), bkg_color: bkg_color.unwrap_or(DEFAULT_BKG_COLOR), swap, blink, shadowed});
+    pub fn get_char_map_mut(&mut self) -> &mut [[Option<TextLayerCell>; TEXT_COLUMNS]; TEXT_ROWS] {
+        &mut self.char_map
     }
 
     /// Inserts a character in the char_map at the specified x and y position.
-    pub fn insert_char_xy(&mut self, x: usize, y: usize, c: char, color: Option<usize>, bkg_color: Option<usize>, swap: bool, blink: bool, shadowed: bool) {
-        let index = text_coord_to_index(x, y);
-        self.insert_char(index, c, color, bkg_color, swap, blink, shadowed);
-    }
-
-    /// Inserts a TextLayerChar in the char_map at the specified x and y position.
-    pub fn insert_text_layer_char_xy(&mut self, x: usize, y: usize, char: TextLayerChar) {
-        let index = text_coord_to_index(x, y);
-        self.insert_text_layer_char(index, char);
+    pub fn write(&mut self, c: char, x: usize, y: usize) {
+        let cell: TextLayerCell = TextLayerCell {
+            c,
+            pen: self.current_pen,
+        };
+        let safe_coord = safe_coord(x, y);
+        self.char_map[safe_coord.1][safe_coord.0] = Some(cell);
     }
 
     /// Inserts a string in the char_map at the specified index.
-    pub fn insert_string(&mut self, index: usize, string: &str, color: Option<usize>, bkg_color: Option<usize>, swap: bool, blink: bool, shadowed: bool) {
+    pub fn write_str(&mut self, x: usize, y: usize, string: &str) {
         if !string.is_empty() {
-            let mut char_count = 0;
-            for c in string.chars() {
-                self.insert_char(index + char_count, c, color, bkg_color, swap, blink, shadowed);
-                char_count = char_count + 1;
+            for (char_count, c) in string.chars().enumerate() {
+                self.write(c, x + char_count, y);
             }
         }
     }
-
-    /// Inserts a string in the char_map at the specified x and y position.
-    pub fn insert_string_xy(&mut self, x: usize, y: usize, string: &str, color: Option<usize>, bkg_color: Option<usize>, swap: bool, blink: bool, shadowed: bool) {
-        let index = text_coord_to_index(x, y);
-        self.insert_string(index, string, color, bkg_color, swap, blink, shadowed);
-    }
 }
 
-pub const fn text_coord_to_index(x: usize, y: usize) -> usize {
-    (y * TEXT_COLUMNS + x) % (TEXT_COLUMNS * TEXT_ROWS)
-}
+// pub const fn text_coord_to_index(x: usize, y: usize) -> usize {
+//     (y * TEXT_COLUMNS + x) % (TEXT_COLUMNS * TEXT_ROWS)
+// }
 
-pub const fn index_to_text_coord(index: usize) -> (usize, usize) {
-    let y: usize = index / TEXT_COLUMNS;
-    let x: usize = index % TEXT_COLUMNS;
-    (x, y)
+const fn safe_coord(x: usize, y: usize) -> (usize, usize) {
+    (x % TEXT_COLUMNS, (y + x / TEXT_COLUMNS) % TEXT_ROWS)
 }
 
 pub const fn text_coord_to_frame_coord(x: usize, y: usize) -> (usize, usize) {
@@ -111,12 +137,4 @@ pub const fn text_coord_to_frame_coord(x: usize, y: usize) -> (usize, usize) {
     let x_pos = horizontal_border + safe_x * CHARACTER_WIDTH;
     let y_pos = vertical_border + safe_y * CHARACTER_HEIGHT;
     (x_pos, y_pos)
-}
-
-pub const fn text_index_to_frame_coord(index: usize) -> (usize, usize) {
-    let horizontal_border: usize = (VIRTUAL_WIDTH - TEXT_COLUMNS * CHARACTER_WIDTH) / 2;
-    let vertical_border: usize = (VIRTUAL_HEIGHT - TEXT_ROWS * CHARACTER_HEIGHT) / 2;
-    let x = horizontal_border + (index % TEXT_COLUMNS) * CHARACTER_WIDTH;
-    let y = vertical_border + ((index / TEXT_COLUMNS) % TEXT_ROWS) * CHARACTER_HEIGHT;
-    (x, y)
 }

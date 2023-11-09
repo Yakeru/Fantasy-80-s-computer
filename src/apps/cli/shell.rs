@@ -4,7 +4,7 @@ use fantasy_cpc_display_controller::{
     characters_rom::CHAR_TABLE,
     color_palettes::{BLUE, TRUE_BLUE, YELLOW},
     config::{TEXT_COLUMNS, TEXT_ROWS},
-    text_layer::TextLayerChar,
+    text_layer::TextLayerCell,
     DisplayController,
 };
 use winit::{event::VirtualKeyCode, event_loop::ControlFlow};
@@ -67,9 +67,9 @@ impl Shell {
         }
     }
 
-    fn get_text_layer_char_from_style(&self, style: StyledChar) -> TextLayerChar {
+    fn get_txt_char_from_style(&self, style: StyledChar) -> TextLayerCell {
         match style {
-            StyledChar::Default(c) => TextLayerChar {
+            StyledChar::Default(c) => TextLayerCell {
                 c,
                 color: self.color,
                 bkg_color: self.bkg_color,
@@ -77,9 +77,9 @@ impl Shell {
                 blink: false,
                 shadowed: false,
             },
-            // StyledChar::Highlight(c) => TextLayerChar {c, color: self.color, bkg_color: self.bkg_color, swap: true, blink: false, shadowed: false},
-            // StyledChar::Warning(c) => TextLayerChar {c, color: self.color, bkg_color: BLACK, swap: false, blink: false, shadowed: false},
-            // StyledChar::Error(c) => TextLayerChar {c, color: RED, bkg_color: BLACK, swap: false, blink: true, shadowed: false}
+            // StyledChar::Highlight(c) => TextLayerCell {c, color: self.color, bkg_color: self.bkg_color, swap: true, blink: false, shadowed: false},
+            // StyledChar::Warning(c) => TextLayerCell {c, color: self.color, bkg_color: BLACK, swap: false, blink: false, shadowed: false},
+            // StyledChar::Error(c) => TextLayerCell {c, color: RED, bkg_color: BLACK, swap: false, blink: true, shadowed: false}
         }
     }
 
@@ -156,9 +156,7 @@ impl FantasyCpcApp for Shell {
                     } else {
                         self.command.push(*c);
                         self.terminal.push_text_layer_char(
-                            self.get_text_layer_char_from_style(
-                                self.style_a_char(*c, Style::Default),
-                            ),
+                            self.get_txt_char_from_style(self.style_a_char(*c, Style::Default)),
                         );
                     }
                 }

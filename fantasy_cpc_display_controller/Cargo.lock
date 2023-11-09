@@ -9,14 +9,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
-name = "clock"
+name = "fantasy_cpc_clock"
 version = "0.1.0"
 
 [[package]]
-name = "display_controller"
+name = "fantasy_cpc_display_controller"
 version = "0.1.0"
 dependencies = [
- "clock",
+ "fantasy_cpc_clock",
  "rand",
  "unicode",
 ]

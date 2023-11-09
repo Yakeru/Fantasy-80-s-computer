@@ -1,7 +1,8 @@
-use apps::{
-    boot::Boot, cli::shell::Shell, life::Life, mandelbrot::game::Mandelbrot,
-    raycaster::game::Raycaster, weather_app::WeatherApp,
-};
+// use apps::{
+//     boot::Boot, cli::shell::Shell, life::Life, mandelbrot::game::Mandelbrot,
+//     raycaster::game::Raycaster, weather_app::WeatherApp,
+// };
+use apps::{boot::Boot, life::Life};
 use crt_shader_renderer::CrtRenderer;
 use fantasy_cpc_app_trait::{AppResponse, AppStatus, FantasyCpcApp};
 use fantasy_cpc_display_controller::{config::*, *};
@@ -109,8 +110,8 @@ fn main() -> Result<(), Error> {
     // no other process is running or has the focus.
     // The Shell uses the console as default output.
     // When closing/quitting an app, it should always fall back to the shell.
-    let mut shell = Box::new(Shell::new());
-    shell.get_app_params().change_status(AppStatus::Running);
+    // let mut shell = Box::new(Shell::new());
+    // shell.get_app_params().change_status(AppStatus::Running);
 
     // ********* //
     // The apps  //
@@ -122,24 +123,25 @@ fn main() -> Result<(), Error> {
 
     // BOOT APP, not really an app, just plays the animation at startup, and when "reboot" command is sent
     let mut boot = Box::new(Boot::new());
-    boot.get_app_params().change_status(AppStatus::Running);
+    boot.get_app_params().change_status(AppStatus::Stopped);
     app_list.push(boot);
 
     // CONWAY'S GAME OF LIFE, TEXT MODE
-    let life = Box::new(Life::new());
+    let mut life = Box::new(Life::new());
+    life.get_app_params().change_status(AppStatus::Running);
     app_list.push(life);
 
-    // WEATHER APP
-    let weather_app = Box::new(WeatherApp::new());
-    app_list.push(weather_app);
+    // // WEATHER APP
+    // let weather_app = Box::new(WeatherApp::new());
+    // app_list.push(weather_app);
 
-    // MANDELBROT
-    let mandelbrot = Box::new(Mandelbrot::new());
-    app_list.push(mandelbrot);
+    // // MANDELBROT
+    // let mandelbrot = Box::new(Mandelbrot::new());
+    // app_list.push(mandelbrot);
 
-    // RAYCASTER
-    let raycaster = Box::new(Raycaster::new());
-    app_list.push(raycaster);
+    // // RAYCASTER
+    // let raycaster = Box::new(Raycaster::new());
+    // app_list.push(raycaster);
 
     // ****************************************************** MAIN WINIT EVENT LOOP ***********************************************
 
@@ -192,9 +194,9 @@ fn main() -> Result<(), Error> {
             }
 
             // If no app is in focus, run the shell
-            if show_shell {
-                app_response = shell.exec_app(Some(&input), &system_clock, &mut display_controller);
-            }
+            // if show_shell {
+            //     app_response = shell.exec_app(Some(&input), &system_clock, &mut display_controller);
+            // }
 
             // Process app response
             //TODO make smarter command line tokenizer and interpreter

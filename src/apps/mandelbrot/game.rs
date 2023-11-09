@@ -240,7 +240,7 @@ impl FantasyCpcApp for Mandelbrot {
     }
 
     fn draw_app(&mut self, clock: &Clock, display_controller: &mut DisplayController) {
-        display_controller.get_text_layer_mut().clear();
+        display_controller.get_txt_mut().clear();
         display_controller.clear(BLACK);
 
         if self.palette_rotation && clock.get_frame_count() % 2 == 0 {

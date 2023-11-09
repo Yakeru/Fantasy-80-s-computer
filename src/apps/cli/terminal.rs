@@ -3,7 +3,7 @@ use fantasy_cpc_display_controller::DisplayController;
 use crate::{
     color_palettes::{TRUE_BLUE, YELLOW},
     config::{TEXT_COLUMNS, TEXT_ROWS},
-    text_layer::TextLayerChar,
+    text_layer::TextLayerCell,
 };
 
 /// The terminal is the text window in which the Shell is displayed
@@ -16,8 +16,8 @@ pub struct Terminal {
     pub cursor: char,
     pub show_border: bool,
     pub show_title_bar: bool,
-    buffer: Vec<TextLayerChar>,
-    formatted_buffer: Vec<TextLayerChar>,
+    buffer: Vec<TextLayerCell>,
+    formatted_buffer: Vec<TextLayerCell>,
 }
 
 impl Terminal {
@@ -72,10 +72,10 @@ impl Terminal {
     }
 
     /// Add a char to the consoles's buffer
-    /// will convert it to a TextLayerChar with the console's default
+    /// will convert it to a TextLayerCell with the console's default
     /// attributes and then call push_text_layer_char()
     pub fn push_char(&mut self, c: char) {
-        let text_layer_char = TextLayerChar {
+        let text_layer_char = TextLayerCell {
             c,
             color: self.default_color,
             bkg_color: self.default_bkg_color,
@@ -94,9 +94,9 @@ impl Terminal {
         }
     }
 
-    /// Pushes a TextLayerChar into the console's buffer (Vec<TextLayerChar>)
+    /// Pushes a TextLayerCell into the console's buffer (Vec<TextLayerCell>)
     /// if the character received is BACKSPACE, will pop the last character instead.
-    pub fn push_text_layer_char(&mut self, text_layer_char: TextLayerChar) {
+    pub fn push_text_layer_char(&mut self, text_layer_char: TextLayerCell) {
         match text_layer_char.c {
             unicode::BACKSPACE => {
                 self.pop_char();
@@ -113,9 +113,9 @@ impl Terminal {
         self.format_buffer();
     }
 
-    /// Returns the raw Vec<TextLayerChar> of characters
+    /// Returns the raw Vec<TextLayerCell> of characters
     /// contained in the console's buffer
-    fn _get_buffer(&self) -> &Vec<TextLayerChar> {
+    fn _get_buffer(&self) -> &Vec<TextLayerCell> {
         &self.buffer
     }
 
@@ -125,12 +125,12 @@ impl Terminal {
     /// the ENTER char, but get_formatted_buffer() fills the rest of the line with empty chars
     /// to automatically move to the next line.
     /// If you want to apply your own formatting, use get_buffer() instead.
-    fn get_formatted_buffer(&self) -> &Vec<TextLayerChar> {
+    fn get_formatted_buffer(&self) -> &Vec<TextLayerCell> {
         &self.formatted_buffer
     }
 
-    fn get_empty_cell(&self) -> TextLayerChar {
-        TextLayerChar {
+    fn get_empty_cell(&self) -> TextLayerCell {
+        TextLayerCell {
             c: ' ',
             color: self.default_color,
             bkg_color: self.default_bkg_color,
@@ -140,8 +140,8 @@ impl Terminal {
         }
     }
 
-    pub fn get_cursor(&self) -> TextLayerChar {
-        TextLayerChar {
+    pub fn get_cursor(&self) -> TextLayerCell {
+        TextLayerCell {
             c: self.cursor,
             color: self.default_color,
             bkg_color: self.default_bkg_color,
@@ -187,8 +187,7 @@ impl Terminal {
     ///
     pub fn render(&mut self, dc: &mut DisplayController) {
         for (index, tlchar) in self.get_formatted_buffer().iter().enumerate() {
-            dc.get_text_layer_mut()
-                .insert_text_layer_char(index, *tlchar);
+            dc.get_txt_mut().insert_text_layer_char(index, *tlchar);
         }
     }
 }

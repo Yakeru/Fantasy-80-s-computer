@@ -186,8 +186,8 @@ impl Raycaster {
     }
 
     pub fn draw_menu(&mut self, _clock: &Clock, dc: &mut DisplayController) {
-        dc.get_text_layer_mut().clear();
-        dc.get_text_layer_mut().insert_string_xy(
+        dc.get_txt_mut().clear();
+        dc.get_txt_mut().insert_string_xy(
             2,
             10,
             "fov: ",
@@ -197,7 +197,7 @@ impl Raycaster {
             self.menu_item_selected == 0,
             false,
         );
-        dc.get_text_layer_mut().insert_string_xy(
+        dc.get_txt_mut().insert_string_xy(
             2,
             11,
             "Wall height: ",
@@ -207,7 +207,7 @@ impl Raycaster {
             self.menu_item_selected == 1,
             false,
         );
-        dc.get_text_layer_mut().insert_string_xy(
+        dc.get_txt_mut().insert_string_xy(
             2,
             12,
             "Render distance: ",
@@ -217,7 +217,7 @@ impl Raycaster {
             self.menu_item_selected == 2,
             false,
         );
-        dc.get_text_layer_mut().insert_string_xy(
+        dc.get_txt_mut().insert_string_xy(
             2,
             15,
             "Quit game",
@@ -228,7 +228,7 @@ impl Raycaster {
             false,
         );
 
-        dc.get_text_layer_mut().insert_string_xy(
+        dc.get_txt_mut().insert_string_xy(
             7,
             10,
             &self.renderer.fov.to_string(),
@@ -238,7 +238,7 @@ impl Raycaster {
             self.menu_item_selected == 0,
             false,
         );
-        dc.get_text_layer_mut().insert_string_xy(
+        dc.get_txt_mut().insert_string_xy(
             15,
             11,
             &self.renderer.wall_height.to_string(),
@@ -248,7 +248,7 @@ impl Raycaster {
             self.menu_item_selected == 1,
             false,
         );
-        dc.get_text_layer_mut().insert_string_xy(
+        dc.get_txt_mut().insert_string_xy(
             19,
             12,
             &self.renderer.render_distance.to_string(),
@@ -271,7 +271,7 @@ impl FantasyCpcApp for Raycaster {
         _system_clock: &fantasy_cpc_clock::Clock,
         display_controller: &mut fantasy_cpc_display_controller::DisplayController,
     ) {
-        display_controller.get_text_layer_mut().clear();
+        display_controller.get_txt_mut().clear();
         self.map.walls.clear();
         self.show_menu = false;
         self.draw_minimap = false;

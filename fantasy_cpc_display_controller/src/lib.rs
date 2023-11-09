@@ -8,7 +8,7 @@ use std::{
     cmp::{max, min},
     ops::{Bound, RangeBounds},
 };
-use text_layer::{text_index_to_frame_coord, TextLayer, TextLayerChar};
+use text_layer::{text_coord_to_frame_coord, TextLayer, TextLayerCell, TextLayerPen};
 
 pub mod characters_rom;
 pub mod color_palettes;
@@ -53,7 +53,7 @@ impl DisplayController {
         (VIRTUAL_WIDTH, VIRTUAL_HEIGHT)
     }
 
-    pub fn get_text_layer_size_xy(&self) -> (usize, usize) {
+    pub fn get_txt_size_xy(&self) -> (usize, usize) {
         self.text_layer.get_dimensions_xy()
     }
 
@@ -61,7 +61,7 @@ impl DisplayController {
         &mut self.frame
     }
 
-    pub fn get_frame(&self) -> &Box<[usize]> {
+    pub fn get_frame(&self) -> &[usize] {
         &self.frame
     }
 
@@ -154,7 +154,7 @@ impl DisplayController {
             return true;
         }
 
-        return false;
+        false
     }
 
     /// Sets all the pixels to the specified color of the color palette
@@ -171,11 +171,11 @@ impl DisplayController {
         self.text_layer.clear();
     }
 
-    pub fn get_text_layer_mut(&mut self) -> &mut TextLayer {
+    pub fn get_txt_mut(&mut self) -> &mut TextLayer {
         &mut self.text_layer
     }
 
-    pub fn get_text_layer(&self) -> &TextLayer {
+    pub fn get_txt(&self) -> &TextLayer {
         &self.text_layer
     }
 
@@ -221,9 +221,7 @@ impl DisplayController {
     }
 
     fn apply_line_scroll_effect(&mut self) {
-        let mut line_index: usize = 0;
-
-        for line_scroll_value in self.line_scroll_list {
+        for (line_index, line_scroll_value) in self.line_scroll_list.into_iter().enumerate() {
             if line_scroll_value > 0 {
                 self.frame[VIRTUAL_WIDTH * line_index..VIRTUAL_WIDTH * line_index + VIRTUAL_WIDTH]
                     .rotate_right(line_scroll_value as usize);
@@ -233,8 +231,6 @@ impl DisplayController {
                 self.frame[VIRTUAL_WIDTH * line_index..VIRTUAL_WIDTH * line_index + VIRTUAL_WIDTH]
                     .rotate_left((-line_scroll_value) as usize);
             }
-
-            line_index += 1;
         }
     }
 
@@ -258,7 +254,7 @@ impl DisplayController {
                     }
 
                     pixel_count += 1;
-                    if pixel_count == sprite.size.size().0 as usize {
+                    if pixel_count == sprite.size.size().0 {
                         pixel_count = 0;
                         sprite_line_count += 1;
                     }
@@ -268,31 +264,30 @@ impl DisplayController {
     }
 
     fn text_layer_renderer(&mut self) {
-        for char_counter in 0..self.text_layer.get_len() {
-            let frame_coord = text_index_to_frame_coord(char_counter);
+        for line_count in 0..TEXT_ROWS {
+            for col_count in 0..TEXT_COLUMNS {
+                let cell = self.get_txt().get_char_map()[line_count][col_count];
 
-            let text_layer_char = self.text_layer.get_char_map()[char_counter];
-            match text_layer_char {
-                Some(char_struct) => {
-                    self.text_layer_char_renderer(&char_struct, frame_coord.0, frame_coord.1);
+                if let Some(toto) = cell {
+                    let frame_coord = text_coord_to_frame_coord(col_count, line_count);
+                    self.text_layer_char_renderer(&toto, frame_coord.0, frame_coord.1);
                 }
-                None => (),
             }
         }
     }
 
     fn text_layer_char_renderer(
         &mut self,
-        text_layer_char: &TextLayerChar,
+        text_layer_cell: &TextLayerCell,
         frame_x_pos: usize,
         frame_y_pos: usize,
     ) {
-        let char = text_layer_char.c;
-        let char_color = text_layer_char.color;
-        let bck_color = text_layer_char.bkg_color;
-        let blink = text_layer_char.blink;
-        let swap = text_layer_char.swap;
-        let shadowed = text_layer_char.shadowed;
+        let char = text_layer_cell.c;
+        let char_color = text_layer_cell.pen.color;
+        let bck_color = text_layer_cell.pen.bkg_color;
+        let blink = text_layer_cell.pen.blink;
+        let swap = text_layer_cell.pen.swap_color;
+        let shadowed = text_layer_cell.pen.shadowed;
 
         //set color, swap or not
         let text_color = if swap || (blink && self.clock.half_second_latch) {
@@ -338,7 +333,7 @@ impl DisplayController {
                     }
                 }
 
-                mask = mask >> 1;
+                mask >>= 1;
             }
         }
     }
@@ -359,7 +354,7 @@ impl DisplayController {
                 let screen_pixel_index = SUB_PIXEL_COUNT * frame_pixel;
 
                 let r = rgb.0;
-                let r_index = 0 + screen_pixel_index;
+                let r_index = screen_pixel_index;
 
                 let g = rgb.1;
                 let g_index = 1 + screen_pixel_index;
@@ -397,16 +392,16 @@ impl DisplayController {
             return;
         }
 
-        let dx: isize = (x2 as isize - x1 as isize).abs();
-        let dy: isize = -(y2 as isize - y1 as isize).abs();
+        let dx: isize = (x2 - x1).abs();
+        let dy: isize = -(y2 - y1).abs();
         let sx: isize = if x1 < x2 { 1 } else { -1 };
         let sy: isize = if y1 < y2 { 1 } else { -1 };
         let mut error = dx + dy;
 
-        let mut x0 = x1 as isize;
-        let mut y0 = y1 as isize;
-        let x1 = x2 as isize;
-        let y1 = y2 as isize;
+        let mut x0 = x1;
+        let mut y0 = y1;
+        let x1 = x2;
+        let y1 = y2;
 
         loop {
             self.set_pixel(x0, y0, color);
@@ -459,7 +454,7 @@ impl DisplayController {
 
         self.line(x1, y1, x2, y2, color);
 
-        return (x2, y2);
+        (x2, y2)
     }
 
     pub fn square(
@@ -559,38 +554,50 @@ impl DisplayController {
 
         let rnd_clear_color: usize = random.gen_range(0..32);
         self.clear(rnd_clear_color);
-        self.get_text_layer_mut().clear();
+        self.get_txt_mut().clear();
 
-        let char_map = self.get_text_layer_mut().get_char_map_mut();
-        for index in 0..char_map.len() {
-            let mut color: usize = random.gen_range(0..(PALETE_SIZE + 10)); //To get a bit more black
-            color = if color > PALETE_SIZE - 1 { 0 } else { color };
+        for y in 0..TEXT_ROWS {
+            for x in 0..TEXT_COLUMNS {
+                let mut color: usize = random.gen_range(0..(PALETE_SIZE + 10)); //To get a bit more black
+                color = if color > PALETE_SIZE - 1 { 0 } else { color };
 
-            let mut bkg_color: usize = random.gen_range(0..(PALETE_SIZE + 10));
-            bkg_color = if bkg_color > PALETE_SIZE - 1 { 0 } else { bkg_color };
+                let mut bkg_color: usize = random.gen_range(0..(PALETE_SIZE + 10));
+                bkg_color = if bkg_color > PALETE_SIZE - 1 {
+                    0
+                } else {
+                    bkg_color
+                };
 
-            let mut char_index = random.gen_range(0..100);
-            char_index = if char_index > characters_rom::CHAR_TABLE.len() - 1 {
-                0
-            } else {
-                char_index
-            };
-            let c: char = characters_rom::CHAR_TABLE[char_index];
+                let mut char_index = random.gen_range(0..100);
+                char_index = if char_index > characters_rom::CHAR_TABLE.len() - 1 {
+                    0
+                } else {
+                    char_index
+                };
+                let c: char = characters_rom::CHAR_TABLE[char_index];
 
-            let effect: u8 = random.gen_range(0..10);
-            let swap: bool = if effect & 0b00000001 > 0 { true } else { false };
-            let blink: bool = if effect & 0b00000010 > 0 { true } else { false };
-            let shadowed: bool = if effect & 0b00000100 > 0 { true } else { false };
+                let effect: u8 = random.gen_range(0..32);
+                let swap_color: bool = effect & 0b00000001 > 0;
+                let blink: bool = effect & 0b00000010 > 0;
+                let shadowed: bool = effect & 0b00000100 > 0;
+                let flip_h: bool = effect & 0b00001000 > 0;
+                let flip_v: bool = effect & 0b00010000 > 0;
 
-            let text_layer_char: TextLayerChar = TextLayerChar {
-                c,
-                color,
-                bkg_color,
-                swap,
-                blink,
-                shadowed,
-            };
-            char_map[index] = Some(text_layer_char);
+                let text_layer_char: TextLayerCell = TextLayerCell {
+                    c,
+                    pen: TextLayerPen {
+                        color,
+                        bkg_color,
+                        swap_color,
+                        blink,
+                        shadowed,
+                        flip_h,
+                        flip_v,
+                    },
+                };
+
+                self.get_txt_mut().get_char_map_mut()[y][x] = Some(text_layer_char);
+            }
         }
     }
 
