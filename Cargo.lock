@@ -139,24 +139,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4668cab20f66d8d020e1fbc0ebe47217433c1b6c8f2040faf858554e394ace6"
 
 [[package]]
-name = "app_macro"
-version = "0.3.0"
-dependencies = [
- "clock",
- "display_controller",
- "winit",
- "winit_input_helper",
-]
-
-[[package]]
-name = "app_macro_derive"
-version = "0.3.0"
-dependencies = [
- "quote",
- "syn 2.0.38",
-]
-
-[[package]]
 name = "arrayref"
 version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -637,10 +619,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "clock"
-version = "0.1.0"
-
-[[package]]
 name = "codespan-reporting"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -965,15 +943,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd0c93bb4b0c6d9b77f4435b0ae98c24d17f1c45b2ff844c6151a07256ca923b"
 
 [[package]]
-name = "display_controller"
-version = "0.1.0"
-dependencies = [
- "clock",
- "rand",
- "unicode",
-]
-
-[[package]]
 name = "dlib"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1065,17 +1034,16 @@ checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 
 [[package]]
 name = "fantasy_cpc"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "anyhow",
- "app_macro",
- "app_macro_derive",
  "bytemuck",
  "cargo-watch",
  "chrono",
- "clock",
  "cpal",
- "display_controller",
+ "fantasy_cpc_app_trait",
+ "fantasy_cpc_clock",
+ "fantasy_cpc_display_controller",
  "fast-math",
  "openweathermap",
  "pixels",
@@ -1085,6 +1053,30 @@ dependencies = [
  "unicode",
  "winit",
  "winit_input_helper",
+]
+
+[[package]]
+name = "fantasy_cpc_app_trait"
+version = "0.1.0"
+dependencies = [
+ "fantasy_cpc_clock",
+ "fantasy_cpc_display_controller",
+ "unicode",
+ "winit",
+ "winit_input_helper",
+]
+
+[[package]]
+name = "fantasy_cpc_clock"
+version = "0.1.0"
+
+[[package]]
+name = "fantasy_cpc_display_controller"
+version = "0.1.0"
+dependencies = [
+ "fantasy_cpc_clock",
+ "rand",
+ "unicode",
 ]
 
 [[package]]

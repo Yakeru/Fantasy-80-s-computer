@@ -1,4 +1,4 @@
-use display_controller::color_palettes::*;
+use fantasy_cpc_display_controller::color_palettes::*;
 
 use super::config::EMPTY_RATIO_TRIGGER;
 

@@ -7,7 +7,9 @@
 	"settings": {
 		"rust-analyzer.linkedProjects": [
 			".\\Cargo.toml",
-			".\\Cargo.toml"
-		]
+			".\\Cargo.toml",
+			".\\app_trait\\Cargo.toml"
+		],
+		"rust-analyzer.showUnlinkedFileNotification": false
 	}
 }

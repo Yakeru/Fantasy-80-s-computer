@@ -1,28 +1,29 @@
-use app_macro_derive::AppMacro;
+use fantasy_cpc_app_trait::{AppResponse, FantasyCpcApp, FantasyCppAppDefaultParams};
+use fantasy_cpc_clock::Clock;
+use fantasy_cpc_display_controller::DisplayController;
 
-#[derive(AppMacro)]
 pub struct Empty {
-    enable_auto_escape: bool,
-    name: String,
-    status: AppStatus,
-    initialized: bool,
+    app_params: FantasyCppAppDefaultParams,
 }
 
 impl Empty {
     pub fn _new() -> Empty {
         Self {
-            enable_auto_escape: true,
-            name: "Empty".to_string(),
-            status: AppStatus::Stopped,
-            initialized: false,
+            app_params: FantasyCppAppDefaultParams::new(String::from("Empty"), true),
         }
     }
+}
 
-    fn init_app(&mut self, _clock: &Clock, _dc: &mut DisplayController) {}
+impl FantasyCpcApp for Empty {
+    fn get_app_params(&mut self) -> &mut FantasyCppAppDefaultParams {
+        &mut self.app_params
+    }
+
+    fn init_app(&mut self, _system_clock: &Clock, _display_controller: &mut DisplayController) {}
 
     fn update_app(
         &mut self,
-        _inputs: Option<&WinitInputHelper>,
+        _inputs: Option<&winit_input_helper::WinitInputHelper>,
         _clock: &Clock,
     ) -> Option<AppResponse> {
         None

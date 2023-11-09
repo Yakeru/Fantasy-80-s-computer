@@ -5,19 +5,18 @@ use super::{
     player::Player,
     renderer::{Renderer, GAME_SCALE},
 };
-use app_macro::{AppMacro, AppStatus};
-use app_macro_derive::AppMacro;
+use fantasy_cpc_app_trait::{FantasyCpcApp, AppStatus, FantasyCppAppDefaultParams};
+use fantasy_cpc_clock::Clock;
+use fantasy_cpc_display_controller::{color_palettes::{YELLOW, BLACK}, DisplayController};
 use fast_math::atan2;
+use winit::event::VirtualKeyCode;
+use winit_input_helper::WinitInputHelper;
 use std::f32::consts::PI;
 
 const PLAYER_SPEED: isize = 8;
 
-#[derive(AppMacro)]
 pub struct Raycaster {
-    enable_auto_escape: bool,
-    name: String,
-    status: AppStatus,
-    initialized: bool,
+    app_params: FantasyCppAppDefaultParams,
     map: Map,
     renderer: Renderer,
     player: Player,
@@ -30,10 +29,7 @@ pub struct Raycaster {
 impl Raycaster {
     pub fn new() -> Raycaster {
         Raycaster {
-            enable_auto_escape: false,
-            name: "raycaster".to_string(),
-            status: AppStatus::Stopped,
-            initialized: false,
+            app_params: FantasyCppAppDefaultParams::new(String::from("raycaster"), false),
             map: Map::new(),
             player: Player {
                 x: 0,
@@ -46,37 +42,6 @@ impl Raycaster {
             renderer: Renderer::new(),
             menu_item_selected: 0,
         }
-    }
-
-    //***************************************************************************************************************** */
-    //                                                    APP
-    //***************************************************************************************************************** */
-    pub fn init_app(&mut self, _clock: &Clock, dc: &mut DisplayController) {
-        dc.get_text_layer_mut().clear();
-        self.map.walls.clear();
-        self.show_menu = false;
-        self.draw_minimap = false;
-        self.map.transform_map_into_list_of_walls();
-        self.renderer.distortion_compensation();
-        self.player = Player::new(
-            self.map.player_start_x * GAME_SCALE + GAME_SCALE / 2,
-            self.map.player_start_y * GAME_SCALE + GAME_SCALE / 2,
-            self.map.player_start_dir,
-        );
-    }
-
-    pub fn update_app(
-        &mut self,
-        inputs: Option<&WinitInputHelper>,
-        clock: &Clock,
-    ) -> Option<AppResponse> {
-        if self.show_menu {
-            self.update_menu(inputs, clock);
-        } else {
-            self.update_game(inputs, clock);
-        }
-
-        None
     }
 
     //***************************************************************************************************************** */
@@ -160,22 +125,6 @@ impl Raycaster {
         self.monster.angle_to_player = monster_angle;
     }
 
-    pub fn draw_app(&mut self, clock: &Clock, dc: &mut DisplayController) {
-        // Menu
-        if self.show_menu {
-            self.draw_menu(clock, dc);
-        }
-
-        // Ray casting renderer
-        self.renderer
-            .render(dc, &self.map, &self.player, &self.monster);
-
-        //Draw minimap
-        if self.draw_minimap {
-            self.renderer
-                .draw_top_view_map(dc, &self.map, &self.player, &self.monster);
-        }
-    }
 
     //***************************************************************************************************************** */
     //                                                    MENU
@@ -194,8 +143,7 @@ impl Raycaster {
 
         if inputs.key_pressed(VirtualKeyCode::Return) {
             if self.menu_item_selected == 4 {
-                self.set_state(AppStatus::Stopped);
-                self.initialized = false;
+                self.get_app_params().change_status(AppStatus::Stopped);
             } else {
                 self.show_menu = false;
             }
@@ -308,5 +256,56 @@ impl Raycaster {
             self.menu_item_selected == 2,
             false,
         );
+    }
+}
+
+impl FantasyCpcApp for Raycaster {
+    fn get_app_params(&mut self) -> &mut FantasyCppAppDefaultParams {
+        &mut self.app_params
+    }
+
+    fn init_app(&mut self, system_clock: &fantasy_cpc_clock::Clock, display_controller: &mut fantasy_cpc_display_controller::DisplayController) {
+        display_controller.get_text_layer_mut().clear();
+        self.map.walls.clear();
+        self.show_menu = false;
+        self.draw_minimap = false;
+        self.map.transform_map_into_list_of_walls();
+        self.renderer.distortion_compensation();
+        self.player = Player::new(
+            self.map.player_start_x * GAME_SCALE + GAME_SCALE / 2,
+            self.map.player_start_y * GAME_SCALE + GAME_SCALE / 2,
+            self.map.player_start_dir,
+        );
+    }
+
+    fn update_app(
+        &mut self,
+        inputs: Option<&winit_input_helper::WinitInputHelper>,
+        clock: &fantasy_cpc_clock::Clock,
+    ) -> Option<fantasy_cpc_app_trait::AppResponse> {
+        if self.show_menu {
+            self.update_menu(inputs, clock);
+        } else {
+            self.update_game(inputs, clock);
+        }
+
+        None
+    }
+
+    fn draw_app(&mut self, clock: &fantasy_cpc_clock::Clock, display_controller: &mut fantasy_cpc_display_controller::DisplayController) {
+        // Menu
+        if self.show_menu {
+            self.draw_menu(clock, display_controller);
+        }
+
+        // Ray casting renderer
+        self.renderer
+            .render(display_controller, &self.map, &self.player, &self.monster);
+
+        //Draw minimap
+        if self.draw_minimap {
+            self.renderer
+                .draw_top_view_map(display_controller, &self.map, &self.player, &self.monster);
+        }
     }
 }

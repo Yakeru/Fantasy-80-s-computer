@@ -1,4 +1,4 @@
-use display_controller::config::{SCREEN_WIDTH, SCREEN_HEIGHT};
+use fantasy_cpc_display_controller::config::{SCREEN_WIDTH, SCREEN_HEIGHT};
 
 pub struct ShaderVariables {
     pub screen_width: f32,

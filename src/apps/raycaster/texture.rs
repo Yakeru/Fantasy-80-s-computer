@@ -1,4 +1,4 @@
-use display_controller::color_palettes::LIGHT_GREY;
+use fantasy_cpc_display_controller::color_palettes::LIGHT_GREY;
 
 #[allow(dead_code)]
 pub struct Texture {

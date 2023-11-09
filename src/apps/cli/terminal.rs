@@ -1,4 +1,4 @@
-use display_controller::DisplayController;
+use fantasy_cpc_display_controller::DisplayController;
 
 use crate::{
     color_palettes::{TRUE_BLUE, YELLOW},

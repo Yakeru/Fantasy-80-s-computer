@@ -1,20 +1,18 @@
 use std::time::Instant;
 
-use app_macro::AppStatus;
-use app_macro_derive::AppMacro;
-use display_controller::{
+use fantasy_cpc_app_trait::{AppResponse, AppStatus, FantasyCpcApp, FantasyCppAppDefaultParams};
+use fantasy_cpc_clock::Clock;
+use fantasy_cpc_display_controller::{
     color_palettes::*,
     config::{TEXT_COLUMNS, TEXT_ROWS},
     DisplayController,
 };
 use rand::Rng;
+use winit::event::VirtualKeyCode;
+use winit_input_helper::WinitInputHelper;
 
-#[derive(AppMacro)]
 pub struct Life {
-    enable_auto_escape: bool,
-    name: String,
-    status: AppStatus,
-    initialized: bool,
+    app_params: FantasyCppAppDefaultParams,
     gen_past: [[bool; TEXT_COLUMNS]; TEXT_ROWS],
     gen_a: Box<[[Cell; TEXT_COLUMNS]; TEXT_ROWS]>,
     gen_b: Box<[[Cell; TEXT_COLUMNS]; TEXT_ROWS]>,
@@ -55,10 +53,7 @@ impl Life {
         let crazy = vec![LIME_GREEN, RED, GREEN, BLUE, YELLOW, MAUVE, BLUE_GREEN];
 
         Life {
-            enable_auto_escape: false,
-            name: String::from("life"),
-            status: AppStatus::Stopped,
-            initialized: false,
+            app_params: FantasyCppAppDefaultParams::new(String::from("life"), false),
             gen_past: [[false; TEXT_COLUMNS]; TEXT_ROWS],
             gen_a: Box::new(
                 [[Cell {
@@ -85,39 +80,6 @@ impl Life {
             random_game_mode: true,
             color_themes: vec![fire, ice, nature, brazil, france, crazy],
             current_theme: 0,
-        }
-    }
-
-    fn init_app(&mut self, _clock: &Clock, dc: &mut DisplayController) {
-        dc.set_brightness(255);
-        self.welcome_screen = true;
-        self.game = false;
-        self.menu = false;
-    }
-
-    fn update_app(
-        &mut self,
-        inputs: Option<&WinitInputHelper>,
-        _clock: &Clock,
-    ) -> Option<AppResponse> {
-        if self.welcome_screen {
-            self.update_welcome_screen(inputs);
-        } else if self.game {
-            self.update_game(inputs);
-        } else {
-            self.update_menu(inputs);
-        }
-
-        None
-    }
-
-    fn draw_app(&mut self, clock: &Clock, display_controller: &mut DisplayController) {
-        if self.welcome_screen {
-            self.draw_welcome_screen(clock, display_controller);
-        } else if self.game {
-            self.draw_game(display_controller);
-        } else if self.menu {
-            self.draw_menu(display_controller);
         }
     }
 
@@ -182,7 +144,7 @@ impl Life {
         let user_inputs = inputs.unwrap();
 
         if user_inputs.key_pressed(VirtualKeyCode::Escape) {
-            self.set_state(AppStatus::Stopped);
+            self.get_app_params().change_status(AppStatus::Stopped)
         }
 
         if user_inputs.key_pressed(VirtualKeyCode::Key1) {
@@ -334,7 +296,7 @@ impl Life {
         }
 
         if inputs.is_some() && inputs.unwrap().key_pressed(VirtualKeyCode::Escape) {
-            self.initialized = false;
+            self.get_app_params().set_initialized(false);
         }
 
         let now = Instant::now();
@@ -613,4 +575,43 @@ fn calculate_life(
     }
 
     continue_game
+}
+
+impl FantasyCpcApp for Life {
+    fn get_app_params(&mut self) -> &mut FantasyCppAppDefaultParams {
+        &mut self.app_params
+    }
+
+    fn init_app(&mut self, _system_clock: &Clock, display_controller: &mut DisplayController) {
+        display_controller.set_brightness(255);
+        self.welcome_screen = true;
+        self.game = false;
+        self.menu = false;
+    }
+
+    fn update_app(
+        &mut self,
+        inputs: Option<&winit_input_helper::WinitInputHelper>,
+        _clock: &Clock,
+    ) -> Option<AppResponse> {
+        if self.welcome_screen {
+            self.update_welcome_screen(inputs);
+        } else if self.game {
+            self.update_game(inputs);
+        } else {
+            self.update_menu(inputs);
+        }
+
+        None
+    }
+
+    fn draw_app(&mut self, clock: &Clock, display_controller: &mut DisplayController) {
+        if self.welcome_screen {
+            self.draw_welcome_screen(clock, display_controller);
+        } else if self.game {
+            self.draw_game(display_controller);
+        } else if self.menu {
+            self.draw_menu(display_controller);
+        }
+    }
 }

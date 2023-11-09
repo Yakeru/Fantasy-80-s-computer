@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use display_controller::color_palettes::{BLACK, BROWN, DARK_GREY};
+use fantasy_cpc_display_controller::color_palettes::{BLACK, BROWN, DARK_GREY};
 
 use super::renderer::GAME_SCALE;
 

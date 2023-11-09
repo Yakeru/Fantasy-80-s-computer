@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use display_controller::{
+use fantasy_cpc_display_controller::{
     color_palettes::*,
     config::{OVERSCAN_H, OVERSCAN_V, VIRTUAL_HEIGHT, VIRTUAL_WIDTH},
     DisplayController,
