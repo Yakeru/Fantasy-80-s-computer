@@ -58,7 +58,7 @@ impl Life {
         Life {
             enable_auto_escape: false,
             name: String::from("life"),
-            status: AppStatus::Running,
+            status: AppStatus::Stopped,
             initialized: false,
             gen_past: [[false; TEXT_COLUMNS]; TEXT_ROWS],
             gen_a: Box::new(

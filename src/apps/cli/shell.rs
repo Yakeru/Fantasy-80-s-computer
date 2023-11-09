@@ -1,5 +1,14 @@
-use app_macro_derive::AppMacro;
-use display_controller::characters_rom::CHAR_TABLE;
+use fantasy_cpc_app_trait::{AppResponse, AppStatus, FantasyCpcApp};
+use fantasy_cpc_clock::Clock;
+use fantasy_cpc_display_controller::{
+    characters_rom::CHAR_TABLE,
+    color_palettes::{BLUE, TRUE_BLUE, YELLOW},
+    config::{TEXT_COLUMNS, TEXT_ROWS},
+    text_layer::TextLayerChar,
+    DisplayController,
+};
+use winit::{event::VirtualKeyCode, event_loop::ControlFlow};
+use winit_input_helper::{TextChar, WinitInputHelper};
 
 use super::terminal::Terminal;
 
@@ -9,7 +18,6 @@ const SHELL_START_MESSAGE: &str = "SHELL 0.1\u{000D}Ready\u{000D}";
 const DEFAULT_BKG_COLOR: usize = TRUE_BLUE;
 const DEFAULT_COLOR: usize = YELLOW;
 
-#[derive(AppMacro)]
 pub struct Shell {
     enable_auto_escape: bool,
     name: String,
@@ -110,10 +118,36 @@ impl Shell {
         }
         response
     }
+}
 
-    fn init_app(&mut self, _clock: &Clock, dc: &mut DisplayController) {
-        dc.set_brightness(255);
-        dc.clear(BLUE);
+impl FantasyCpcApp for Shell {
+    fn get_name(&self) -> &str {
+        &self.name
+    }
+
+    fn get_state(&self) -> &AppStatus {
+        &self.status
+    }
+
+    fn set_state(&mut self, state: AppStatus) {
+        self.status = state;
+    }
+
+    fn get_initialized(&self) -> bool {
+        self.initialized
+    }
+
+    fn set_initialized(&mut self, is_initialized: bool) {
+        self.initialized = is_initialized
+    }
+
+    fn get_enable_autoescape(&self) -> bool {
+        self.enable_auto_escape
+    }
+
+    fn init_app(&mut self, system_clock: &Clock, display_controller: &mut DisplayController) {
+        display_controller.set_brightness(255);
+        display_controller.clear(BLUE);
         self.terminal.set_coordinates((0, 0));
         self.terminal.set_size((TEXT_COLUMNS, TEXT_ROWS));
         self.terminal.clear();
@@ -183,7 +217,7 @@ impl Shell {
         None
     }
 
-    fn draw_app(&mut self, _clock: &Clock, dc: &mut DisplayController) {
-        self.terminal.render(dc);
+    fn draw_app(&mut self, clock: &Clock, display_controller: &mut DisplayController) {
+        self.terminal.render(display_controller);
     }
 }

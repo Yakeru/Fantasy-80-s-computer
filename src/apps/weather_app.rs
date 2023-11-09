@@ -1,7 +1,10 @@
-use app_macro::AppStatus;
-use app_macro_derive::AppMacro;
 use chrono::{Local, Timelike};
-use display_controller::{color_palettes::*, DisplayController};
+use fantasy_cpc_app_trait::{AppResponse, AppStatus, FantasyCpcApp};
+use fantasy_cpc_display_controller::{
+    color_palettes::*,
+    config::{VIRTUAL_HEIGHT, VIRTUAL_WIDTH},
+    DisplayController,
+};
 use openweathermap::{CurrentWeather, Receiver};
 use rand::Rng;
 use std::{
@@ -9,7 +12,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-#[derive(AppMacro)]
 pub struct WeatherApp {
     enable_auto_escape: bool,
     name: String,
@@ -66,150 +68,6 @@ impl WeatherApp {
             current_weather: None,
             current_second: 0,
             clouds: Vec::new(),
-        }
-    }
-
-    pub fn init_app(&mut self, _clock: &Clock, _dc: &mut DisplayController) {
-        openweathermap::update(&self.receiver);
-
-        let now = Local::now();
-        self.current_second = now.second();
-        self.clouds.clear();
-        self.clouds.push(Self::generate_cloud());
-        self.clouds.push(Self::generate_cloud());
-        self.clouds.push(Self::generate_cloud());
-        self.clouds.push(Self::generate_cloud());
-    }
-
-    fn update_app(
-        &mut self,
-        _inputs: Option<&WinitInputHelper>,
-        clock: &Clock,
-    ) -> Option<AppResponse> {
-        let response = AppResponse::new();
-
-        if Instant::now().duration_since(self.last_weather_update) >= self.update_appinterval {
-            let last_weather_update = openweathermap::update(&self.receiver);
-            if last_weather_update.is_some() {
-                self.current_weather = last_weather_update;
-            }
-            self.last_weather_update = Instant::now();
-        }
-
-        if clock.get_frame_count() % 10 == 0 {
-            let mut clouds_to_pop: Vec<usize> = Vec::new();
-            for (index, cloud) in self.clouds.chunks_exact_mut(1).enumerate() {
-                Self::move_cloud(&mut cloud[0]);
-                if cloud[0].x > VIRTUAL_WIDTH as isize + 100 {
-                    clouds_to_pop.push(index);
-                }
-            }
-            for index in clouds_to_pop {
-                self.clouds.remove(index);
-                self.clouds.push(Self::generate_cloud());
-            }
-        }
-
-        Some(response)
-    }
-
-    fn draw_app(&mut self, _clock: &Clock, dc: &mut DisplayController) {
-        dc.get_text_layer_mut().clear();
-        dc.clear(BLACK);
-
-        self.draw_analogue_clock(
-            dc,
-            (VIRTUAL_WIDTH / 2) as isize,
-            (VIRTUAL_HEIGHT - 75) as isize,
-        );
-        self.draw_digital_clock(dc);
-
-        match &self.current_weather {
-            Some(result) => match result {
-                Ok(current_weather) => {
-                    dc.get_text_layer_mut().insert_string_xy(
-                        0,
-                        0,
-                        &format!(
-                            "Description: {}",
-                            current_weather.weather[0]
-                                .description
-                                .replace(['é', 'ê', 'è'], "e")
-                                .replace('à', "a")
-                                .replace('ç', "c")
-                        ),
-                        Some(WHITE),
-                        Some(BLACK),
-                        false,
-                        false,
-                        false,
-                    );
-
-                    dc.get_text_layer_mut().insert_string_xy(
-                        0,
-                        2,
-                        &format!(
-                            "Temperature: {}▪c, feels like {}▪c",
-                            current_weather.main.temp, current_weather.main.feels_like
-                        ),
-                        Some(WHITE),
-                        Some(BLACK),
-                        false,
-                        false,
-                        false,
-                    );
-
-                    dc.get_text_layer_mut().insert_string_xy(
-                        0,
-                        4,
-                        &format!("Humidity:    {} %", current_weather.main.humidity),
-                        Some(WHITE),
-                        Some(BLACK),
-                        false,
-                        false,
-                        false,
-                    );
-
-                    dc.get_text_layer_mut().insert_string_xy(
-                        0,
-                        6,
-                        &format!("Pressure:    {} Kpa", current_weather.main.pressure),
-                        Some(WHITE),
-                        Some(BLACK),
-                        false,
-                        false,
-                        false,
-                    );
-
-                    dc.get_text_layer_mut().insert_string_xy(
-                        0,
-                        8,
-                        &format!("Wind:        {} m/s", current_weather.wind.speed),
-                        Some(WHITE),
-                        Some(BLACK),
-                        false,
-                        false,
-                        false,
-                    );
-                }
-                Err(message) => {
-                    dc.get_text_layer_mut().insert_string_xy(
-                        0,
-                        0,
-                        message,
-                        Some(WHITE),
-                        Some(BLACK),
-                        false,
-                        false,
-                        false,
-                    );
-                }
-            },
-            None => (),
-        }
-
-        for cloud in self.clouds.chunks_exact_mut(1) {
-            Self::draw_cloud(&mut cloud[0], dc);
         }
     }
 
@@ -524,6 +382,184 @@ impl WeatherApp {
                 WHITE,
                 true,
             );
+        }
+    }
+}
+
+impl FantasyCpcApp for WeatherApp {
+    fn get_name(&self) -> &str {
+        &self.name
+    }
+
+    fn get_state(&self) -> &AppStatus {
+        &self.status
+    }
+
+    fn set_state(&mut self, state: AppStatus) {
+        self.status = state
+    }
+
+    fn get_initialized(&self) -> bool {
+        self.initialized
+    }
+
+    fn set_initialized(&mut self, is_initialized: bool) {
+        self.initialized = is_initialized
+    }
+
+    fn get_enable_autoescape(&self) -> bool {
+        self.enable_auto_escape
+    }
+
+    fn init_app(
+        &mut self,
+        system_clock: &fantasy_cpc_clock::Clock,
+        display_controller: &mut DisplayController,
+    ) {
+        openweathermap::update(&self.receiver);
+
+        let now = Local::now();
+        self.current_second = now.second();
+        self.clouds.clear();
+        self.clouds.push(Self::generate_cloud());
+        self.clouds.push(Self::generate_cloud());
+        self.clouds.push(Self::generate_cloud());
+        self.clouds.push(Self::generate_cloud());
+    }
+
+    fn update_app(
+        &mut self,
+        inputs: Option<&winit_input_helper::WinitInputHelper>,
+        clock: &fantasy_cpc_clock::Clock,
+    ) -> Option<fantasy_cpc_app_trait::AppResponse> {
+        let response = AppResponse::new();
+
+        if Instant::now().duration_since(self.last_weather_update) >= self.update_appinterval {
+            let last_weather_update = openweathermap::update(&self.receiver);
+            if last_weather_update.is_some() {
+                self.current_weather = last_weather_update;
+            }
+            self.last_weather_update = Instant::now();
+        }
+
+        if clock.get_frame_count() % 10 == 0 {
+            let mut clouds_to_pop: Vec<usize> = Vec::new();
+            for (index, cloud) in self.clouds.chunks_exact_mut(1).enumerate() {
+                Self::move_cloud(&mut cloud[0]);
+                if cloud[0].x > VIRTUAL_WIDTH as isize + 100 {
+                    clouds_to_pop.push(index);
+                }
+            }
+            for index in clouds_to_pop {
+                self.clouds.remove(index);
+                self.clouds.push(Self::generate_cloud());
+            }
+        }
+
+        None
+    }
+
+    fn draw_app(
+        &mut self,
+        clock: &fantasy_cpc_clock::Clock,
+        display_controller: &mut DisplayController,
+    ) {
+        display_controller.get_text_layer_mut().clear();
+        display_controller.clear(BLACK);
+
+        self.draw_analogue_clock(
+            display_controller,
+            (VIRTUAL_WIDTH / 2) as isize,
+            (VIRTUAL_HEIGHT - 75) as isize,
+        );
+        self.draw_digital_clock(display_controller);
+
+        match &self.current_weather {
+            Some(result) => match result {
+                Ok(current_weather) => {
+                    display_controller.get_text_layer_mut().insert_string_xy(
+                        0,
+                        0,
+                        &format!(
+                            "Description: {}",
+                            current_weather.weather[0]
+                                .description
+                                .replace(['é', 'ê', 'è'], "e")
+                                .replace('à', "a")
+                                .replace('ç', "c")
+                        ),
+                        Some(WHITE),
+                        Some(BLACK),
+                        false,
+                        false,
+                        false,
+                    );
+
+                    display_controller.get_text_layer_mut().insert_string_xy(
+                        0,
+                        2,
+                        &format!(
+                            "Temperature: {}▪c, feels like {}▪c",
+                            current_weather.main.temp, current_weather.main.feels_like
+                        ),
+                        Some(WHITE),
+                        Some(BLACK),
+                        false,
+                        false,
+                        false,
+                    );
+
+                    display_controller.get_text_layer_mut().insert_string_xy(
+                        0,
+                        4,
+                        &format!("Humidity:    {} %", current_weather.main.humidity),
+                        Some(WHITE),
+                        Some(BLACK),
+                        false,
+                        false,
+                        false,
+                    );
+
+                    display_controller.get_text_layer_mut().insert_string_xy(
+                        0,
+                        6,
+                        &format!("Pressure:    {} Kpa", current_weather.main.pressure),
+                        Some(WHITE),
+                        Some(BLACK),
+                        false,
+                        false,
+                        false,
+                    );
+
+                    display_controller.get_text_layer_mut().insert_string_xy(
+                        0,
+                        8,
+                        &format!("Wind:        {} m/s", current_weather.wind.speed),
+                        Some(WHITE),
+                        Some(BLACK),
+                        false,
+                        false,
+                        false,
+                    );
+                }
+                Err(message) => {
+                    display_controller.get_text_layer_mut().insert_string_xy(
+                        0,
+                        0,
+                        message,
+                        Some(WHITE),
+                        Some(BLACK),
+                        false,
+                        false,
+                        false,
+                    );
+                }
+            },
+            None => (),
+        }
+
+        for cloud in self.clouds.chunks_exact_mut(1) {
+            Self::draw_cloud(&mut cloud[0], display_controller);
         }
     }
 }

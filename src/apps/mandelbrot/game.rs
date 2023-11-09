@@ -1,12 +1,15 @@
-use app_macro_derive::AppMacro;
+use fantasy_cpc_app_trait::{AppStatus, AppResponse, FantasyCpcApp};
+use fantasy_cpc_clock::Clock;
+use fantasy_cpc_display_controller::{DisplayController, color_palettes::BLACK, config::{OVERSCAN_V, VIRTUAL_HEIGHT, OVERSCAN_H, VIRTUAL_WIDTH}};
 use rand::Rng;
+use winit::event::VirtualKeyCode;
+use winit_input_helper::WinitInputHelper;
 
 use super::{
     config::*,
     theme::{self, *},
 };
 
-#[derive(AppMacro)]
 pub struct Mandelbrot {
     enable_auto_escape: bool,
     name: String,
@@ -56,7 +59,47 @@ impl Mandelbrot {
         }
     }
 
-    pub fn init_app(&mut self, _clock: &Clock, _dc: &mut DisplayController) {
+    fn reset(&mut self) {
+        self.mandel_x_range = MAX_X_RANGE;
+        self.mandel_y_range = MAX_Y_RANGE;
+        self.max_iteration = MIN_ITER;
+        self.previous_empty_ratio = 0.0;
+    }
+
+    fn swap_palette(&mut self) {
+        self.current_theme += 1;
+        if self.current_theme >= self.themes.len() {
+            self.current_theme = 0;
+        }
+    }
+}
+
+impl FantasyCpcApp for Mandelbrot {
+    fn get_name(&self) -> &str {
+        &self.name
+    }
+
+    fn get_state(&self) -> &AppStatus {
+        &self.status
+    }
+
+    fn set_state(&mut self, state: AppStatus) {
+        self.status = state
+    }
+
+    fn get_initialized(&self) -> bool {
+        self.initialized
+    }
+
+    fn set_initialized(&mut self, is_initialized: bool) {
+        self.initialized = is_initialized
+    }
+
+    fn get_enable_autoescape(&self) -> bool {
+        self.enable_auto_escape
+    }
+
+    fn init_app(&mut self, system_clock: &Clock, display_controller: &mut DisplayController) {
         self.welcome_screen = true;
         self.game = false;
         self.menu = false;
@@ -74,10 +117,10 @@ impl Mandelbrot {
         self.palette_rotation = false;
     }
 
-    pub fn update_app(
+    fn update_app(
         &mut self,
         inputs: Option<&WinitInputHelper>,
-        _clock: &Clock,
+        clock: &Clock,
     ) -> Option<AppResponse> {
         inputs?;
 
@@ -218,9 +261,9 @@ impl Mandelbrot {
         None
     }
 
-    pub fn draw_app(&mut self, clock: &Clock, dc: &mut DisplayController) {
-        dc.get_text_layer_mut().clear();
-        dc.clear(BLACK);
+    fn draw_app(&mut self, clock: &Clock, display_controller: &mut DisplayController) {
+        display_controller.get_text_layer_mut().clear();
+        display_controller.clear(BLACK);
 
         if self.palette_rotation && clock.get_frame_count() % 2 == 0 {
             if !self.themes[self.current_theme].get_palette_1().is_empty() {
@@ -298,7 +341,7 @@ impl Mandelbrot {
                     temp_color_1
                 };
 
-                dc.set_pixel(px as isize, py as isize, color);
+                display_controller.set_pixel(px as isize, py as isize, color);
             }
         }
 
@@ -362,20 +405,6 @@ impl Mandelbrot {
         // If minimum range is reached, reset animation
         if self.mandel_y_range <= MIN_RANGE {
             self.reset();
-        }
-    }
-
-    fn reset(&mut self) {
-        self.mandel_x_range = MAX_X_RANGE;
-        self.mandel_y_range = MAX_Y_RANGE;
-        self.max_iteration = MIN_ITER;
-        self.previous_empty_ratio = 0.0;
-    }
-
-    fn swap_palette(&mut self) {
-        self.current_theme += 1;
-        if self.current_theme >= self.themes.len() {
-            self.current_theme = 0;
         }
     }
 }
