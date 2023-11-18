@@ -50,7 +50,7 @@ impl FantasyCpcApp for Boot {
     fn update_app(
         &mut self,
         inputs: Option<&WinitInputHelper>,
-        messages: Option<Vec<AppMessage>>,
+        _messages: Option<Vec<AppMessage>>,
         clock: &fantasy_cpc_clock::Clock,
     ) -> Option<Vec<AppMessage>> {
         if clock.total_running_time - self.starting_time >= Duration::new(6, 0) {

@@ -14,7 +14,7 @@ pub struct Sprite {
 pub enum SpriteSize {
     _8x8,
     _16x16,
-    _32x32
+    _32x32,
 }
 
 impl SpriteSize {
@@ -57,8 +57,8 @@ impl Sprite {
 
         let mut data: Vec<usize> = Vec::new();
 
-        for i in 2..split_text.len() {
-            data.push(split_text[i].parse::<usize>().unwrap());
+        for value in split_text.iter().skip(2) {
+            data.push(value.parse::<usize>().unwrap());
         }
 
         Sprite {

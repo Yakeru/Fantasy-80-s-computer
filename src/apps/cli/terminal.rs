@@ -123,6 +123,11 @@ impl Terminal {
                 }),
             },
         }
+
+        if self.buffer.len() > self.max_buffer_size {
+            self.buffer.remove(0);
+        }
+
         self.format_buffer();
     }
 
@@ -170,6 +175,7 @@ impl Terminal {
         let mut buffer_index: usize = 0;
         let screen = txt.get_map_mut();
 
+        #[allow(clippy::needless_range_loop)]
         for line in self.screen_coordinates.1..self.size.1 {
             for column in self.screen_coordinates.0..self.size.0 {
                 screen[line][column] = self.formatted_buffer[buffer_index];

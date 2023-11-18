@@ -59,7 +59,7 @@ impl FantasyCpcApp for Life {
     fn update_app(
         &mut self,
         inputs: Option<&winit_input_helper::WinitInputHelper>,
-        messages: Option<Vec<AppMessage>>,
+        _messages: Option<Vec<AppMessage>>,
         _clock: &Clock,
     ) -> Option<Vec<AppMessage>> {
         if self.welcome_screen {

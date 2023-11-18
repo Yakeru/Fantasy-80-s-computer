@@ -21,8 +21,6 @@ const DEFAULT_COLOR: usize = YELLOW;
 
 pub struct Shell {
     app_params: FantasyCppAppDefaultParams,
-    color: usize,
-    bkg_color: usize,
     clear_text_layer: bool,
     command: Vec<char>,
     // command_history: Vec<String>,
@@ -30,8 +28,8 @@ pub struct Shell {
 }
 
 pub const DEFAULT_TERM_STYLE: TextCellStyle = TextCellStyle {
-    color: YELLOW,
-    bkg_color: TRUE_BLUE,
+    color: DEFAULT_COLOR,
+    bkg_color: DEFAULT_BKG_COLOR,
     swap_color: false,
     blink: false,
     shadowed: false,
@@ -40,8 +38,8 @@ pub const DEFAULT_TERM_STYLE: TextCellStyle = TextCellStyle {
 };
 
 pub const HIGHLIGHT_TERM_STYLE: TextCellStyle = TextCellStyle {
-    color: YELLOW,
-    bkg_color: TRUE_BLUE,
+    color: DEFAULT_COLOR,
+    bkg_color: DEFAULT_BKG_COLOR,
     swap_color: true,
     blink: false,
     shadowed: false,
@@ -83,12 +81,8 @@ impl Shell {
     pub fn new() -> Shell {
         Self {
             app_params: FantasyCppAppDefaultParams::new(String::from("shell"), false),
-            color: DEFAULT_COLOR,
-            bkg_color: DEFAULT_BKG_COLOR,
-            //last_character_received: None,
             clear_text_layer: false,
             command: Vec::new(),
-            // command_history,
             terminal: Terminal::new((0, 0), (TEXT_COLUMNS, TEXT_ROWS)),
         }
     }
@@ -196,7 +190,7 @@ impl FantasyCpcApp for Shell {
         if !inputs.unwrap().text().is_empty() {
             match inputs.unwrap().text().get(0) {
                 Some(TextChar::Char(c)) => {
-                    if *c == unicode::ESCAPE && self.command.len() == 0 {
+                    if *c == unicode::ESCAPE && self.command.is_empty() {
                         self.terminal.push_char(ENTER, None);
                         self.terminal
                             .push_string("Type 'quit' or 'exit' to quit Fantasy CPC.", None);
