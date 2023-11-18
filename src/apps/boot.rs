@@ -89,7 +89,7 @@ impl FantasyCpcApp for Boot {
             display_controller.clear(0);
             display_controller
                 .get_txt_mut()
-                .write(0, 0, Text::String(String::from("Loading...")));
+                .write(0, 0, Text::String("Loading..."));
         }
 
         //Display loading overscan while "loading"

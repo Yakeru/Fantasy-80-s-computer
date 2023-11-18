@@ -1,10 +1,11 @@
 use std::time::Instant;
 
-use fantasy_cpc_app_trait::{AppResponse, AppStatus, FantasyCpcApp, FantasyCppAppDefaultParams};
+use fantasy_cpc_app_trait::{AppMessage, AppStatus, FantasyCpcApp, FantasyCppAppDefaultParams};
 use fantasy_cpc_clock::Clock;
 use fantasy_cpc_display_controller::{
     color_palettes::*,
     config::{TEXT_COLUMNS, TEXT_ROWS},
+    text_layer::{Text, DEFAULT_STYLE},
     DisplayController,
 };
 use rand::Rng;
@@ -58,8 +59,9 @@ impl FantasyCpcApp for Life {
     fn update_app(
         &mut self,
         inputs: Option<&winit_input_helper::WinitInputHelper>,
+        messages: Option<Vec<AppMessage>>,
         _clock: &Clock,
-    ) -> Option<AppResponse> {
+    ) -> Option<Vec<AppMessage>> {
         if self.welcome_screen {
             self.update_welcome_screen(inputs);
         } else if self.game {
@@ -204,45 +206,81 @@ impl Life {
     }
 
     fn draw_welcome_screen(&mut self, clock: &Clock, dc: &mut DisplayController) {
-        dc.get_txt_mut().clear();
+        dc.get_txt_mut().clear(Some(DEFAULT_STYLE));
         dc.clear(BLACK);
 
         //Animated title
-        let title_extraa: &str = " 🯆                         🯆 ";
-        let tilte_main_1: &str = " 🯆  Conway's Game Of Life  🯆 ";
-        let tilte_main_2: &str = "🯆🯆🯆 Conway's Game Of Life 🯆🯆🯆";
+        let title_extraa = " 🯆                         🯆 ";
+        let tilte_main_1 = " 🯆  Conway's Game Of Life  🯆 ";
+        let tilte_main_2 = "🯆🯆🯆 Conway's Game Of Life 🯆🯆🯆";
         let title_pos_x: usize = (TEXT_COLUMNS - tilte_main_2.chars().count()) / 2;
 
-        dc.get_txt_mut().set_pen_colors(BLUE, BLACK);
+        // dc.get_txt_mut().set_pen_colors(BLUE, BLACK);
 
         if clock.second_latch && clock.half_second_latch {
-            dc.get_txt_mut().write_str(title_pos_x, 10, title_extraa);
-            dc.get_txt_mut().write_str(title_pos_x, 11, tilte_main_1);
-            dc.get_txt_mut().write_str(title_pos_x, 12, title_extraa);
+            dc.get_txt_mut().write(
+                10,
+                title_pos_x,
+                Text::ColoredString(title_extraa, BLUE, BLACK),
+            );
+            dc.get_txt_mut().write(
+                11,
+                title_pos_x,
+                Text::ColoredString(tilte_main_1, BLUE, BLACK),
+            );
+            dc.get_txt_mut().write(
+                12,
+                title_pos_x,
+                Text::ColoredString(title_extraa, BLUE, BLACK),
+            );
         } else if clock.second_latch && !clock.half_second_latch {
-            dc.get_txt_mut().write_str(title_pos_x, 11, tilte_main_2);
+            dc.get_txt_mut().write(
+                11,
+                title_pos_x,
+                Text::ColoredString(tilte_main_2, BLUE, BLACK),
+            );
         } else if !clock.second_latch && clock.half_second_latch {
-            dc.get_txt_mut().write_str(title_pos_x, 10, title_extraa);
-            dc.get_txt_mut().write_str(title_pos_x, 11, tilte_main_1);
-            dc.get_txt_mut().write_str(title_pos_x, 12, title_extraa);
+            dc.get_txt_mut().write(
+                10,
+                title_pos_x,
+                Text::ColoredString(title_extraa, BLUE, BLACK),
+            );
+            dc.get_txt_mut().write(
+                11,
+                title_pos_x,
+                Text::ColoredString(tilte_main_1, BLUE, BLACK),
+            );
+            dc.get_txt_mut().write(
+                12,
+                title_pos_x,
+                Text::ColoredString(title_extraa, BLUE, BLACK),
+            );
         } else {
-            dc.get_txt_mut().write_str(title_pos_x, 11, tilte_main_2);
+            dc.get_txt_mut().write(
+                11,
+                title_pos_x,
+                Text::ColoredString(tilte_main_2, BLUE, BLACK),
+            );
         }
 
         // Menu
-        let menu_1: &str = "1 - Random mode";
+        let menu_1 = "1 - Random mode";
         let menu_1_pos_x: usize = (TEXT_COLUMNS - menu_1.len()) / 2;
-        let menu_2: &str = "2 - Combat mode";
+        let menu_2 = "2 - Combat mode";
         let menu_2_pos_x: usize = (TEXT_COLUMNS - menu_2.len()) / 2;
-        dc.get_txt_mut().set_pen_color(ORANGE);
-        dc.get_txt_mut().write_str(menu_1_pos_x, 20, menu_1);
-        dc.get_txt_mut().write_str(menu_2_pos_x, 21, menu_2);
+        dc.get_txt_mut()
+            .write(20, menu_1_pos_x, Text::ColoredString(menu_1, ORANGE, BLACK));
+        dc.get_txt_mut()
+            .write(21, menu_2_pos_x, Text::ColoredString(menu_2, ORANGE, BLACK));
 
         // Credit
-        let credit: &str = "2022 - Damien Torreilles";
+        let credit = "2023 - Damien Torreilles";
         let credit_pos_x: usize = (TEXT_COLUMNS - credit.len()) / 2;
-        dc.get_txt_mut().set_pen_color(TRUE_BLUE);
-        dc.get_txt_mut().write_str(credit_pos_x, 29, credit);
+        dc.get_txt_mut().write(
+            TEXT_ROWS - 3,
+            credit_pos_x,
+            Text::ColoredString(credit, TRUE_BLUE, BLACK),
+        );
     }
 
     /*************************************************************************************************************
@@ -291,9 +329,8 @@ impl Life {
     }
 
     fn draw_game(&mut self, dc: &mut DisplayController) {
-        dc.get_txt_mut().clear();
+        dc.get_txt_mut().clear(Some(DEFAULT_STYLE));
         dc.clear(WHITE);
-        dc.get_txt_mut().set_pen_bkg_color(BLACK);
 
         let chars = ['🯆', '🯅', '🯇', '🯈'];
 
@@ -321,11 +358,11 @@ impl Life {
                     }
 
                     let char = chars[(self.gen_a[row][col].age % (chars.len() - 1) as u8) as usize];
-                    dc.get_txt_mut().set_pen_color(color);
-                    dc.get_txt_mut().write(col, row, char);
+                    dc.get_txt_mut()
+                        .write(row, col, Text::ColoredChar(char, color, BLACK));
                 } else {
-                    dc.get_txt_mut().set_pen_color(BLACK);
-                    dc.get_txt_mut().write(col, row, ' ');
+                    dc.get_txt_mut()
+                        .write(row, col, Text::ColoredChar(' ', BLACK, BLACK));
                 }
             }
         }
@@ -380,15 +417,16 @@ impl Life {
     }
 
     fn draw_menu(&mut self, dc: &mut DisplayController) {
-        dc.get_txt_mut().clear();
+        dc.get_txt_mut().clear(Some(DEFAULT_STYLE));
         dc.clear(BLACK);
-        dc.get_txt_mut().set_pen_colors(BLUE, BLACK);
-        dc.get_txt_mut().write_str(5, 5, "Team A : ");
-        dc.get_txt_mut().write_str(5, 7, "Team B : ");
-        dc.get_txt_mut().set_pen_colors(self.team_a_color, BLACK);
-        dc.get_txt_mut().write(14, 5, '🯆');
-        dc.get_txt_mut().set_pen_colors(self.team_b_color, BLACK);
-        dc.get_txt_mut().write(14, 7, '🯆');
+        dc.get_txt_mut()
+            .write(5, 5, Text::ColoredString("Team A : ", BLUE, BLACK));
+        dc.get_txt_mut()
+            .write(5, 7, Text::ColoredString("Team B : ", BLUE, BLACK));
+        dc.get_txt_mut()
+            .write(14, 5, Text::ColoredChar('🯆', self.team_a_color, BLACK));
+        dc.get_txt_mut()
+            .write(14, 7, Text::ColoredChar('🯆', self.team_b_color, BLACK));
     }
 }
 

@@ -36,13 +36,13 @@ pub struct TextLayer {
     map: [[TextCell; TEXT_COLUMNS]; TEXT_ROWS],
 }
 
-pub enum Text {
+pub enum Text<'a> {
     Char(char),
-    String(String),
+    String(&'a str),
     ColoredChar(char, usize, usize),
-    ColoredString(String, usize, usize),
+    ColoredString(&'a str, usize, usize),
     StyledChar(char, TextCellStyle),
-    StyledString(String, TextCellStyle),
+    StyledString(&'a str, TextCellStyle),
 }
 
 impl TextLayer {

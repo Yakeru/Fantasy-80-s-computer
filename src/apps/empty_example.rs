@@ -1,4 +1,4 @@
-use fantasy_cpc_app_trait::{AppResponse, FantasyCpcApp, FantasyCppAppDefaultParams};
+use fantasy_cpc_app_trait::{AppMessage, FantasyCpcApp, FantasyCppAppDefaultParams};
 use fantasy_cpc_clock::Clock;
 use fantasy_cpc_display_controller::DisplayController;
 
@@ -24,8 +24,9 @@ impl FantasyCpcApp for Empty {
     fn update_app(
         &mut self,
         _inputs: Option<&winit_input_helper::WinitInputHelper>,
+        _messages: Option<Vec<AppMessage>>,
         _clock: &Clock,
-    ) -> Option<AppResponse> {
+    ) -> Option<Vec<AppMessage>> {
         None
     }
 

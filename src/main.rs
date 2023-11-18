@@ -1,8 +1,4 @@
-// use apps::{
-//     boot::Boot, cli::shell::Shell, life::Life, mandelbrot::game::Mandelbrot,
-//     raycaster::game::Raycaster, weather_app::WeatherApp,
-// };
-use apps::{boot::Boot, cli::shell::Shell};
+use apps::{boot::Boot, cli::shell::Shell, life::Life};
 use crt_shader_renderer::CrtRenderer;
 use fantasy_cpc_app_trait::{AppMessage, AppStatus, FantasyCpcApp};
 use fantasy_cpc_display_controller::{config::*, *};
@@ -126,9 +122,9 @@ fn main() -> Result<(), Error> {
     boot.get_app_params().change_status(AppStatus::Running);
     app_list.push(boot);
 
-    // // CONWAY'S GAME OF LIFE, TEXT MODE
-    // let life = Box::new(Life::new());
-    // app_list.push(life);
+    // CONWAY'S GAME OF LIFE, TEXT MODE
+    let life = Box::new(Life::new());
+    app_list.push(life);
 
     // // WEATHER APP
     // let weather_app = Box::new(WeatherApp::new());
