@@ -59,23 +59,21 @@ impl Renderer {
 
     pub fn draw_sky(&self, dc: &mut DisplayController, _color: usize, _fog_color: usize) {
         dc.clear(DARK_GREY);
-        dc.square(
+        dc.fill_square(
             0,
             67,
             VIRTUAL_WIDTH as isize,
             18,
             DARKER_GREY,
-            DARKER_GREY,
-            true,
+            DARKER_GREY
         );
-        dc.square(
+        dc.fill_square(
             0,
             85,
             VIRTUAL_WIDTH as isize,
             200,
             DARKER_GREY,
-            DARKER_GREY,
-            true,
+            DARKER_GREY
         );
         for y in 85..95 {
             if y % 2 == 0 {
@@ -115,14 +113,13 @@ impl Renderer {
     }
 
     pub fn draw_ground(&self, dc: &mut DisplayController, _color: usize, _fog_color: usize) {
-        dc.square(
+        dc.fill_square(
             0,
             (VIRTUAL_HEIGHT / 2) as isize,
             VIRTUAL_WIDTH as isize,
             (VIRTUAL_HEIGHT / 2) as isize,
             DARK_BROWN,
-            DARK_BROWN,
-            true,
+            DARK_BROWN
         );
 
         for y in VIRTUAL_HEIGHT / 2..155 {
@@ -160,14 +157,13 @@ impl Renderer {
                 }
             }
         }
-        dc.square(
+        dc.fill_square(
             0,
             (VIRTUAL_HEIGHT - 67) as isize,
             VIRTUAL_WIDTH as isize,
             200,
             BROWN,
-            BROWN,
-            true,
+            BROWN
         );
     }
 

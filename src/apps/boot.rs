@@ -1,7 +1,7 @@
-use fantasy_cpc_app_trait::{AppStatus, FantasyCpcApp, FantasyCppAppDefaultParams};
+use fantasy_cpc_app_trait::{AppMessage, AppStatus, FantasyCpcApp, FantasyCppAppDefaultParams};
 use fantasy_cpc_clock::Clock;
 use fantasy_cpc_display_controller::{
-    color_palettes::{BLACK, WHITE},
+    text_layer::{Text, DEFAULT_STYLE},
     DisplayController,
 };
 use std::time::Duration;
@@ -50,8 +50,9 @@ impl FantasyCpcApp for Boot {
     fn update_app(
         &mut self,
         inputs: Option<&WinitInputHelper>,
+        messages: Option<Vec<AppMessage>>,
         clock: &fantasy_cpc_clock::Clock,
-    ) -> Option<fantasy_cpc_app_trait::AppResponse> {
+    ) -> Option<Vec<AppMessage>> {
         if clock.total_running_time - self.starting_time >= Duration::new(6, 0) {
             self.get_app_params().change_status(AppStatus::Stopped);
         }
@@ -84,11 +85,11 @@ impl FantasyCpcApp for Boot {
 
         //Clear garbage and display Loading...
         if clock.total_running_time - self.starting_time >= Duration::new(3, 0) {
-            display_controller.get_txt_mut().clear();
+            display_controller.get_txt_mut().clear(Some(DEFAULT_STYLE));
             display_controller.clear(0);
             display_controller
                 .get_txt_mut()
-                .write_str(0, 0, "Loading...");
+                .write(0, 0, Text::String(String::from("Loading...")));
         }
 
         //Display loading overscan while "loading"

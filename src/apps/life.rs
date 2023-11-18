@@ -43,6 +43,45 @@ enum Team {
     B,
 }
 
+impl FantasyCpcApp for Life {
+    fn get_app_params(&mut self) -> &mut FantasyCppAppDefaultParams {
+        &mut self.app_params
+    }
+
+    fn init_app(&mut self, _system_clock: &Clock, display_controller: &mut DisplayController) {
+        display_controller.set_brightness(255);
+        self.welcome_screen = true;
+        self.game = false;
+        self.menu = false;
+    }
+
+    fn update_app(
+        &mut self,
+        inputs: Option<&winit_input_helper::WinitInputHelper>,
+        _clock: &Clock,
+    ) -> Option<AppResponse> {
+        if self.welcome_screen {
+            self.update_welcome_screen(inputs);
+        } else if self.game {
+            self.update_game(inputs);
+        } else {
+            self.update_menu(inputs);
+        }
+
+        None
+    }
+
+    fn draw_app(&mut self, clock: &Clock, display_controller: &mut DisplayController) {
+        if self.welcome_screen {
+            self.draw_welcome_screen(clock, display_controller);
+        } else if self.game {
+            self.draw_game(display_controller);
+        } else if self.menu {
+            self.draw_menu(display_controller);
+        }
+    }
+}
+
 impl Life {
     pub fn new() -> Life {
         let fire = vec![RED, DARK_ORANGE, ORANGE, YELLOW, LIGHT_YELLOW, WHITE];
@@ -192,19 +231,18 @@ impl Life {
 
         // Menu
         let menu_1: &str = "1 - Random mode";
+        let menu_1_pos_x: usize = (TEXT_COLUMNS - menu_1.len()) / 2;
         let menu_2: &str = "2 - Combat mode";
-
+        let menu_2_pos_x: usize = (TEXT_COLUMNS - menu_2.len()) / 2;
         dc.get_txt_mut().set_pen_color(ORANGE);
-        dc.get_txt_mut()
-            .write_str((TEXT_COLUMNS - menu_1.len()) / 2, 20, menu_1);
-        dc.get_txt_mut()
-            .write_str((TEXT_COLUMNS - menu_2.len()) / 2, 21, menu_2);
+        dc.get_txt_mut().write_str(menu_1_pos_x, 20, menu_1);
+        dc.get_txt_mut().write_str(menu_2_pos_x, 21, menu_2);
 
         // Credit
         let credit: &str = "2022 - Damien Torreilles";
+        let credit_pos_x: usize = (TEXT_COLUMNS - credit.len()) / 2;
         dc.get_txt_mut().set_pen_color(TRUE_BLUE);
-        dc.get_txt_mut()
-            .write_str((TEXT_COLUMNS - credit.len()) / 2, TEXT_ROWS - 1, credit);
+        dc.get_txt_mut().write_str(credit_pos_x, 29, credit);
     }
 
     /*************************************************************************************************************
@@ -255,8 +293,7 @@ impl Life {
     fn draw_game(&mut self, dc: &mut DisplayController) {
         dc.get_txt_mut().clear();
         dc.clear(WHITE);
-
-        let bkg_color = BLACK;
+        dc.get_txt_mut().set_pen_bkg_color(BLACK);
 
         let chars = ['🯆', '🯅', '🯇', '🯈'];
 
@@ -284,12 +321,11 @@ impl Life {
                     }
 
                     let char = chars[(self.gen_a[row][col].age % (chars.len() - 1) as u8) as usize];
-                    dc.get_txt_mut().set_pen_colors(color, bkg_color);
-                    dc.get_txt_mut().write(char, col, row);
+                    dc.get_txt_mut().set_pen_color(color);
+                    dc.get_txt_mut().write(col, row, char);
                 } else {
-                    dc.get_txt_mut().set_pen_colors(bkg_color, bkg_color);
-
-                    dc.get_txt_mut().write(' ', col, row);
+                    dc.get_txt_mut().set_pen_color(BLACK);
+                    dc.get_txt_mut().write(col, row, ' ');
                 }
             }
         }
@@ -350,9 +386,9 @@ impl Life {
         dc.get_txt_mut().write_str(5, 5, "Team A : ");
         dc.get_txt_mut().write_str(5, 7, "Team B : ");
         dc.get_txt_mut().set_pen_colors(self.team_a_color, BLACK);
-        dc.get_txt_mut().write('🯆', 14, 5);
+        dc.get_txt_mut().write(14, 5, '🯆');
         dc.get_txt_mut().set_pen_colors(self.team_b_color, BLACK);
-        dc.get_txt_mut().write('🯆', 14, 7);
+        dc.get_txt_mut().write(14, 7, '🯆');
     }
 }
 
@@ -464,43 +500,4 @@ fn calculate_life(
     }
 
     continue_game
-}
-
-impl FantasyCpcApp for Life {
-    fn get_app_params(&mut self) -> &mut FantasyCppAppDefaultParams {
-        &mut self.app_params
-    }
-
-    fn init_app(&mut self, _system_clock: &Clock, display_controller: &mut DisplayController) {
-        display_controller.set_brightness(255);
-        self.welcome_screen = true;
-        self.game = false;
-        self.menu = false;
-    }
-
-    fn update_app(
-        &mut self,
-        inputs: Option<&winit_input_helper::WinitInputHelper>,
-        _clock: &Clock,
-    ) -> Option<AppResponse> {
-        if self.welcome_screen {
-            self.update_welcome_screen(inputs);
-        } else if self.game {
-            self.update_game(inputs);
-        } else {
-            self.update_menu(inputs);
-        }
-
-        None
-    }
-
-    fn draw_app(&mut self, clock: &Clock, display_controller: &mut DisplayController) {
-        if self.welcome_screen {
-            self.draw_welcome_screen(clock, display_controller);
-        } else if self.game {
-            self.draw_game(display_controller);
-        } else if self.menu {
-            self.draw_menu(display_controller);
-        }
-    }
 }

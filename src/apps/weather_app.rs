@@ -211,99 +211,31 @@ impl WeatherApp {
 
     fn draw_digital_clock(&mut self, dc: &mut DisplayController) {
         let now = Local::now();
-        if now.hour() < 10 {
-            dc.get_txt_mut().insert_string_xy(
-                17,
-                29,
-                &format!("{}", now.hour()),
-                Some(WHITE),
-                Some(BLACK),
-                false,
-                false,
-                false,
-            );
+        let hours = now.hour().to_string();
+        let minutes = now.minute().to_string();
+        let seconds = now.second().to_string();
+
+        dc.get_txt_mut().set_pen_colors(WHITE, BLACK);
+
+        if hours.chars().count() == 1 {
+            dc.get_txt_mut().write_str(17, 29, &hours);
         } else {
-            dc.get_txt_mut().insert_string_xy(
-                16,
-                29,
-                &format!("{}", now.hour()),
-                Some(WHITE),
-                Some(BLACK),
-                false,
-                false,
-                false,
-            );
+            dc.get_txt_mut().write_str(16, 29, &hours);
         }
-        dc.get_txt_mut()
-            .insert_char_xy(18, 29, ':', Some(WHITE), Some(BLACK), false, false, false);
-        if now.minute() < 10 {
-            dc.get_txt_mut().insert_string_xy(
-                19,
-                29,
-                "0",
-                Some(WHITE),
-                Some(BLACK),
-                false,
-                false,
-                false,
-            );
-            dc.get_txt_mut().insert_string_xy(
-                20,
-                29,
-                &format!("{}", now.minute()),
-                Some(WHITE),
-                Some(BLACK),
-                false,
-                false,
-                false,
-            );
+        dc.get_txt_mut().write(18, 29, ':');
+        if minutes.chars().count() == 1 {
+            dc.get_txt_mut().write(19, 29, '0');
+            dc.get_txt_mut().write_str(20, 29, &minutes);
         } else {
-            dc.get_txt_mut().insert_string_xy(
-                19,
-                29,
-                &format!("{}", now.minute()),
-                Some(WHITE),
-                Some(BLACK),
-                false,
-                false,
-                false,
-            );
+            dc.get_txt_mut().write_str(19, 29, &minutes);
         }
 
-        dc.get_txt_mut()
-            .insert_char_xy(21, 29, ':', Some(WHITE), Some(BLACK), false, false, false);
-        if now.second() < 10 {
-            dc.get_txt_mut().insert_string_xy(
-                22,
-                29,
-                "0",
-                Some(WHITE),
-                Some(BLACK),
-                false,
-                false,
-                false,
-            );
-            dc.get_txt_mut().insert_string_xy(
-                23,
-                29,
-                &format!("{}", now.second()),
-                Some(WHITE),
-                Some(BLACK),
-                false,
-                false,
-                false,
-            );
+        dc.get_txt_mut().write(21, 29, ':');
+        if seconds.chars().count() == 1 {
+            dc.get_txt_mut().write(22, 29, '0');
+            dc.get_txt_mut().write_str(23, 29, &seconds);
         } else {
-            dc.get_txt_mut().insert_string_xy(
-                22,
-                29,
-                &format!("{}", now.second()),
-                Some(WHITE),
-                Some(BLACK),
-                false,
-                false,
-                false,
-            );
+            dc.get_txt_mut().write_str(22, 29, &seconds);
         }
     }
 
@@ -417,107 +349,52 @@ impl FantasyCpcApp for WeatherApp {
         None
     }
 
-    fn draw_app(
-        &mut self,
-        _clock: &fantasy_cpc_clock::Clock,
-        display_controller: &mut DisplayController,
-    ) {
-        display_controller.get_txt_mut().clear();
-        display_controller.clear(BLACK);
+    fn draw_app(&mut self, _clock: &fantasy_cpc_clock::Clock, dc: &mut DisplayController) {
+        dc.get_txt_mut().clear();
+        dc.clear(BLACK);
+        dc.get_txt_mut().set_pen_colors(WHITE, BLACK);
 
         self.draw_analogue_clock(
-            display_controller,
+            dc,
             (VIRTUAL_WIDTH / 2) as isize,
             (VIRTUAL_HEIGHT - 75) as isize,
         );
-        self.draw_digital_clock(display_controller);
+        self.draw_digital_clock(dc);
 
         match &self.current_weather {
             Some(result) => match result {
                 Ok(current_weather) => {
-                    display_controller.get_txt_mut().insert_string_xy(
-                        0,
-                        0,
-                        &format!(
-                            "Description: {}",
-                            current_weather.weather[0]
-                                .description
-                                .replace(['é', 'ê', 'è'], "e")
-                                .replace('à', "a")
-                                .replace('ç', "c")
-                        ),
-                        Some(WHITE),
-                        Some(BLACK),
-                        false,
-                        false,
-                        false,
+                    let description = &format!(
+                        "Description: {}",
+                        current_weather.weather[0]
+                            .description
+                            .replace(['é', 'ê', 'è'], "e")
+                            .replace('à', "a")
+                            .replace('ç', "c")
                     );
+                    let temperature = &format!(
+                        "Temperature: {}▪c, feels like {}▪c",
+                        current_weather.main.temp, current_weather.main.feels_like
+                    );
+                    let humidity = &format!("Humidity:    {} %", current_weather.main.humidity);
+                    let pressure = &format!("Pressure:    {} Kpa", current_weather.main.pressure);
+                    let wind = &format!("Wind:        {} m/s", current_weather.wind.speed);
 
-                    display_controller.get_txt_mut().insert_string_xy(
-                        0,
-                        2,
-                        &format!(
-                            "Temperature: {}▪c, feels like {}▪c",
-                            current_weather.main.temp, current_weather.main.feels_like
-                        ),
-                        Some(WHITE),
-                        Some(BLACK),
-                        false,
-                        false,
-                        false,
-                    );
-
-                    display_controller.get_txt_mut().insert_string_xy(
-                        0,
-                        4,
-                        &format!("Humidity:    {} %", current_weather.main.humidity),
-                        Some(WHITE),
-                        Some(BLACK),
-                        false,
-                        false,
-                        false,
-                    );
-
-                    display_controller.get_txt_mut().insert_string_xy(
-                        0,
-                        6,
-                        &format!("Pressure:    {} Kpa", current_weather.main.pressure),
-                        Some(WHITE),
-                        Some(BLACK),
-                        false,
-                        false,
-                        false,
-                    );
-
-                    display_controller.get_txt_mut().insert_string_xy(
-                        0,
-                        8,
-                        &format!("Wind:        {} m/s", current_weather.wind.speed),
-                        Some(WHITE),
-                        Some(BLACK),
-                        false,
-                        false,
-                        false,
-                    );
+                    dc.get_txt_mut().write_str(0, 0, description);
+                    dc.get_txt_mut().write_str(0, 2, temperature);
+                    dc.get_txt_mut().write_str(0, 4, humidity);
+                    dc.get_txt_mut().write_str(0, 6, pressure);
+                    dc.get_txt_mut().write_str(0, 8, wind);
                 }
                 Err(message) => {
-                    display_controller.get_txt_mut().insert_string_xy(
-                        0,
-                        0,
-                        message,
-                        Some(WHITE),
-                        Some(BLACK),
-                        false,
-                        false,
-                        false,
-                    );
+                    dc.get_txt_mut().write_str(0, 0, message);
                 }
             },
             None => (),
         }
 
         for cloud in self.clouds.chunks_exact_mut(1) {
-            Self::draw_cloud(&mut cloud[0], display_controller);
+            Self::draw_cloud(&mut cloud[0], dc);
         }
     }
 }

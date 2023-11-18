@@ -2,9 +2,9 @@
 //     boot::Boot, cli::shell::Shell, life::Life, mandelbrot::game::Mandelbrot,
 //     raycaster::game::Raycaster, weather_app::WeatherApp,
 // };
-use apps::{boot::Boot, life::Life};
+use apps::{boot::Boot, cli::shell::Shell};
 use crt_shader_renderer::CrtRenderer;
-use fantasy_cpc_app_trait::{AppResponse, AppStatus, FantasyCpcApp};
+use fantasy_cpc_app_trait::{AppMessage, AppStatus, FantasyCpcApp};
 use fantasy_cpc_display_controller::{config::*, *};
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rodio::Source;
@@ -110,8 +110,8 @@ fn main() -> Result<(), Error> {
     // no other process is running or has the focus.
     // The Shell uses the console as default output.
     // When closing/quitting an app, it should always fall back to the shell.
-    // let mut shell = Box::new(Shell::new());
-    // shell.get_app_params().change_status(AppStatus::Running);
+    let mut shell = Box::new(Shell::new());
+    shell.get_app_params().change_status(AppStatus::Running);
 
     // ********* //
     // The apps  //
@@ -123,13 +123,12 @@ fn main() -> Result<(), Error> {
 
     // BOOT APP, not really an app, just plays the animation at startup, and when "reboot" command is sent
     let mut boot = Box::new(Boot::new());
-    boot.get_app_params().change_status(AppStatus::Stopped);
+    boot.get_app_params().change_status(AppStatus::Running);
     app_list.push(boot);
 
-    // CONWAY'S GAME OF LIFE, TEXT MODE
-    let mut life = Box::new(Life::new());
-    life.get_app_params().change_status(AppStatus::Running);
-    app_list.push(life);
+    // // CONWAY'S GAME OF LIFE, TEXT MODE
+    // let life = Box::new(Life::new());
+    // app_list.push(life);
 
     // // WEATHER APP
     // let weather_app = Box::new(WeatherApp::new());
@@ -182,7 +181,7 @@ fn main() -> Result<(), Error> {
 
             //Updating apps
             let mut show_shell: bool = true;
-            let mut app_response: Option<AppResponse> = None;
+            let mut app_response: Option<Vec<AppMessage>> = None;
             //let app_inputs: AppInputs = AppInputs { keyboard_input, char_received, mouse_move_delta, system_clock };
             for app in app_list.chunks_exact_mut(1) {
                 if *app[0].get_app_params().get_status() == AppStatus::Running {
@@ -190,89 +189,93 @@ fn main() -> Result<(), Error> {
                 };
 
                 app_response =
-                    app[0].exec_app(Some(&input), &system_clock, &mut display_controller);
+                    app[0].exec_app(Some(&input), None, &system_clock, &mut display_controller);
             }
 
             // If no app is in focus, run the shell
-            // if show_shell {
-            //     app_response = shell.exec_app(Some(&input), &system_clock, &mut display_controller);
-            // }
+            if show_shell {
+                app_response =
+                    shell.exec_app(Some(&input), None, &system_clock, &mut display_controller);
+            }
 
             // Process app response
             //TODO make smarter command line tokenizer and interpreter
             //TODO make enum of available commands
             //TODO add support for command line parameters
             if let Some(response) = app_response {
-                //If app response contains a winit event, send it directly to winit's control flow
-                if let Some(app_event) = response.event {
-                    *control_flow = app_event
-                }
+                //If app_response contains a system message, interpret it.
+                //ex: can then be interpreted to run another app, or change settings.
+                if !response.is_empty() {
+                    for (message_count, message) in response.iter().enumerate() {
+                        println!("{} {}", message_count, message);
 
-                //If app_response contains a message, interpret it with command line interpreter.
-                //ex: when pressing enter in console app, the message will contain the command from the console
-                //that command can then be interpreted to run another app, or change settings.
-                if let Some(app_message) = response.message {
-                    println!("App message: {}", app_message);
+                        if let fantasy_cpc_app_trait::AppMessage::System(text) = message {
+                            //Tests if message is name of an available app. If so, switches to that app.
+                            for app in app_list.chunks_exact_mut(1) {
+                                if app[0].get_app_params().get_name() == text {
+                                    app[0].get_app_params().change_status(AppStatus::Running);
+                                }
+                            }
 
-                    //Tests if message is name of an available app. If so, switches to that app.
-                    for app in app_list.chunks_exact_mut(1) {
-                        if app[0].get_app_params().get_name() == app_message {
-                            app[0].get_app_params().change_status(AppStatus::Running);
+                            //Reboot (resets app statuses to default state and plays boot animation)
+                            if text.to_lowercase() == "reboot" {
+                                shell.get_app_params().change_status(AppStatus::Stopped);
+                                shell.get_app_params().change_status(AppStatus::Running);
+                            }
+
+                            //Reboot (resets app statuses to default state and plays boot animation)
+                            if text.to_lowercase() == "exit" || text.to_lowercase() == "quit" {
+                                *control_flow = ControlFlow::Exit;
+                            }
+
+                            //Shader settings
+                            if text == "mode 0" {
+                                shader_variables.mode = 0.0;
+                            }
+
+                            if text == "mode 1" {
+                                shader_variables.mode = 1.0;
+                            }
+
+                            if text == "mode 2" {
+                                shader_variables.mode = 2.0;
+                            }
+
+                            if text == "dist 0" {
+                                shader_variables.horiz_distortion = 0.0;
+                                shader_variables.vert_distortion = 0.0;
+                            }
+
+                            if text == "dist 1" {
+                                shader_variables.horiz_distortion = 32.0 * (4.0 / 3.0);
+                                shader_variables.vert_distortion = 32.0;
+                            }
+
+                            if text == "dist 2" {
+                                shader_variables.horiz_distortion = 16.0 * (4.0 / 3.0);
+                                shader_variables.vert_distortion = 16.0;
+                            }
+
+                            if text == "dist 3" {
+                                shader_variables.horiz_distortion = 8.0 * (4.0 / 3.0);
+                                shader_variables.vert_distortion = 8.0;
+                            }
+
+                            if text == "dist 4" {
+                                shader_variables.horiz_distortion = 2.0 * (4.0 / 3.0);
+                                shader_variables.vert_distortion = 2.0;
+                            }
+
+                            if text == "dist 5" {
+                                shader_variables.horiz_distortion = 1.0 * (4.0 / 3.0);
+                                shader_variables.vert_distortion = 1.0;
+                            }
+
+                            if text == "dist 6" {
+                                shader_variables.horiz_distortion = 0.5 * (4.0 / 3.0);
+                                shader_variables.vert_distortion = 0.5;
+                            }
                         }
-                    }
-
-                    //Reboot (resets app statuses to default state and plays boot animation)
-                    if app_message == "reboot" {
-                        // shell.set_state(AppStatus::Stopped);
-                        // shell.set_state(AppStatus::Running);
-                    }
-
-                    //Shader settings
-                    if app_message == "mode 0" {
-                        shader_variables.mode = 0.0;
-                    }
-
-                    if app_message == "mode 1" {
-                        shader_variables.mode = 1.0;
-                    }
-
-                    if app_message == "mode 2" {
-                        shader_variables.mode = 2.0;
-                    }
-
-                    if app_message == "dist 0" {
-                        shader_variables.horiz_distortion = 0.0;
-                        shader_variables.vert_distortion = 0.0;
-                    }
-
-                    if app_message == "dist 1" {
-                        shader_variables.horiz_distortion = 32.0 * (4.0 / 3.0);
-                        shader_variables.vert_distortion = 32.0;
-                    }
-
-                    if app_message == "dist 2" {
-                        shader_variables.horiz_distortion = 16.0 * (4.0 / 3.0);
-                        shader_variables.vert_distortion = 16.0;
-                    }
-
-                    if app_message == "dist 3" {
-                        shader_variables.horiz_distortion = 8.0 * (4.0 / 3.0);
-                        shader_variables.vert_distortion = 8.0;
-                    }
-
-                    if app_message == "dist 4" {
-                        shader_variables.horiz_distortion = 2.0 * (4.0 / 3.0);
-                        shader_variables.vert_distortion = 2.0;
-                    }
-
-                    if app_message == "dist 5" {
-                        shader_variables.horiz_distortion = 1.0 * (4.0 / 3.0);
-                        shader_variables.vert_distortion = 1.0;
-                    }
-
-                    if app_message == "dist 6" {
-                        shader_variables.horiz_distortion = 0.5 * (4.0 / 3.0);
-                        shader_variables.vert_distortion = 0.5;
                     }
                 }
             }

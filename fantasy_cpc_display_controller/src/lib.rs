@@ -8,7 +8,7 @@ use std::{
     cmp::{max, min},
     ops::{Bound, RangeBounds},
 };
-use text_layer::{text_coord_to_frame_coord, TextLayer, TextLayerCell, TextLayerPen};
+use text_layer::{text_coord_to_frame_coord, TextCellStyle, TextCell, TextLayer, DEFAULT_STYLE};
 
 pub mod characters_rom;
 pub mod color_palettes;
@@ -32,6 +32,12 @@ pub struct DisplayController {
     text_layer: TextLayer,
     sprites: Vec<Sprite>,
     clock: Clock,
+}
+
+impl Default for DisplayController {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl DisplayController {
@@ -67,8 +73,8 @@ impl DisplayController {
 
     pub fn get_pixel(&mut self, x: usize, y: usize) -> Option<usize> {
         let index = frame_coord_to_index(x as isize, y as isize);
-        if index.is_some() {
-            return Some(self.frame[index.unwrap()]);
+        if let Some(index_value) = index {
+            Some(self.frame[index_value])
         } else {
             None
         }
@@ -76,8 +82,8 @@ impl DisplayController {
 
     pub fn set_pixel(&mut self, x: isize, y: isize, color: usize) {
         let index = frame_coord_to_index(x, y);
-        if index.is_some() {
-            self.frame[index.unwrap()] = color
+        if let Some(index_value) = index {
+            self.frame[index_value] = color
         }
     }
 
@@ -120,10 +126,8 @@ impl DisplayController {
     }
 
     pub fn overscan_renderer(&mut self) {
-        let mut line_count: usize = 0;
-
-        for line in self.frame.chunks_exact_mut(VIRTUAL_WIDTH) {
-            if line_count < OVERSCAN_V || line_count >= VIRTUAL_HEIGHT - OVERSCAN_V {
+        for (line_count, line) in self.frame.chunks_exact_mut(VIRTUAL_WIDTH).enumerate() {
+            if !(OVERSCAN_V..VIRTUAL_HEIGHT - OVERSCAN_V).contains(&line_count) {
                 line.copy_from_slice(&[self.overscan[line_count]; VIRTUAL_WIDTH]);
             } else {
                 line.chunks_exact_mut(OVERSCAN_H)
@@ -135,8 +139,6 @@ impl DisplayController {
                     .unwrap()
                     .copy_from_slice(&[self.overscan[line_count]; OVERSCAN_H]);
             }
-
-            line_count += 1;
         }
     }
 
@@ -164,11 +166,6 @@ impl DisplayController {
         self.frame
             .copy_from_slice(&[color; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]);
         self.overscan.copy_from_slice(&[color; VIRTUAL_HEIGHT]);
-    }
-
-    //Removes all chars, colors and effects from the text_layer
-    pub fn clear_text_layer(&mut self) {
-        self.text_layer.clear();
     }
 
     pub fn get_txt_mut(&mut self) -> &mut TextLayer {
@@ -204,11 +201,6 @@ impl DisplayController {
         //Text layer
         self.text_layer_renderer();
 
-        // //Console
-        // if self.console.display {
-        //     self.console_renderer();
-        // }
-
         //Line offset
         self.apply_line_scroll_effect();
 
@@ -243,10 +235,10 @@ impl DisplayController {
 
             let global_offset = frame_coord_to_index(sprite.pos_x, sprite.pos_y);
 
-            if global_offset.is_some() {
+            if let Some(global_offset_value) = global_offset {
                 for pixel in &sprite.image {
                     let virtual_fb_offset =
-                        (global_offset.unwrap() + VIRTUAL_WIDTH * sprite_line_count + pixel_count)
+                        (global_offset_value + VIRTUAL_WIDTH * sprite_line_count + pixel_count)
                             % (VIRTUAL_WIDTH * VIRTUAL_HEIGHT);
 
                     if *pixel != 0 {
@@ -266,28 +258,30 @@ impl DisplayController {
     fn text_layer_renderer(&mut self) {
         for line_count in 0..TEXT_ROWS {
             for col_count in 0..TEXT_COLUMNS {
-                let cell = self.get_txt().get_char_map()[line_count][col_count];
-
-                if let Some(toto) = cell {
-                    let frame_coord = text_coord_to_frame_coord(col_count, line_count);
-                    self.text_layer_char_renderer(&toto, frame_coord.0, frame_coord.1);
-                }
+                let text_cell = self.get_txt().get_map()[line_count][col_count];
+                let frame_coord = text_coord_to_frame_coord(col_count, line_count);
+                self.text_layer_char_renderer(text_cell, frame_coord.0, frame_coord.1);
             }
         }
     }
 
     fn text_layer_char_renderer(
         &mut self,
-        text_layer_cell: &TextLayerCell,
+        text_layer_cell: text_layer::TextCell,
         frame_x_pos: usize,
         frame_y_pos: usize,
     ) {
-        let char = text_layer_cell.c;
-        let char_color = text_layer_cell.pen.color;
-        let bck_color = text_layer_cell.pen.bkg_color;
-        let blink = text_layer_cell.pen.blink;
-        let swap = text_layer_cell.pen.swap_color;
-        let shadowed = text_layer_cell.pen.shadowed;
+        if text_layer_cell.c.is_none() && text_layer_cell.style.is_none() {
+            return;
+        }
+
+        let c: char = text_layer_cell.c.unwrap_or(' ');
+        let style: TextCellStyle = text_layer_cell.style.unwrap_or(DEFAULT_STYLE);
+        let char_color = style.color;
+        let bck_color = style.bkg_color;
+        let blink = style.blink;
+        let swap = style.swap_color;
+        let shadowed = style.shadowed;
 
         //set color, swap or not
         let text_color = if swap || (blink && self.clock.half_second_latch) {
@@ -302,11 +296,10 @@ impl DisplayController {
         };
 
         //Get char picture from  "character rom"
-        let pic = rom(char);
+        let pic = rom(c);
 
         //Draw picture pixel by pixel in frame buffer
-        for row_count in 0..CHARACTER_HEIGHT {
-            let row = pic[row_count];
+        for (row_count, row) in pic.iter().enumerate().take(CHARACTER_HEIGHT) {
             let mut mask: u8 = 128;
 
             for col_count in 0..CHARACTER_WIDTH {
@@ -341,11 +334,9 @@ impl DisplayController {
     pub fn render_to_output_frame(&self, output_frame: &mut [u8]) {
         let mut rendered_line: [u8; RENDERED_LINE_LENGTH] = [0; RENDERED_LINE_LENGTH];
 
-        let mut frame_line_count: usize = 0;
-
-        for frame_line in self.frame.chunks_exact(VIRTUAL_WIDTH) {
+        for (frame_line_count, frame_line) in self.frame.chunks_exact(VIRTUAL_WIDTH).enumerate() {
             for frame_pixel in 0..VIRTUAL_WIDTH {
-                let mut rgb = unsafe { COLOR_PALETTE[(frame_line[frame_pixel]) as usize] };
+                let mut rgb = COLOR_PALETTE[frame_line[frame_pixel]];
 
                 if self.is_inside_rounded_corner(frame_pixel, frame_line_count) {
                     rgb = (0, 0, 0)
@@ -373,7 +364,6 @@ impl DisplayController {
 
             let start = frame_line_count * RENDERED_LINE_LENGTH;
             output_frame[start..start + RENDERED_LINE_LENGTH].copy_from_slice(&rendered_line);
-            frame_line_count += 1;
         }
     }
 
@@ -436,28 +426,31 @@ impl DisplayController {
         let x_move = a.cos() * l as f32;
         let y_move = a.sin() * l as f32;
 
-        let x2: isize;
-
-        if x_move < 0.0 {
-            x2 = x1 - (-x_move).round() as isize;
+        let x2: isize = if x_move < 0.0 {
+            x1 - (-x_move).round() as isize
         } else {
-            x2 = x1 + x_move.round() as isize;
-        }
+            x1 + x_move.round() as isize
+        };
 
-        let y2: isize;
-
-        if y_move < 0.0 {
-            y2 = y1 - (-y_move).round() as isize;
+        let y2: isize = if y_move < 0.0 {
+            y1 - (-y_move).round() as isize
         } else {
-            y2 = y1 + y_move.round() as isize;
-        }
+            y1 + y_move.round() as isize
+        };
 
         self.line(x1, y1, x2, y2, color);
 
         (x2, y2)
     }
 
-    pub fn square(
+    pub fn square(&mut self, x: isize, y: isize, width: isize, height: isize, color: usize) {
+        self.line(x, y, x + width - 1, y, color);
+        self.line(x + width - 1, y, x + width - 1, y + height - 1, color);
+        self.line(x + width - 1, y + height - 1, x, y + height - 1, color);
+        self.line(x, y + height - 1, x, y, color);
+    }
+
+    pub fn fill_square(
         &mut self,
         x: isize,
         y: isize,
@@ -465,20 +458,14 @@ impl DisplayController {
         height: isize,
         color: usize,
         fill_color: usize,
-        fill: bool,
     ) {
-        self.line(x, y, x + width - 1, y, color);
-        self.line(x + width - 1, y, x + width - 1, y + height - 1, color);
-        self.line(x + width - 1, y + height - 1, x, y + height - 1, color);
-        self.line(x, y + height - 1, x, y, color);
-
-        if fill {
-            for y in (y + 1)..(y + height - 1) {
-                self.line(x + 1, y, x + width - 2, y, fill_color);
-            }
+        self.square(x, y, width, height, color);
+        for y in (y + 1)..(y + height - 1) {
+            self.line(x + 1, y, x + width - 2, y, fill_color);
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn draw_circle(
         &mut self,
         xc: isize,
@@ -539,10 +526,10 @@ impl DisplayController {
             x += 1;
 
             if d > 0 {
-                d = d + 4 * (x as isize - y as isize) + 10;
+                d = d + 4 * (x - y) + 10;
                 y -= 1;
             } else {
-                d = d + 4 * x as isize + 6;
+                d = d + 4 * x + 6;
             }
 
             self.draw_circle(xc, yc, x, y, color, fill_color, fill);
@@ -554,7 +541,7 @@ impl DisplayController {
 
         let rnd_clear_color: usize = random.gen_range(0..32);
         self.clear(rnd_clear_color);
-        self.get_txt_mut().clear();
+        self.get_txt_mut().clear(None);
 
         for y in 0..TEXT_ROWS {
             for x in 0..TEXT_COLUMNS {
@@ -568,14 +555,13 @@ impl DisplayController {
                     bkg_color
                 };
 
-                let mut char_index = random.gen_range(0..100);
-                char_index = if char_index > characters_rom::CHAR_TABLE.len() - 1 {
+                let mut random_char_index = random.gen_range(0..100);
+                random_char_index = if random_char_index > characters_rom::CHAR_TABLE.len() - 1 {
                     0
                 } else {
-                    char_index
+                    random_char_index
                 };
-                let c: char = characters_rom::CHAR_TABLE[char_index];
-
+                let c: char = characters_rom::CHAR_TABLE[random_char_index];
                 let effect: u8 = random.gen_range(0..32);
                 let swap_color: bool = effect & 0b00000001 > 0;
                 let blink: bool = effect & 0b00000010 > 0;
@@ -583,9 +569,9 @@ impl DisplayController {
                 let flip_h: bool = effect & 0b00001000 > 0;
                 let flip_v: bool = effect & 0b00010000 > 0;
 
-                let text_layer_char: TextLayerCell = TextLayerCell {
-                    c,
-                    pen: TextLayerPen {
+                let text_cell: TextCell = TextCell {
+                    c: Some(c),
+                    style: Some(TextCellStyle {
                         color,
                         bkg_color,
                         swap_color,
@@ -593,10 +579,10 @@ impl DisplayController {
                         shadowed,
                         flip_h,
                         flip_v,
-                    },
+                    }),
                 };
 
-                self.get_txt_mut().get_char_map_mut()[y][x] = Some(text_layer_char);
+                self.get_txt_mut().get_map_mut()[y][x] = text_cell;
             }
         }
     }
