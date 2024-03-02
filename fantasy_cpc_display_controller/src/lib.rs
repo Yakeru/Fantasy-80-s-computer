@@ -2,13 +2,14 @@ use characters_rom::*;
 use color_palettes::*;
 use config::*;
 use fantasy_cpc_clock::Clock;
-use rand::Rng;
 use sprite::Sprite;
 use std::{
     cmp::{max, min},
     ops::{Bound, RangeBounds},
 };
-use text_layer::{text_coord_to_frame_coord, TextCellStyle, TextCell, TextLayer, DEFAULT_STYLE};
+use text_layer::{
+    text_coord_to_frame_coord, TextLayer
+};
 
 pub mod characters_rom;
 pub mod color_palettes;
@@ -25,12 +26,12 @@ const ROUNDED_CORNER: [usize; 10] = [10, 8, 6, 5, 4, 3, 2, 2, 1, 1];
 /// This frame buffer is meant to contain a low resolution low color picure that
 /// will be upscaled into the final pixel 2D frame buffer.
 pub struct DisplayController {
-    frame: Box<[usize]>,
-    overscan: [usize; VIRTUAL_HEIGHT],
-    brightness: u8,
-    line_scroll_list: [isize; VIRTUAL_HEIGHT],
-    text_layer: TextLayer,
-    sprites: Vec<Sprite>,
+    pub frame: Box<[usize]>,
+    pub overscan: [usize; VIRTUAL_HEIGHT],
+    pub brightness: u8,
+    pub line_scroll_list: [isize; VIRTUAL_HEIGHT],
+    pub text_layer: TextLayer,
+    pub sprites: Vec<Sprite>,
     clock: Clock,
 }
 
@@ -59,17 +60,9 @@ impl DisplayController {
         (VIRTUAL_WIDTH, VIRTUAL_HEIGHT)
     }
 
-    pub fn get_txt_size_xy(&self) -> (usize, usize) {
-        self.text_layer.get_dimensions_xy()
-    }
-
-    pub fn get_frame_mut(&mut self) -> &mut Box<[usize]> {
-        &mut self.frame
-    }
-
-    pub fn get_frame(&self) -> &[usize] {
-        &self.frame
-    }
+    // pub fn get_txt_size_xy(&self) -> (usize, usize) {
+    //     self.text_layer.get_dimensions_xy()
+    // }
 
     pub fn get_pixel(&mut self, x: usize, y: usize) -> Option<usize> {
         let index = frame_coord_to_index(x as isize, y as isize);
@@ -87,18 +80,10 @@ impl DisplayController {
         }
     }
 
-    pub fn get_line_scroll_list(&mut self) -> &mut [isize] {
-        &mut self.line_scroll_list
-    }
-
     pub fn set_line_scroll_list(&mut self, index: usize, value: isize) {
         if index < self.line_scroll_list.len() {
             self.line_scroll_list[index] = value;
         }
-    }
-
-    pub fn set_brightness(&mut self, br: u8) {
-        self.brightness = br;
     }
 
     pub fn set_overscan_color(&mut self, color: usize) {
@@ -162,34 +147,11 @@ impl DisplayController {
     /// Sets all the pixels to the specified color of the color palette
     /// Used to clear the screen between frames or set the background when
     /// redering only the text layer. Doesn't include the overscan.
-    pub fn clear(&mut self, color: usize) {
+    pub fn clear(&mut self, color: usize, style: Option<TextCellStyle>) {
         self.frame
             .copy_from_slice(&[color; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]);
         self.overscan.copy_from_slice(&[color; VIRTUAL_HEIGHT]);
-    }
-
-    pub fn get_txt_mut(&mut self) -> &mut TextLayer {
-        &mut self.text_layer
-    }
-
-    pub fn get_txt(&self) -> &TextLayer {
-        &self.text_layer
-    }
-
-    pub fn get_width(&self) -> usize {
-        VIRTUAL_WIDTH
-    }
-
-    pub fn get_height(&self) -> usize {
-        VIRTUAL_HEIGHT
-    }
-
-    pub fn get_sprites_mut(&mut self) -> &mut Vec<Sprite> {
-        &mut self.sprites
-    }
-
-    pub fn get_sprites(&self) -> &Vec<Sprite> {
-        &self.sprites
+        self.text_layer.map = [[TextCell { c: None, style }; TEXT_COLUMNS]; TEXT_ROWS];
     }
 
     pub fn render(&mut self, output_frame: &mut [u8]) {
@@ -258,7 +220,7 @@ impl DisplayController {
     fn text_layer_renderer(&mut self) {
         for line_count in 0..TEXT_ROWS {
             for col_count in 0..TEXT_COLUMNS {
-                let text_cell = self.get_txt().get_map()[line_count][col_count];
+                let text_cell = self.text_layer.map[line_count][col_count];
                 let frame_coord = text_coord_to_frame_coord(col_count, line_count);
                 self.text_layer_char_renderer(text_cell, frame_coord.0, frame_coord.1);
             }
@@ -364,6 +326,131 @@ impl DisplayController {
 
             let start = frame_line_count * RENDERED_LINE_LENGTH;
             output_frame[start..start + RENDERED_LINE_LENGTH].copy_from_slice(&rendered_line);
+        }
+    }
+
+    fn valid_coord(&self, line: usize, column: usize) -> bool {
+        line < TEXT_ROWS && column < TEXT_COLUMNS
+    }
+
+    pub fn set_char(&mut self, line: usize, column: usize, c: char) {
+        if self.valid_coord(line, column) {
+            self.text_layer.map[line][column].c = Some(c);
+        }
+    }
+
+    pub fn set_style(&mut self, line: usize, column: usize, style: TextCellStyle) {
+        if self.valid_coord(line, column) {
+            self.text_layer.map[line][column].style = Some(style);
+        }
+    }
+
+    pub fn set_color(&mut self, line: usize, column: usize, color: usize, bkg_color: usize) {
+        if self.valid_coord(line, column) {
+            if let Some(mut style) = self.text_layer.map[line][column].style {
+                style.color = color;
+                style.bkg_color = bkg_color;
+            } else {
+                let style: TextCellStyle = TextCellStyle {
+                    color,
+                    bkg_color,
+                    swap_color: false,
+                    blink: false,
+                    shadowed: false,
+                    flip_h: false,
+                    flip_v: false,
+                };
+                self.text_layer.map[line][column].style = Some(style);
+            }
+        }
+    }
+
+    pub fn set_swap(&mut self, line: usize, column: usize, swap_color: bool) {
+        if self.valid_coord(line, column) {
+            if let Some(mut style) = self.text_layer.map[line][column].style {
+                style.swap_color = swap_color;
+            }
+        }
+    }
+
+    pub fn set_blink(&mut self, line: usize, column: usize, blink: bool) {
+        if self.valid_coord(line, column) {
+            if let Some(mut style) = self.text_layer.map[line][column].style {
+                style.blink = blink;
+            }
+        }
+    }
+
+    pub fn set_shadowed(&mut self, line: usize, column: usize, shadowed: bool) {
+        if self.valid_coord(line, column) {
+            if let Some(mut style) = self.text_layer.map[line][column].style {
+                style.shadowed = shadowed;
+            }
+        }
+    }
+
+    pub fn set_flip(&mut self, line: usize, column: usize, flip_h: bool, flip_v: bool) {
+        if self.valid_coord(line, column) {
+            if let Some(mut style) = self.text_layer.map[line][column].style {
+                style.flip_h = flip_h;
+                style.flip_v = flip_v;
+            }
+        }
+    }
+
+    /// Inserts a string in the map at the specified x and y position.
+    pub fn write(&mut self, line: usize, column: usize, color: usize, bkg_color: usize, text: &str) {
+        match text {
+            Text::Char(c) => self.set_char(line, column, c),
+            Text::String(str) => {
+                if !str.is_empty() {
+                    for (char_index, c) in str.chars().enumerate() {
+                        self.set_char(line, column + char_index, c)
+                    }
+                }
+            }
+            Text::StyledChar(c, style) => {
+                self.set_char(line, column, c);
+                self.set_style(line, column, style);
+            }
+            Text::StyledString(str, style) => {
+                if !str.is_empty() {
+                    for (char_index, c) in str.chars().enumerate() {
+                        self.set_char(line, column + char_index, c);
+                        self.set_style(line, column + char_index, style);
+                    }
+                }
+            }
+            Text::ColoredChar(c, color, bkg_color) => {
+                let style = TextCellStyle {
+                    color,
+                    bkg_color,
+                    blink: false,
+                    swap_color: false,
+                    shadowed: false,
+                    flip_h: false,
+                    flip_v: false,
+                };
+                self.set_char(line, column, c);
+                self.set_style(line, column, style);
+            }
+            Text::ColoredString(str, color, bkg_color) => {
+                let style = TextCellStyle {
+                    color,
+                    bkg_color,
+                    blink: false,
+                    swap_color: false,
+                    shadowed: false,
+                    flip_h: false,
+                    flip_v: false,
+                };
+                if !str.is_empty() {
+                    for (char_index, c) in str.chars().enumerate() {
+                        self.set_char(line, column + char_index, c);
+                        self.set_style(line, column + char_index, style);
+                    }
+                }
+            }
         }
     }
 
@@ -533,76 +620,6 @@ impl DisplayController {
             }
 
             self.draw_circle(xc, yc, x, y, color, fill_color, fill);
-        }
-    }
-
-    pub fn genrate_random_garbage(&mut self) {
-        let mut random = rand::thread_rng();
-
-        let rnd_clear_color: usize = random.gen_range(0..32);
-        self.clear(rnd_clear_color);
-        self.get_txt_mut().clear(None);
-
-        for y in 0..TEXT_ROWS {
-            for x in 0..TEXT_COLUMNS {
-                let mut color: usize = random.gen_range(0..(PALETE_SIZE + 10)); //To get a bit more black
-                color = if color > PALETE_SIZE - 1 { 0 } else { color };
-
-                let mut bkg_color: usize = random.gen_range(0..(PALETE_SIZE + 10));
-                bkg_color = if bkg_color > PALETE_SIZE - 1 {
-                    0
-                } else {
-                    bkg_color
-                };
-
-                let mut random_char_index = random.gen_range(0..100);
-                random_char_index = if random_char_index > characters_rom::CHAR_TABLE.len() - 1 {
-                    0
-                } else {
-                    random_char_index
-                };
-                let c: char = characters_rom::CHAR_TABLE[random_char_index];
-                let effect: u8 = random.gen_range(0..32);
-                let swap_color: bool = effect & 0b00000001 > 0;
-                let blink: bool = effect & 0b00000010 > 0;
-                let shadowed: bool = effect & 0b00000100 > 0;
-                let flip_h: bool = effect & 0b00001000 > 0;
-                let flip_v: bool = effect & 0b00010000 > 0;
-
-                let text_cell: TextCell = TextCell {
-                    c: Some(c),
-                    style: Some(TextCellStyle {
-                        color,
-                        bkg_color,
-                        swap_color,
-                        blink,
-                        shadowed,
-                        flip_h,
-                        flip_v,
-                    }),
-                };
-
-                self.get_txt_mut().get_map_mut()[y][x] = text_cell;
-            }
-        }
-    }
-
-    pub fn draw_loading_overscan_artefacts(&mut self) {
-        let mut random = rand::thread_rng();
-        let mut rgb_color: usize = random.gen_range(0..32);
-        let mut line_count: usize = 0;
-        let mut band_height: usize = random.gen_range(4..20);
-
-        while line_count <= VIRTUAL_HEIGHT {
-            let range_max = if line_count + band_height > VIRTUAL_HEIGHT {
-                VIRTUAL_HEIGHT
-            } else {
-                line_count + band_height
-            };
-            self.set_overscan_color_range(rgb_color, line_count..range_max);
-            line_count += band_height;
-            rgb_color = random.gen_range(0..32);
-            band_height = random.gen_range(4..20);
         }
     }
 }

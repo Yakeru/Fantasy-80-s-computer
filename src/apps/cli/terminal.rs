@@ -173,7 +173,7 @@ impl Terminal {
     ///
     pub fn render(&mut self, txt: &mut TextLayer) {
         let mut buffer_index: usize = 0;
-        let screen = txt.get_map_mut();
+        let mut screen = txt.map;
 
         #[allow(clippy::needless_range_loop)]
         for line in self.screen_coordinates.1..self.size.1 {

@@ -61,7 +61,7 @@ fn warp(pos: vec2<f32>) -> vec2<f32>{
     return new_pos*0.5 + 0.5;
 }
 
-fn warped_coord_outsie_screen(warped_coord: vec2<f32>) -> bool {
+fn warped_coord_outside_screen(warped_coord: vec2<f32>) -> bool {
     if(max(abs(warped_coord.x - 0.5), abs(warped_coord.y - 0.5))>0.5) {
         return true;
     }
@@ -79,9 +79,9 @@ fn fs_main(@location(0) tex_coord: vec2<f32>) -> @location(0) vec4<f32> {
     var sampled_color_left = textureSample(r_tex_color, r_tex_sampler, warped_left_coord);
     var sampled_color_right = textureSample(r_tex_color, r_tex_sampler, warped_right_coord);
 
-    if(warped_coord_outsie_screen(warped_coord)) {sampled_color *= 0.0;}
-    if(warped_coord_outsie_screen(warped_left_coord)) {sampled_color_left *= 0.0;}
-    if(warped_coord_outsie_screen(warped_right_coord)) {sampled_color_right *= 0.0;}
+    if(warped_coord_outside_screen(warped_coord)) {sampled_color *= 0.0;}
+    if(warped_coord_outside_screen(warped_left_coord)) {sampled_color_left *= 0.0;}
+    if(warped_coord_outside_screen(warped_right_coord)) {sampled_color_right *= 0.0;}
 
     var screen_coord = get_screen_coord(tex_coord);
     var screen_coord_warped = get_screen_coord(warped_coord);

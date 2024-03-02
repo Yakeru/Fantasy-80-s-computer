@@ -133,8 +133,8 @@ impl FantasyCpcApp for Shell {
     }
 
     fn init_app(&mut self, _system_clock: &Clock, display_controller: &mut DisplayController) {
-        display_controller.set_brightness(255);
-        display_controller.clear(BLUE);
+        display_controller.brightness = 255;
+        display_controller.clear(BLUE, None);
         self.terminal.set_coordinates((0, 0));
         self.terminal.set_size((TEXT_COLUMNS, TEXT_ROWS));
         self.terminal.clear();
@@ -230,6 +230,6 @@ impl FantasyCpcApp for Shell {
     }
 
     fn draw_app(&mut self, _clock: &Clock, dc: &mut DisplayController) {
-        self.terminal.render(dc.get_txt_mut());
+        self.terminal.render(&mut dc.text_layer);
     }
 }

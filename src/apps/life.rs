@@ -50,7 +50,7 @@ impl FantasyCpcApp for Life {
     }
 
     fn init_app(&mut self, _system_clock: &Clock, display_controller: &mut DisplayController) {
-        display_controller.set_brightness(255);
+        display_controller.brightness = 255;
         self.welcome_screen = true;
         self.game = false;
         self.menu = false;
@@ -206,8 +206,7 @@ impl Life {
     }
 
     fn draw_welcome_screen(&mut self, clock: &Clock, dc: &mut DisplayController) {
-        dc.get_txt_mut().clear(Some(DEFAULT_STYLE));
-        dc.clear(BLACK);
+        dc.clear(BLACK, Some(DEFAULT_STYLE));
 
         //Animated title
         let title_extraa = " 🯆                         🯆 ";
@@ -218,45 +217,45 @@ impl Life {
         // dc.get_txt_mut().set_pen_colors(BLUE, BLACK);
 
         if clock.second_latch && clock.half_second_latch {
-            dc.get_txt_mut().write(
+            dc.write(
                 10,
                 title_pos_x,
                 Text::ColoredString(title_extraa, BLUE, BLACK),
             );
-            dc.get_txt_mut().write(
+            dc.write(
                 11,
                 title_pos_x,
                 Text::ColoredString(tilte_main_1, BLUE, BLACK),
             );
-            dc.get_txt_mut().write(
+            dc.write(
                 12,
                 title_pos_x,
                 Text::ColoredString(title_extraa, BLUE, BLACK),
             );
         } else if clock.second_latch && !clock.half_second_latch {
-            dc.get_txt_mut().write(
+            dc.write(
                 11,
                 title_pos_x,
                 Text::ColoredString(tilte_main_2, BLUE, BLACK),
             );
         } else if !clock.second_latch && clock.half_second_latch {
-            dc.get_txt_mut().write(
+            dc.write(
                 10,
                 title_pos_x,
                 Text::ColoredString(title_extraa, BLUE, BLACK),
             );
-            dc.get_txt_mut().write(
+            dc.write(
                 11,
                 title_pos_x,
                 Text::ColoredString(tilte_main_1, BLUE, BLACK),
             );
-            dc.get_txt_mut().write(
+            dc.write(
                 12,
                 title_pos_x,
                 Text::ColoredString(title_extraa, BLUE, BLACK),
             );
         } else {
-            dc.get_txt_mut().write(
+            dc.write(
                 11,
                 title_pos_x,
                 Text::ColoredString(tilte_main_2, BLUE, BLACK),
@@ -268,15 +267,13 @@ impl Life {
         let menu_1_pos_x: usize = (TEXT_COLUMNS - menu_1.len()) / 2;
         let menu_2 = "2 - Combat mode";
         let menu_2_pos_x: usize = (TEXT_COLUMNS - menu_2.len()) / 2;
-        dc.get_txt_mut()
-            .write(20, menu_1_pos_x, Text::ColoredString(menu_1, ORANGE, BLACK));
-        dc.get_txt_mut()
-            .write(21, menu_2_pos_x, Text::ColoredString(menu_2, ORANGE, BLACK));
+        dc.write(20, menu_1_pos_x, Text::ColoredString(menu_1, ORANGE, BLACK));
+        dc.write(21, menu_2_pos_x, Text::ColoredString(menu_2, ORANGE, BLACK));
 
         // Credit
         let credit = "2023 - Damien Torreilles";
         let credit_pos_x: usize = (TEXT_COLUMNS - credit.len()) / 2;
-        dc.get_txt_mut().write(
+        dc.write(
             TEXT_ROWS - 3,
             credit_pos_x,
             Text::ColoredString(credit, TRUE_BLUE, BLACK),
@@ -329,8 +326,7 @@ impl Life {
     }
 
     fn draw_game(&mut self, dc: &mut DisplayController) {
-        dc.get_txt_mut().clear(Some(DEFAULT_STYLE));
-        dc.clear(WHITE);
+        dc.clear(WHITE, Some(DEFAULT_STYLE));
 
         let chars = ['🯆', '🯅', '🯇', '🯈'];
 
@@ -358,11 +354,9 @@ impl Life {
                     }
 
                     let char = chars[(self.gen_a[row][col].age % (chars.len() - 1) as u8) as usize];
-                    dc.get_txt_mut()
-                        .write(row, col, Text::ColoredChar(char, color, BLACK));
+                    dc.write(row, col, Text::ColoredChar(char, color, BLACK));
                 } else {
-                    dc.get_txt_mut()
-                        .write(row, col, Text::ColoredChar(' ', BLACK, BLACK));
+                    dc.write(row, col, Text::ColoredChar(' ', BLACK, BLACK));
                 }
             }
         }
@@ -417,16 +411,11 @@ impl Life {
     }
 
     fn draw_menu(&mut self, dc: &mut DisplayController) {
-        dc.get_txt_mut().clear(Some(DEFAULT_STYLE));
-        dc.clear(BLACK);
-        dc.get_txt_mut()
-            .write(5, 5, Text::ColoredString("Team A : ", BLUE, BLACK));
-        dc.get_txt_mut()
-            .write(5, 7, Text::ColoredString("Team B : ", BLUE, BLACK));
-        dc.get_txt_mut()
-            .write(14, 5, Text::ColoredChar('🯆', self.team_a_color, BLACK));
-        dc.get_txt_mut()
-            .write(14, 7, Text::ColoredChar('🯆', self.team_b_color, BLACK));
+        dc.clear(BLACK, Some(DEFAULT_STYLE));
+        dc.write(5, 5, Text::ColoredString("Team A : ", BLUE, BLACK));
+        dc.write(5, 7, Text::ColoredString("Team B : ", BLUE, BLACK));
+        dc.write(14, 5, Text::ColoredChar('🯆', self.team_a_color, BLACK));
+        dc.write(14, 7, Text::ColoredChar('🯆', self.team_b_color, BLACK));
     }
 }
 
