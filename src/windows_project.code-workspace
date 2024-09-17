@@ -7,8 +7,9 @@
 	"settings": {
 		"rust-analyzer.linkedProjects": [
 			".\\Cargo.toml",
-			".\\Cargo.toml",
-			".\\app_trait\\Cargo.toml"
+			".\\fantasy_cpc_app_trait\\Cargo.toml",
+			".\\fantasy_cpc_clock\\Cargo.toml",
+			".\\fantasy_cpc_display_controller\\Cargo.toml"
 		],
 		"rust-analyzer.showUnlinkedFileNotification": false
 	}

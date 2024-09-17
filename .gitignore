@@ -3,3 +3,4 @@
 /fantasy_cpc_clock/target
 /fantasy_cpc_display_controller/target
 *.gcode
+*.lock

@@ -1,6 +1,7 @@
 use fantasy_cpc_clock::Clock;
 use fantasy_cpc_display_controller::DisplayController;
-use winit::{event::VirtualKeyCode, event_loop::ControlFlow};
+use winit::event::VirtualKeyCode::Escape;
+use winit::event_loop::ControlFlow;
 use winit_input_helper::WinitInputHelper;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -86,14 +87,14 @@ pub trait FantasyCpcApp {
                 }
                 let app_response = self.update(inputs, system_clock);
                 self.draw(system_clock, display_controller);
-                return app_response;
+                app_response
             }
             AppStatus::Background => {
                 if !self.get_app_params().get_initialized() {
                     self.init_app(system_clock, display_controller);
                     self.get_app_params().set_initialized(true);
                 }
-                return self.update(None, system_clock);
+                self.update(None, system_clock)
             }
         }
     }
@@ -105,14 +106,15 @@ pub trait FantasyCpcApp {
     ) -> Option<AppResponse> {
         // Implementing default behaviour when ESCAPE key is pressed in app
         // Applied only if enable_auto_escape is set to true in app.
-        if inputs.is_some() && self.get_app_params().get_enable_autoescape() {
-            if inputs.unwrap().key_released(VirtualKeyCode::Escape) {
-                self.get_app_params().change_status(AppStatus::Stopped);
-                self.get_app_params().set_initialized(false);
-            }
+        if inputs.is_some()
+            && self.get_app_params().get_enable_autoescape()
+            && inputs.unwrap().key_released(Escape)
+        {
+            self.get_app_params().change_status(AppStatus::Stopped);
+            self.get_app_params().set_initialized(false);
         }
 
-        return self.update_app(inputs, system_clock);
+        self.update_app(inputs, system_clock)
     }
 
     fn draw(&mut self, system_clock: &Clock, display_controller: &mut DisplayController) {
