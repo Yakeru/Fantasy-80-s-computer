@@ -128,6 +128,12 @@ pub struct AppResponse {
     pub message: Option<String>,
 }
 
+impl Default for AppResponse {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AppResponse {
     pub fn new() -> AppResponse {
         AppResponse {

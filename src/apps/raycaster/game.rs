@@ -5,13 +5,16 @@ use super::{
     player::Player,
     renderer::{Renderer, GAME_SCALE},
 };
-use fantasy_cpc_app_trait::{FantasyCpcApp, AppStatus, FantasyCppAppDefaultParams};
+use fantasy_cpc_app_trait::{AppStatus, FantasyCpcApp, FantasyCppAppDefaultParams};
 use fantasy_cpc_clock::Clock;
-use fantasy_cpc_display_controller::{color_palettes::{YELLOW, BLACK}, DisplayController};
+use fantasy_cpc_display_controller::{
+    color_palettes::{BLACK, YELLOW},
+    DisplayController,
+};
 use fast_math::atan2;
+use std::f32::consts::PI;
 use winit::event::VirtualKeyCode;
 use winit_input_helper::WinitInputHelper;
-use std::f32::consts::PI;
 
 const PLAYER_SPEED: isize = 8;
 
@@ -124,7 +127,6 @@ impl Raycaster {
         );
         self.monster.angle_to_player = monster_angle;
     }
-
 
     //***************************************************************************************************************** */
     //                                                    MENU
@@ -264,7 +266,11 @@ impl FantasyCpcApp for Raycaster {
         &mut self.app_params
     }
 
-    fn init_app(&mut self, system_clock: &fantasy_cpc_clock::Clock, display_controller: &mut fantasy_cpc_display_controller::DisplayController) {
+    fn init_app(
+        &mut self,
+        _system_clock: &fantasy_cpc_clock::Clock,
+        display_controller: &mut fantasy_cpc_display_controller::DisplayController,
+    ) {
         display_controller.get_text_layer_mut().clear();
         self.map.walls.clear();
         self.show_menu = false;
@@ -292,8 +298,13 @@ impl FantasyCpcApp for Raycaster {
         None
     }
 
-    fn draw_app(&mut self, clock: &fantasy_cpc_clock::Clock, display_controller: &mut fantasy_cpc_display_controller::DisplayController) {
+    fn draw_app(
+        &mut self,
+        clock: &fantasy_cpc_clock::Clock,
+        display_controller: &mut fantasy_cpc_display_controller::DisplayController,
+    ) {
         // Menu
+        display_controller.get_text_layer_mut().clear();
         if self.show_menu {
             self.draw_menu(clock, display_controller);
         }
@@ -304,8 +315,12 @@ impl FantasyCpcApp for Raycaster {
 
         //Draw minimap
         if self.draw_minimap {
-            self.renderer
-                .draw_top_view_map(display_controller, &self.map, &self.player, &self.monster);
+            self.renderer.draw_top_view_map(
+                display_controller,
+                &self.map,
+                &self.player,
+                &self.monster,
+            );
         }
     }
 }

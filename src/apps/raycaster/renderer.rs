@@ -65,8 +65,7 @@ impl Renderer {
             VIRTUAL_WIDTH as isize,
             18,
             DARKER_GREY,
-            DARKER_GREY,
-            true,
+            Some(DARKER_GREY)
         );
         dc.square(
             0,
@@ -74,8 +73,7 @@ impl Renderer {
             VIRTUAL_WIDTH as isize,
             200,
             DARKER_GREY,
-            DARKER_GREY,
-            true,
+            Some(DARKER_GREY)
         );
         for y in 85..95 {
             if y % 2 == 0 {
@@ -121,8 +119,7 @@ impl Renderer {
             VIRTUAL_WIDTH as isize,
             (VIRTUAL_HEIGHT / 2) as isize,
             DARK_BROWN,
-            DARK_BROWN,
-            true,
+            Some(DARK_BROWN)
         );
 
         for y in VIRTUAL_HEIGHT / 2..155 {
@@ -166,8 +163,7 @@ impl Renderer {
             VIRTUAL_WIDTH as isize,
             200,
             BROWN,
-            BROWN,
-            true,
+            Some(BROWN)
         );
     }
 
@@ -296,7 +292,7 @@ impl Renderer {
     ) {
         // Draw player and view cone
         let player_coord = convert_map_coord_to_minimap_coord(player.x, player.y);
-        dc.circle(player_coord.0, player_coord.1, 2, GREEN, GREEN, true);
+        dc.circle(player_coord.0, player_coord.1, 2, GREEN, Some(GREEN));
         let r0 = dc.vector(
             player_coord.0,
             player_coord.1,
@@ -314,7 +310,7 @@ impl Renderer {
         dc.line(r0.0, r0.1, r319.0, r319.1, GREEN);
 
         let monster_coord = convert_map_coord_to_minimap_coord(monster.x, monster.y);
-        dc.circle(monster_coord.0, monster_coord.1, 2, RED, RED, true);
+        dc.circle(monster_coord.0, monster_coord.1, 2, RED, Some(RED));
 
         //Draw  mini map
         for wall in map.walls.chunks_exact(1) {

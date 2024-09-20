@@ -19,6 +19,12 @@ pub struct TextLayer {
     char_map: [Option<TextLayerChar>; TEXT_COLUMNS * TEXT_ROWS],
 }
 
+impl Default for TextLayer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TextLayer {
     pub const fn new() -> TextLayer {
         TextLayer {
@@ -34,20 +40,20 @@ impl TextLayer {
 
     /// Returns the dimensions in columns and rowns of the text layer map.
     pub fn get_dimensions_xy(&self) -> (usize, usize) {
-        return (TEXT_COLUMNS, TEXT_ROWS);
+         (TEXT_COLUMNS, TEXT_ROWS)
     }
 
     /// Returns the lenght of the char_map array.
     pub fn get_len(&self) -> usize {
-        return self.char_map.len();
+         self.char_map.len()
     }
 
     pub fn get_char_map(&self) -> &[Option<TextLayerChar>] {
-        return &self.char_map;
+         &self.char_map
     }
 
     pub fn get_char_map_mut(&mut self) -> &mut [Option<TextLayerChar>] {
-        return &mut self.char_map;
+         &mut self.char_map
     }
 
     /// Inserts a TextLayerChar in the char_map at the specified index.
@@ -78,10 +84,8 @@ impl TextLayer {
     /// Inserts a string in the char_map at the specified index.
     pub fn insert_string(&mut self, index: usize, string: &str, color: Option<usize>, bkg_color: Option<usize>, swap: bool, blink: bool, shadowed: bool) {
         if !string.is_empty() {
-            let mut char_count = 0;
-            for c in string.chars() {
+            for (char_count, c) in string.chars().enumerate() {
                 self.insert_char(index + char_count, c, color, bkg_color, swap, blink, shadowed);
-                char_count = char_count + 1;
             }
         }
     }

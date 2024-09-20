@@ -1,5 +1,5 @@
 use chrono::{Local, Timelike};
-use fantasy_cpc_app_trait::{AppResponse, AppStatus, FantasyCpcApp, FantasyCppAppDefaultParams};
+use fantasy_cpc_app_trait::{FantasyCpcApp, FantasyCppAppDefaultParams};
 use fantasy_cpc_display_controller::{
     color_palettes::*,
     config::{VIRTUAL_HEIGHT, VIRTUAL_WIDTH},
@@ -85,46 +85,42 @@ impl WeatherApp {
         //dc.square(clock_x - clock_radius, clock_y - clock_radius, clock_radius * 2, clock_radius * 2, RED, GREEN, true);
 
         //Clock face
-        dc.circle(clock_x + 1, clock_y - 1, clock_radius, WHITE, WHITE, true);
-        dc.circle(clock_x - 1, clock_y + 1, clock_radius, BLACK, BLACK, true);
+        dc.circle(clock_x + 1, clock_y - 1, clock_radius, WHITE, Some(WHITE));
+        dc.circle(clock_x - 1, clock_y + 1, clock_radius, BLACK, Some(BLACK));
         dc.circle(
             clock_x,
             clock_y,
             clock_radius,
             DARKER_GREY,
-            DARKER_GREY,
-            true,
+            Some(DARKER_GREY)
         );
         dc.circle(
             clock_x + 1,
             clock_y - 1,
             clock_radius - 5,
             BLACK,
-            BLACK,
-            true,
+            Some(BLACK)
         );
         dc.circle(
             clock_x - 1,
             clock_y + 1,
             clock_radius - 5,
             WHITE,
-            WHITE,
-            true,
+            Some(WHITE)
         );
         dc.circle(
             clock_x,
             clock_y,
             clock_radius - 5,
             LIGHT_GREY,
-            LIGHT_GREY,
-            true,
+            Some(LIGHT_GREY)
         );
 
         let mut index_angle: f32 = 0.0;
 
         while index_angle < 2.0 * PI {
             let index_position = dc.vector(clock_x, clock_y, 40, LIGHT_GREY, index_angle);
-            dc.circle(index_position.0, index_position.1, 1, BLACK, WHITE, true);
+            dc.circle(index_position.0, index_position.1, 1, BLACK, Some(WHITE));
             index_angle += PI / 6.0;
         }
 
@@ -142,16 +138,14 @@ impl WeatherApp {
             hour_decoration_coord.1,
             2,
             TRUE_BLUE,
-            TRUE_BLUE,
-            true,
+            Some(TRUE_BLUE)
         );
         dc.circle(
             hour_decoration_coord.0,
             hour_decoration_coord.1,
             1,
             LIGHT_GREY,
-            LIGHT_GREY,
-            true,
+            Some(LIGHT_GREY)
         );
 
         //Minute hand
@@ -168,24 +162,22 @@ impl WeatherApp {
             minute_decoration_coord.1,
             3,
             TRUE_BLUE,
-            TRUE_BLUE,
-            true,
+            Some(TRUE_BLUE)
         );
         dc.circle(
             minute_decoration_coord.0,
             minute_decoration_coord.1,
             2,
             LIGHT_GREY,
-            LIGHT_GREY,
-            true,
+            Some(LIGHT_GREY)
         );
 
         //Second hand
         dc.vector(clock_x, clock_y, 38, DARK_ORANGE, hand_angles.2);
 
         //center
-        dc.circle(clock_x, clock_y, 3, TRUE_BLUE, TRUE_BLUE, true);
-        dc.circle(clock_x, clock_y, 2, WHITE, WHITE, true);
+        dc.circle(clock_x, clock_y, 3, TRUE_BLUE, Some(TRUE_BLUE));
+        dc.circle(clock_x, clock_y, 2, WHITE, Some(WHITE));
     }
 
     fn time_to_hand_angles(&self, hour: u32, minute: u32, second: u32) -> (f32, f32, f32) {
@@ -365,16 +357,14 @@ impl WeatherApp {
                 circle.1 .1 + cloud.y - 1,
                 circle.1 .2,
                 LIGHT_GREY,
-                LIGHT_GREY,
-                true,
+                Some(LIGHT_GREY)
             );
             dc.circle(
                 circle.1 .0 + cloud.x,
                 circle.1 .1 + cloud.y,
                 circle.1 .2,
                 WHITE,
-                WHITE,
-                true,
+                Some(WHITE)
             );
         }
     }
@@ -387,8 +377,8 @@ impl FantasyCpcApp for WeatherApp {
 
     fn init_app(
         &mut self,
-        system_clock: &fantasy_cpc_clock::Clock,
-        display_controller: &mut DisplayController,
+        _system_clock: &fantasy_cpc_clock::Clock,
+        _display_controller: &mut DisplayController,
     ) {
         openweathermap::update(&self.receiver);
 
@@ -403,10 +393,10 @@ impl FantasyCpcApp for WeatherApp {
 
     fn update_app(
         &mut self,
-        inputs: Option<&winit_input_helper::WinitInputHelper>,
+        _inputs: Option<&winit_input_helper::WinitInputHelper>,
         clock: &fantasy_cpc_clock::Clock,
     ) -> Option<fantasy_cpc_app_trait::AppResponse> {
-        let response = AppResponse::new();
+        // let response = AppResponse::new();
 
         if Instant::now().duration_since(self.last_weather_update) >= self.update_appinterval {
             let last_weather_update = openweathermap::update(&self.receiver);
@@ -435,7 +425,7 @@ impl FantasyCpcApp for WeatherApp {
 
     fn draw_app(
         &mut self,
-        clock: &fantasy_cpc_clock::Clock,
+        _clock: &fantasy_cpc_clock::Clock,
         display_controller: &mut DisplayController,
     ) {
         display_controller.get_text_layer_mut().clear();

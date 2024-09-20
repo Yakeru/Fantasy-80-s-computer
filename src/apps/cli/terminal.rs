@@ -184,7 +184,6 @@ impl Terminal {
         }
     }
 
-    ///
     pub fn render(&mut self, dc: &mut DisplayController) {
         for (index, tlchar) in self.get_formatted_buffer().iter().enumerate() {
             dc.get_text_layer_mut()
