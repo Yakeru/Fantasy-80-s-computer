@@ -1,5 +1,5 @@
 use chrono::{Local, Timelike};
-use fantasy_cpc_app_trait::{FantasyCpcApp, FantasyCppAppDefaultParams};
+use fantasy_cpc_app::{FantasyCpcApp, FantasyCppAppDefaultParams};
 use fantasy_cpc_display_controller::{
     color_palettes::*,
     config::{VIRTUAL_HEIGHT, VIRTUAL_WIDTH},
@@ -395,7 +395,7 @@ impl FantasyCpcApp for WeatherApp {
         &mut self,
         _inputs: Option<&winit_input_helper::WinitInputHelper>,
         clock: &fantasy_cpc_clock::Clock,
-    ) -> Option<fantasy_cpc_app_trait::AppResponse> {
+    ) -> Option<fantasy_cpc_app::AppResponse> {
         // let response = AppResponse::new();
 
         if Instant::now().duration_since(self.last_weather_update) >= self.update_appinterval {

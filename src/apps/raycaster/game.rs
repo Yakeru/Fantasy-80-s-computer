@@ -5,7 +5,7 @@ use super::{
     player::Player,
     renderer::{Renderer, GAME_SCALE},
 };
-use fantasy_cpc_app_trait::{AppStatus, FantasyCpcApp, FantasyCppAppDefaultParams};
+use fantasy_cpc_app::{AppStatus, FantasyCpcApp, FantasyCppAppDefaultParams};
 use fantasy_cpc_clock::Clock;
 use fantasy_cpc_display_controller::{
     color_palettes::{BLACK, YELLOW},
@@ -288,7 +288,7 @@ impl FantasyCpcApp for Raycaster {
         &mut self,
         inputs: Option<&winit_input_helper::WinitInputHelper>,
         clock: &fantasy_cpc_clock::Clock,
-    ) -> Option<fantasy_cpc_app_trait::AppResponse> {
+    ) -> Option<fantasy_cpc_app::AppResponse> {
         if self.show_menu {
             self.update_menu(inputs, clock);
         } else {

@@ -1,7 +1,6 @@
-use fantasy_cpc_app_trait::{AppResponse, FantasyCpcApp, FantasyCppAppDefaultParams};
+use fantasy_cpc_app::{AppResponse, FantasyCpcApp, FantasyCppAppDefaultParams};
 use fantasy_cpc_clock::Clock;
 use fantasy_cpc_display_controller::{
-    characters_rom::CHAR_TABLE,
     color_palettes::{BLUE, TRUE_BLUE, YELLOW},
     config::{TEXT_COLUMNS, TEXT_ROWS},
     text_layer::TextLayerChar,
@@ -96,13 +95,13 @@ impl Shell {
                 self.command.clear();
                 self.clear_text_layer = true;
             } else if command == "ps" {
-            } else if command == "test" {
-                let mut toto = Vec::new();
-                for char in CHAR_TABLE {
-                    toto.push(char);
-                }
-                let titi = toto.iter().cloned().collect::<String>();
-                response.set_message(titi);
+            // } else if command == "test" {
+            //     let mut toto = Vec::new();
+            //     for char in CHAR_TABLE {
+            //         toto.push(char);
+            //     }
+            //     let titi = toto.iter().cloned().collect::<String>();
+            //     response.set_message(titi);
             } else if command == "quit" || command == "exit" {
                 response.event = Some(ControlFlow::Exit);
                 response.set_message(String::from("Command 'quit' or 'exit' received; stopping."));
@@ -115,7 +114,7 @@ impl Shell {
 }
 
 impl FantasyCpcApp for Shell {
-    fn get_app_params(&mut self) -> &mut fantasy_cpc_app_trait::FantasyCppAppDefaultParams {
+    fn get_app_params(&mut self) -> &mut fantasy_cpc_app::FantasyCppAppDefaultParams {
         &mut self.app_params
     }
 

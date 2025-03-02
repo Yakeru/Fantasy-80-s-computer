@@ -3,7 +3,7 @@ use apps::{
     raycaster::game::Raycaster, weather_app::WeatherApp,
 };
 use crt_shader_renderer::CrtRenderer;
-use fantasy_cpc_app_trait::{AppResponse, AppStatus, FantasyCpcApp};
+use fantasy_cpc_app::{AppResponse, AppStatus, FantasyCpcApp};
 use fantasy_cpc_display_controller::{config::*, *};
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rodio::Source;
@@ -287,4 +287,5 @@ fn main() -> Result<(), Error> {
             mouse_move_delta.1 = 0.0;
         }
     });
+    Ok(())
 }

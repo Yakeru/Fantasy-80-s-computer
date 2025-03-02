@@ -1,6 +1,7 @@
-use characters_rom::*;
+use character_rom_trait::FantasyCpc8by8CharacterRomTrait;
 use color_palettes::*;
 use config::*;
+use default_character_rom::FantasyCpcAmstradCharacterSet;
 use fantasy_cpc_clock::Clock;
 use rand::Rng;
 use sprite::Sprite;
@@ -10,7 +11,8 @@ use std::{
 };
 use text_layer::{text_index_to_frame_coord, TextLayer, TextLayerChar};
 
-pub mod characters_rom;
+pub mod character_rom_trait;
+pub mod default_character_rom;
 pub mod color_palettes;
 pub mod config;
 pub mod sprite;
@@ -304,14 +306,14 @@ impl DisplayController {
         };
 
         //Get char picture from  "character rom"
-        let pic = rom(char);
+        let pic = FantasyCpcAmstradCharacterSet::get_char(char);
 
         //Draw picture pixel by pixel in frame buffer
         for (row_count, _) in pic.iter().enumerate() {
             let row = pic[row_count];
             let mut mask: u8 = 128;
 
-            for col_count in 0..CHARACTER_WIDTH {
+            for col_count in 0..8 {
                 let virtual_frame_buffer_pos =
                     frame_x_pos + col_count + (frame_y_pos + row_count) * VIRTUAL_WIDTH;
 
@@ -561,12 +563,12 @@ impl DisplayController {
             };
 
             let mut char_index = random.gen_range(0..100);
-            char_index = if char_index > characters_rom::CHAR_TABLE.len() - 1 {
+            char_index = if char_index > FantasyCpcAmstradCharacterSet::get_char_table().len() - 1 {
                 0
             } else {
                 char_index
             };
-            let c: char = characters_rom::CHAR_TABLE[char_index];
+            let c: char = FantasyCpcAmstradCharacterSet::get_char_table().chars().nth(char_index).expect("oups");
 
             let effect: u8 = random.gen_range(0..10);
             let swap: bool = effect & 0b00000001 > 0;

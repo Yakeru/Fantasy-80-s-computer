@@ -1,4 +1,4 @@
-use crate::{config::*, color_palettes::*, characters_rom::*};
+use crate::{config::*, color_palettes::*};
 
 const DEFAULT_COLOR: usize = WHITE;
 const DEFAULT_BKG_COLOR: usize = BLACK;
@@ -108,19 +108,19 @@ pub const fn index_to_text_coord(index: usize) -> (usize, usize) {
 }
 
 pub const fn text_coord_to_frame_coord(x: usize, y: usize) -> (usize, usize) {
-    let horizontal_border: usize = (VIRTUAL_WIDTH - TEXT_COLUMNS * CHARACTER_WIDTH) / 2;
-    let vertical_border: usize = (VIRTUAL_HEIGHT - TEXT_ROWS * CHARACTER_HEIGHT) / 2;
+    let horizontal_border: usize = (VIRTUAL_WIDTH - TEXT_COLUMNS * 8) / 2;
+    let vertical_border: usize = (VIRTUAL_HEIGHT - TEXT_ROWS * 8) / 2;
     let safe_x = x % TEXT_COLUMNS;
     let safe_y = y % TEXT_ROWS;
-    let x_pos = horizontal_border + safe_x * CHARACTER_WIDTH;
-    let y_pos = vertical_border + safe_y * CHARACTER_HEIGHT;
+    let x_pos = horizontal_border + safe_x * 8;
+    let y_pos = vertical_border + safe_y * 8;
     (x_pos, y_pos)
 }
 
 pub const fn text_index_to_frame_coord(index: usize) -> (usize, usize) {
-    let horizontal_border: usize = (VIRTUAL_WIDTH - TEXT_COLUMNS * CHARACTER_WIDTH) / 2;
-    let vertical_border: usize = (VIRTUAL_HEIGHT - TEXT_ROWS * CHARACTER_HEIGHT) / 2;
-    let x = horizontal_border + (index % TEXT_COLUMNS) * CHARACTER_WIDTH;
-    let y = vertical_border + ((index / TEXT_COLUMNS) % TEXT_ROWS) * CHARACTER_HEIGHT;
+    let horizontal_border: usize = (VIRTUAL_WIDTH - TEXT_COLUMNS * 8) / 2;
+    let vertical_border: usize = (VIRTUAL_HEIGHT - TEXT_ROWS * 8) / 2;
+    let x = horizontal_border + (index % TEXT_COLUMNS) * 8;
+    let y = vertical_border + ((index / TEXT_COLUMNS) % TEXT_ROWS) * 8;
     (x, y)
 }

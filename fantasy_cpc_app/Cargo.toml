@@ -1,5 +1,5 @@
 [package]
-name = "fantasy_cpc_app_trait"
+name = "fantasy_cpc_app"
 version = "0.1.0"
 edition = "2021"
 

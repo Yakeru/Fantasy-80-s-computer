@@ -7,7 +7,7 @@ authors = ["Damien Torreilles <damien.torreilles@gmail.com>"]
 [dependencies]
 fantasy_cpc_display_controller = { path = "./fantasy_cpc_display_controller" }
 fantasy_cpc_clock = { path = "./fantasy_cpc_clock" }
-fantasy_cpc_app_trait = { path = "./fantasy_cpc_app_trait"}
+fantasy_cpc_app = { path = "./fantasy_cpc_app"}
 unicode = { path = "./unicode" }
 chrono = "0.4.38"
 rand = "0.8.5"

@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use fantasy_cpc_app_trait::{AppResponse, AppStatus, FantasyCpcApp, FantasyCppAppDefaultParams};
+use fantasy_cpc_app::{AppResponse, AppStatus, FantasyCpcApp, FantasyCppAppDefaultParams};
 use fantasy_cpc_clock::Clock;
 use fantasy_cpc_display_controller::{
     color_palettes::*,

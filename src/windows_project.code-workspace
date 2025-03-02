@@ -7,7 +7,7 @@
 	"settings": {
 		"rust-analyzer.linkedProjects": [
 			".\\Cargo.toml",
-			".\\fantasy_cpc_app_trait\\Cargo.toml",
+			".\\fantasy_cpc_app\\Cargo.toml",
 			".\\fantasy_cpc_clock\\Cargo.toml",
 			".\\fantasy_cpc_display_controller\\Cargo.toml"
 		],

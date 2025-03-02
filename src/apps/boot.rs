@@ -1,4 +1,4 @@
-use fantasy_cpc_app_trait::{AppStatus, FantasyCpcApp, FantasyCppAppDefaultParams};
+use fantasy_cpc_app::{AppStatus, FantasyCpcApp, FantasyCppAppDefaultParams};
 use fantasy_cpc_display_controller::{
     color_palettes::{BLACK, WHITE},
     DisplayController,
@@ -54,7 +54,7 @@ impl FantasyCpcApp for Boot {
         &mut self,
         inputs: Option<&WinitInputHelper>,
         clock: &fantasy_cpc_clock::Clock,
-    ) -> Option<fantasy_cpc_app_trait::AppResponse> {
+    ) -> Option<fantasy_cpc_app::AppResponse> {
         if clock.total_running_time - self.starting_time >= Duration::new(6, 0) {
             self.get_app_params().change_status(AppStatus::Stopped);
         }

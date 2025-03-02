@@ -1,4 +1,4 @@
-use fantasy_cpc_app_trait::{AppResponse, FantasyCpcApp, FantasyCppAppDefaultParams};
+use fantasy_cpc_app::{AppResponse, FantasyCpcApp, FantasyCppAppDefaultParams};
 use fantasy_cpc_clock::Clock;
 use fantasy_cpc_display_controller::{DisplayController, color_palettes::BLACK, config::{OVERSCAN_V, VIRTUAL_HEIGHT, OVERSCAN_H, VIRTUAL_WIDTH}};
 use rand::Rng;
