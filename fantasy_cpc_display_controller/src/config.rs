@@ -11,8 +11,8 @@ pub const TEXT_ROWS: usize = 30;
 pub const FULLSCREEN: bool = true;
 
 // 1080p
-// pub const WIDTH: usize = 1280;
-// pub const HEIGHT: usize = 960;
+// pub const SCREEN_WIDTH: usize = 1280;
+// pub const SCREEN_HEIGHT: usize = 960;
 // pub const UPSCALE: usize = 3;
 // pub const VIRTUAL_WIDTH: usize = 420;
 // pub const VIRTUAL_HEIGHT: usize = 320;
