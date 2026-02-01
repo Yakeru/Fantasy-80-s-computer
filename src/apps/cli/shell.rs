@@ -1,10 +1,7 @@
 use fantasy_cpc_app::{AppResponse, FantasyCpcApp, FantasyCppAppDefaultParams};
 use fantasy_cpc_clock::Clock;
 use fantasy_cpc_display_controller::{
-    color_palettes::{BLUE, TRUE_BLUE, YELLOW},
-    config::{TEXT_COLUMNS, TEXT_ROWS},
-    text_layer::TextLayerChar,
-    DisplayController,
+    DisplayController, color_palettes::{BLUE, TRUE_BLUE, YELLOW}, config::{TEXT_COLUMNS, TEXT_ROWS}, text_layer::text_layer::TextLayerChar
 };
 use winit::{event::VirtualKeyCode, event_loop::ControlFlow};
 use winit_input_helper::{TextChar, WinitInputHelper};

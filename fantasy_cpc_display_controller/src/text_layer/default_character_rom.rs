@@ -1,4 +1,4 @@
-use crate::character_rom_trait::FantasyCpc8by8CharacterRomTrait;
+use crate::text_layer::character_rom_trait::FantasyCpc8by8CharacterRomTrait;
 
 /// The character "ROM", returns the 8x8 pixels drawing corresponding to each character.
 /// Inspired by the AMSTRAD character set.

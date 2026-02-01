@@ -1,9 +1,8 @@
-use fantasy_cpc_display_controller::DisplayController;
+use fantasy_cpc_display_controller::{DisplayController, text_layer::text_layer::TextLayerChar};
 
 use crate::{
     color_palettes::{TRUE_BLUE, YELLOW},
     config::{TEXT_COLUMNS, TEXT_ROWS},
-    text_layer::TextLayerChar,
 };
 
 /// The terminal is the text window in which the Shell is displayed
