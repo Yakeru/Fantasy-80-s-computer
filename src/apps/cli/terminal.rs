@@ -13,8 +13,8 @@ pub struct Terminal {
     pub default_color: usize,
     pub default_bkg_color: usize,
     pub cursor: char,
-    pub show_border: bool,
-    pub show_title_bar: bool,
+    pub _show_border: bool,
+    pub _show_title_bar: bool,
     buffer: Vec<TextLayerChar>,
     formatted_buffer: Vec<TextLayerChar>,
 }
@@ -28,8 +28,8 @@ impl Terminal {
             default_color: YELLOW,
             default_bkg_color: TRUE_BLUE,
             cursor: '\u{25AE}', // filled square
-            show_border: false,
-            show_title_bar: false,
+            _show_border: false,
+            _show_title_bar: false,
             buffer: Vec::new(),
             formatted_buffer: Vec::new(),
         }

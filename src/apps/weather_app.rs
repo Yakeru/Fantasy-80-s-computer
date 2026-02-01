@@ -438,8 +438,9 @@ impl FantasyCpcApp for WeatherApp {
         );
         self.draw_digital_clock(display_controller);
 
-        match &self.current_weather {
-            Some(result) => match result {
+
+        if let Some(result) = &self.current_weather { 
+            match result {
                 Ok(current_weather) => {
                     display_controller.get_text_layer_mut().insert_string_xy(
                         0,
@@ -518,8 +519,7 @@ impl FantasyCpcApp for WeatherApp {
                         false,
                     );
                 }
-            },
-            None => (),
+            }
         }
 
         for cloud in self.clouds.chunks_exact_mut(1) {

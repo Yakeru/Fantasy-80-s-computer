@@ -287,5 +287,4 @@ fn main() -> Result<(), Error> {
             mouse_move_delta.1 = 0.0;
         }
     });
-    Ok(())
 }

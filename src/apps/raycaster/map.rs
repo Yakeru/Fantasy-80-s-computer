@@ -35,8 +35,8 @@ pub struct Map {
     pub fog_distance: isize,
     pub fog_range: isize,
     pub fog_color: usize,
-    pub ground_color: usize,
-    pub sky_color: usize
+    pub _ground_color: usize,
+    pub _sky_color: usize
 }
 
 impl Map {
@@ -62,8 +62,8 @@ impl Map {
             fog_distance: 3,
             fog_range: 2,
             fog_color: BLACK,
-            ground_color: BROWN,
-            sky_color: DARK_GREY
+            _ground_color: BROWN,
+            _sky_color: DARK_GREY
         }
     }
 
