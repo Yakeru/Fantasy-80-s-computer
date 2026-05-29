@@ -142,6 +142,29 @@ impl DisplayController {
         }
     }
 
+    pub fn rounded_corners_renderer(&mut self) {
+
+        for (line_index, nb_of_black_pixels) in ROUNDED_CORNER.iter().enumerate() {
+            
+            let top_line = self.frame.chunks_exact_mut(VIRTUAL_WIDTH).nth(line_index);
+            if let Some(line) = top_line {
+                let mut chunk_iter = line.chunks_exact_mut(*nb_of_black_pixels);
+
+                let first = chunk_iter.next();
+                if let Some(c) = first {
+                    c.fill(0);
+                }
+
+                let last = chunk_iter.last();
+                if let Some(c) = last {
+                    c.fill(0);
+                }
+            }
+
+            let bottom_line = self.frame.chunks_exact_mut(VIRTUAL_WIDTH).nth_back(line_index);
+        }
+    }
+
     pub fn is_inside_rounded_corner(&self, x: usize, y: usize) -> bool {
         if y < ROUNDED_CORNER.len()
             && (x < ROUNDED_CORNER[y] || x >= VIRTUAL_WIDTH - ROUNDED_CORNER[y])
@@ -217,6 +240,9 @@ impl DisplayController {
         //Overscan
         self.overscan_renderer();
 
+        //Rounded corners
+        self.rounded_corners_renderer();
+
         self.render_to_output_frame(output_frame);
 
         self.clock.count_frame();
@@ -241,11 +267,8 @@ impl DisplayController {
 
         for (frame_line_count, frame_line) in self.frame.chunks_exact(VIRTUAL_WIDTH).enumerate() {
             for frame_pixel in 0..VIRTUAL_WIDTH {
-                let mut rgb = unsafe { COLOR_PALETTE[frame_line[frame_pixel]] };
 
-                if self.is_inside_rounded_corner(frame_pixel, frame_line_count) {
-                    rgb = (0, 0, 0)
-                };
+                let rgb = unsafe { COLOR_PALETTE[frame_line[frame_pixel]] };
 
                 let screen_pixel_index = SUB_PIXEL_COUNT * frame_pixel;
 
