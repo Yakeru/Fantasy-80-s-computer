@@ -1,6 +1,6 @@
 use apps::{
     boot::Boot, cli::shell::Shell, life::Life, mandelbrot::game::Mandelbrot,
-    raycaster::game::Raycaster, weather_app::WeatherApp,
+    raycaster::game::Raycaster//, weather_app::WeatherApp,
 };
 use crt_shader_renderer::CrtRenderer;
 use fantasy_cpc_app::{AppResponse, AppStatus, FantasyCpcApp};
@@ -8,7 +8,7 @@ use fantasy_cpc_display_controller::{config::*, *};
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rodio::Source;
 use shader_variables::ShaderVariables;
-use sound::play;
+// use sound::play;
 use winit::{
     dpi::{PhysicalPosition, PhysicalSize, Position},
     event::Event,
@@ -22,13 +22,13 @@ use fantasy_cpc_clock::Clock;
 mod apps;
 mod crt_shader_renderer;
 mod shader_variables;
-mod sound;
+// mod sound;
 
 fn main() -> Result<(), Error> {
     // ************************************************ SOUND INIT ************************************************
     // First time sound is played, it takes a few seconds and gets de-sync'ed with the display
     // So here is a function to play an empty sound for 1/10 s to "init" rodio
-    play::init_sound();
+    // play::init_sound();
 
     // ************************************************ DISPLAY SETUP *********************************************
     // winit setup
@@ -130,8 +130,8 @@ fn main() -> Result<(), Error> {
     app_list.push(life);
 
     // WEATHER APP
-    let weather_app = Box::new(WeatherApp::new());
-    app_list.push(weather_app);
+    // let weather_app = Box::new(WeatherApp::new());
+    // app_list.push(weather_app);
 
     // MANDELBROT
     let mandelbrot = Box::new(Mandelbrot::new());

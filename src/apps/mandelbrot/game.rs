@@ -1,7 +1,7 @@
 use fantasy_cpc_app::{AppResponse, FantasyCpcApp, FantasyCppAppDefaultParams};
 use fantasy_cpc_clock::Clock;
 use fantasy_cpc_display_controller::{DisplayController, color_palettes::BLACK, config::{OVERSCAN_V, VIRTUAL_HEIGHT, OVERSCAN_H, VIRTUAL_WIDTH}};
-use rand::Rng;
+use rand::prelude::*;
 use winit::event::VirtualKeyCode;
 use winit_input_helper::WinitInputHelper;
 
@@ -264,7 +264,7 @@ impl FantasyCpcApp for Mandelbrot {
         let mut x2: f64;
         let mut y2: f64;
         let mut iteration: usize;
-        let mut random = rand::thread_rng();
+        let mut random = rand::rng();
 
         // Mandelbrot algorithm from Wikipedia : https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set
         for py in OVERSCAN_V..VIRTUAL_HEIGHT - OVERSCAN_V {
@@ -278,9 +278,9 @@ impl FantasyCpcApp for Mandelbrot {
                 let fuzziness = self.themes[self.current_theme].fuzzyness;
                 if fuzziness > 0.0 && self.fuzzy {
                     x0 += random
-                        .gen_range(-self.mandel_x_range / 250.0..self.mandel_x_range / fuzziness);
+                        .random_range(-self.mandel_x_range / 250.0..self.mandel_x_range / fuzziness);
                     y0 += random
-                        .gen_range(-self.mandel_y_range / 250.0..self.mandel_y_range / fuzziness);
+                        .random_range(-self.mandel_y_range / 250.0..self.mandel_y_range / fuzziness);
                 }
 
                 x = 0.0;
@@ -309,7 +309,7 @@ impl FantasyCpcApp for Mandelbrot {
                 let color: usize = if iteration == self.max_iteration {
                     max_iteration_count += 1;
                     empty_color
-                } else if color_swap && random.gen_bool(0.5) {
+                } else if color_swap && random.random_bool(0.5) {
                     temp_color_2
                 } else {
                     temp_color_1

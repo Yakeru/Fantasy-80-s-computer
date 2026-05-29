@@ -1,10 +1,10 @@
 use color_palettes::*;
 use config::*;
 use fantasy_cpc_clock::Clock;
-use rand::Rng;
+use rand::prelude::*;
 use sprite::Sprite;
 use std::{
-    ops::{Bound, RangeBounds},
+    ops::{Bound, RangeBounds}, time::Instant
 };
 
 use crate::text_layer::text_layer::TextLayer;
@@ -162,6 +162,19 @@ impl DisplayController {
             }
 
             let bottom_line = self.frame.chunks_exact_mut(VIRTUAL_WIDTH).nth_back(line_index);
+            if let Some(line) = bottom_line {
+                let mut chunk_iter = line.chunks_exact_mut(*nb_of_black_pixels);
+
+                let first = chunk_iter.next();
+                if let Some(c) = first {
+                    c.fill(0);
+                }
+
+                let last = chunk_iter.last();
+                if let Some(c) = last {
+                    c.fill(0);
+                }
+            }
         }
     }
 
@@ -223,6 +236,8 @@ impl DisplayController {
     pub fn render(&mut self, output_frame: &mut [u8]) {
         self.clock.update();
 
+        let start = Instant::now();
+
         //Sprites
         self.sprite_layer_renderer();
 
@@ -246,6 +261,8 @@ impl DisplayController {
         self.render_to_output_frame(output_frame);
 
         self.clock.count_frame();
+
+        dbg!(start.elapsed());
     }
 
     fn apply_line_scroll_effect(&mut self) {
@@ -296,10 +313,10 @@ impl DisplayController {
     }
 
     pub fn draw_loading_overscan_artefacts(&mut self) {
-        let mut random = rand::thread_rng();
-        let mut rgb_color: usize = random.gen_range(0..32);
+        let mut random = rand::rng();
+        let mut rgb_color: usize = random.random_range(0..32);
         let mut line_count: usize = 0;
-        let mut band_height: usize = random.gen_range(4..20);
+        let mut band_height: usize = random.random_range(4..20);
 
         while line_count <= VIRTUAL_HEIGHT {
             let range_max = if line_count + band_height > VIRTUAL_HEIGHT {
@@ -309,8 +326,8 @@ impl DisplayController {
             };
             self.set_overscan_color_range(rgb_color, line_count..range_max);
             line_count += band_height;
-            rgb_color = random.gen_range(0..32);
-            band_height = random.gen_range(4..20);
+            rgb_color = random.random_range(0..32);
+            band_height = random.random_range(4..20);
         }
     }
 }

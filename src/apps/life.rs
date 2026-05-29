@@ -7,7 +7,7 @@ use fantasy_cpc_display_controller::{
     config::{TEXT_COLUMNS, TEXT_ROWS},
     DisplayController,
 };
-use rand::Rng;
+use rand::prelude::*;
 use winit::event::VirtualKeyCode;
 use winit_input_helper::WinitInputHelper;
 
@@ -96,7 +96,7 @@ impl Life {
             }; TEXT_COLUMNS]; TEXT_ROWS],
         );
 
-        let mut random = rand::thread_rng();
+        let mut random = rand::rng();
 
         //For each cell in gen_a, randomize life.
         //If game mode, cells on the left will be team A, on the right: team B
@@ -104,20 +104,20 @@ impl Life {
             for col in 0..TEXT_COLUMNS {
                 if self.random_game_mode {
                     self.gen_a[row][col] = Cell {
-                        alive: random.gen_range(0..2) != 0,
+                        alive: random.random_range(0..2) != 0,
                         age: 0,
                         team: Team::NA,
                     };
                 } else {
                     let cell: Cell = if col < TEXT_COLUMNS / 2 {
                         Cell {
-                            alive: random.gen_range(0..2) != 0,
+                            alive: random.random_range(0..2) != 0,
                             age: 0,
                             team: Team::A,
                         }
                     } else {
                         Cell {
-                            alive: random.gen_range(0..2) != 0,
+                            alive: random.random_range(0..2) != 0,
                             age: 0,
                             team: Team::B,
                         }
@@ -128,7 +128,7 @@ impl Life {
         }
         self.alive = true;
         self.toggle_gen = true;
-        self.current_theme = random.gen_range(0..self.color_themes.len());
+        self.current_theme = random.random_range(0..self.color_themes.len());
     }
 
     /*************************************************************************************************************
