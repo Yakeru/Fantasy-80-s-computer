@@ -99,6 +99,7 @@ fn main() -> Result<(), Error> {
 
     // A crt renderer using pixels upscaler and a CRT shader in WGSL
     let mut shader_variables: ShaderVariables = ShaderVariables::new();
+    shader_variables.scanline_interval = fantasy_cpc_display_controller::config::SCANLINES_INTERVAL;
     let crt_renderer = CrtRenderer::new(&pixels, &shader_variables)?;
 
     // ****************************************************** APPS SETUP ***********************************************
