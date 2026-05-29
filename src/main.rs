@@ -1,6 +1,6 @@
 use apps::{
     boot::Boot, cli::shell::Shell, life::Life, mandelbrot::game::Mandelbrot,
-    raycaster::game::Raycaster//, weather_app::WeatherApp,
+    raycaster::game::Raycaster, weather_app::WeatherApp,
 };
 use crt_shader_renderer::CrtRenderer;
 use fantasy_cpc_app::{AppResponse, AppStatus, FantasyCpcApp};
@@ -130,8 +130,8 @@ fn main() -> Result<(), Error> {
     app_list.push(life);
 
     // WEATHER APP
-    // let weather_app = Box::new(WeatherApp::new());
-    // app_list.push(weather_app);
+    let weather_app = Box::new(WeatherApp::new());
+    app_list.push(weather_app);
 
     // MANDELBROT
     let mandelbrot = Box::new(Mandelbrot::new());

@@ -22,10 +22,10 @@ pub struct Life {
     game: bool,
     menu: bool,
     alive: bool,
-    team_a_color: usize,
-    team_b_color: usize,
+    team_a_color: u8,
+    team_b_color: u8,
     random_game_mode: bool,
-    color_themes: Vec<Vec<usize>>,
+    color_themes: Vec<Vec<u8>>,
     current_theme: usize,
 }
 
@@ -347,7 +347,7 @@ impl Life {
                 };
 
                 if cell.alive {
-                    let color: Option<usize>;
+                    let color: Option<u8>;
                     if self.random_game_mode {
                         let theme = self.color_themes.get(self.current_theme).unwrap();
                         let color_index = self.gen_a[row][col].age % theme.len() as u8;

@@ -1,21 +1,21 @@
 use rand::prelude::*;
-use crate::{DisplayController, color_palettes::PALETE_SIZE, text_layer::{character_rom_trait::FantasyCpc8by8CharacterRomTrait, default_character_rom::FantasyCpcAmstradCharacterSet, text_layer::TextLayerChar}};
+use crate::{DisplayController, color_palettes::{COLOR_PALETTE, PALETE_SIZE}, text_layer::{character_rom_trait::FantasyCpc8by8CharacterRomTrait, default_character_rom::FantasyCpcAmstradCharacterSet, text_layer::TextLayerChar}};
 
 impl DisplayController {
     pub fn genrate_random_garbage(&mut self) {
         let mut random = rand::rng();
 
-        let rnd_clear_color: usize = random.random_range(0..32);
+        let rnd_clear_color: u8 = random.random_range(0..(PALETE_SIZE as u8));
         self.clear(rnd_clear_color);
         self.get_text_layer_mut().clear();
 
         let char_map = self.get_text_layer_mut().get_char_map_mut();
         for index in 0..char_map.len() {
-            let mut color: usize = random.random_range(0..(PALETE_SIZE + 10)); //To get a bit more black
-            color = if color > PALETE_SIZE - 1 { 0 } else { color };
+            let mut color: u8 = random.random_range(0..(PALETE_SIZE as u8 + 10)); //To get a bit more black
+            color = if color > PALETE_SIZE as u8 - 1 { 0 } else { color };
 
-            let mut bkg_color: usize = random.random_range(0..(PALETE_SIZE + 10));
-            bkg_color = if bkg_color > PALETE_SIZE - 1 {
+            let mut bkg_color: u8 = random.random_range(0..(PALETE_SIZE as u8 + 10));
+            bkg_color = if bkg_color > PALETE_SIZE as u8 - 1 {
                 0
             } else {
                 bkg_color

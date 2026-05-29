@@ -24,8 +24,8 @@ const ROUNDED_CORNER: [usize; 10] = [10, 8, 6, 5, 4, 3, 2, 2, 1, 1];
 /// This frame buffer is meant to contain a low resolution low color picure that
 /// will be upscaled into the final pixel 2D frame buffer.
 pub struct DisplayController {
-    frame: Box<[usize]>,
-    overscan: [usize; VIRTUAL_HEIGHT],
+    frame: Vec<u8>,
+    overscan: [u8; VIRTUAL_HEIGHT],
     brightness: u8,
     line_scroll_list: [isize; VIRTUAL_HEIGHT],
     text_layer: TextLayer,
@@ -44,7 +44,7 @@ impl DisplayController {
         //TODO init background_layers, tiles_layers, sprites_layers... and correesponding renderes
 
         DisplayController {
-            frame: Box::new([0; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]),
+            frame: vec![0; VIRTUAL_WIDTH * VIRTUAL_HEIGHT],
             overscan: [WHITE; VIRTUAL_HEIGHT],
             line_scroll_list: [0; VIRTUAL_HEIGHT],
             brightness: 255,
@@ -62,16 +62,16 @@ impl DisplayController {
         self.text_layer.get_dimensions_xy()
     }
 
-    pub fn get_frame_mut(&mut self) -> &mut Box<[usize]> {
+    pub fn get_frame_mut(&mut self) -> &mut Vec<u8> {
         &mut self.frame
     }
 
-    pub fn get_frame(&self) -> &[usize] {
+    pub fn get_frame(&self) -> &Vec<u8> {
         &self.frame
     }
 
-    pub fn get_pixel(&mut self, x: usize, y: usize) -> Option<usize> {
-        let index = frame_coord_to_index(x as isize, y as isize);
+    pub fn get_pixel(&mut self, x: isize, y: isize) -> Option<u8> {
+        let index = frame_coord_to_index(x, y);
 
         if let Some(i) = index {
             return Some(self.frame[i]);
@@ -80,10 +80,10 @@ impl DisplayController {
         None
     }
 
-    pub fn set_pixel(&mut self, x: isize, y: isize, color: usize) {
+    pub fn set_pixel(&mut self, x: isize, y: isize, color: u8) {
         let index = frame_coord_to_index(x, y);
-        if index.is_some() {
-            self.frame[index.unwrap()] = color
+        if let Some(i) = index {
+            self.frame[i] = color;
         }
     }
 
@@ -101,11 +101,11 @@ impl DisplayController {
         self.brightness = br;
     }
 
-    pub fn set_overscan_color(&mut self, color: usize) {
+    pub fn set_overscan_color(&mut self, color: u8) {
         self.set_overscan_color_range(color, 0..VIRTUAL_HEIGHT)
     }
 
-    pub fn set_overscan_color_range<R: RangeBounds<usize>>(&mut self, color: usize, range: R) {
+    pub fn set_overscan_color_range<R: RangeBounds<usize>>(&mut self, color: u8, range: R) {
         let start = match range.start_bound() {
             Bound::Unbounded => 0,
             Bound::Excluded(&s) => s + 1,
@@ -198,9 +198,8 @@ impl DisplayController {
     /// Sets all the pixels to the specified color of the color palette
     /// Used to clear the screen between frames or set the background when
     /// redering only the text layer. Doesn't include the overscan.
-    pub fn clear(&mut self, color: usize) {
-        self.frame
-            .copy_from_slice(&[color; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]);
+    pub fn clear(&mut self, color: u8) {
+        self.frame.fill(color);
         self.overscan.copy_from_slice(&[color; VIRTUAL_HEIGHT]);
     }
 
@@ -285,7 +284,7 @@ impl DisplayController {
         for (frame_line_count, frame_line) in self.frame.chunks_exact(VIRTUAL_WIDTH).enumerate() {
             for frame_pixel in 0..VIRTUAL_WIDTH {
 
-                let rgb = unsafe { COLOR_PALETTE[frame_line[frame_pixel]] };
+                let rgb = unsafe { COLOR_PALETTE[frame_line[frame_pixel as usize] as usize] };
 
                 let screen_pixel_index = SUB_PIXEL_COUNT * frame_pixel;
 
@@ -314,7 +313,7 @@ impl DisplayController {
 
     pub fn draw_loading_overscan_artefacts(&mut self) {
         let mut random = rand::rng();
-        let mut rgb_color: usize = random.random_range(0..32);
+        let mut rgb_color: u8 = random.random_range(0..32);
         let mut line_count: usize = 0;
         let mut band_height: usize = random.random_range(4..20);
 

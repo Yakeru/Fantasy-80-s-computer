@@ -11,13 +11,13 @@ use super::terminal::Terminal;
 const SPLASH: &str = "\u{000D} Fantasy CPC Microcomputer V(0.6.0)\u{000D}\u{000D} 2023 Damien Torreilles\u{000D}\u{000D}";
 const SHELL_START_MESSAGE: &str = "SHELL 0.1\u{000D}Ready\u{000D}";
 
-const DEFAULT_BKG_COLOR: usize = TRUE_BLUE;
-const DEFAULT_COLOR: usize = YELLOW;
+const DEFAULT_BKG_COLOR: u8 = TRUE_BLUE;
+const DEFAULT_COLOR: u8 = YELLOW;
 
 pub struct Shell {
     app_params: FantasyCppAppDefaultParams,
-    color: usize,
-    bkg_color: usize,
+    color: u8,
+    bkg_color: u8,
     clear_text_layer: bool,
     command: Vec<char>,
     // command_history: Vec<String>,

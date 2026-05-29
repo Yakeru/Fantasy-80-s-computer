@@ -3,7 +3,7 @@ use std::cmp::{max, min};
 use crate::DisplayController;
 
 impl DisplayController {
-    pub fn line(&mut self, x1: isize, y1: isize, x2: isize, y2: isize, color: usize) {
+    pub fn line(&mut self, x1: isize, y1: isize, x2: isize, y2: isize, color: u8) {
         if y1 == y2 {
             for x in min(x1, x2)..=max(x1, x2) {
                 self.set_pixel(x, y1, color);
@@ -55,7 +55,7 @@ impl DisplayController {
         }
     }
 
-    pub fn vector(&mut self, x: isize, y: isize, l: isize, color: usize, a: f32) -> (isize, isize) {
+    pub fn vector(&mut self, x: isize, y: isize, l: isize, color: u8, a: f32) -> (isize, isize) {
         let x1 = x;
         let y1 = y;
 
@@ -85,8 +85,8 @@ impl DisplayController {
         y: isize,
         width: isize,
         height: isize,
-        color: usize,
-        fill_color: Option<usize>,
+        color: u8,
+        fill_color: Option<u8>,
     ) {
         self.line(x, y, x + width - 1, y, color);
         self.line(x + width - 1, y, x + width - 1, y + height - 1, color);

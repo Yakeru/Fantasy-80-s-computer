@@ -306,7 +306,7 @@ impl FantasyCpcApp for Mandelbrot {
                 } else {
                     temp_color_1
                 };
-                let color: usize = if iteration == self.max_iteration {
+                let color: u8 = if iteration == self.max_iteration {
                     max_iteration_count += 1;
                     empty_color
                 } else if color_swap && random.random_bool(0.5) {
