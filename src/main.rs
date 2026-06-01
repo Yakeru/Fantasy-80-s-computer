@@ -1,6 +1,10 @@
 use apps::{
-    boot::Boot, cli::shell::Shell, life::Life, mandelbrot::game::Mandelbrot,
-    raycaster::game::Raycaster, weather_app::WeatherApp,
+    boot::Boot, 
+    cli::shell::Shell, 
+    life::Life, 
+    mandelbrot::game::Mandelbrot,
+    raycaster::game::Raycaster, 
+    weather_app::WeatherApp,
 };
 use crt_shader_renderer::CrtRenderer;
 use fantasy_cpc_app::{AppResponse, AppStatus, FantasyCpcApp};
@@ -35,10 +39,7 @@ fn main() -> Result<(), Error> {
     let event_loop = EventLoop::new();
     let window_builder = WindowBuilder::new()
         .with_decorations(true)
-        .with_inner_size(PhysicalSize::new(
-            fantasy_cpc_display_controller::config::SCREEN_WIDTH as i32,
-            fantasy_cpc_display_controller::config::SCREEN_HEIGHT as i32,
-        ))
+        .with_inner_size(PhysicalSize::new(SCREEN_WIDTH as i32, SCREEN_HEIGHT as i32))
         .with_title("Fantasy CPC")
         .with_resizable(false)
         .with_position(Position::Physical(PhysicalPosition::new(5, 5)));
@@ -67,13 +68,13 @@ fn main() -> Result<(), Error> {
     // pixels set-up
     let mut pixels = {
         let surface_texture = SurfaceTexture::new(
-            fantasy_cpc_display_controller::config::SCREEN_WIDTH as u32,
-            fantasy_cpc_display_controller::config::SCREEN_HEIGHT as u32,
+            SCREEN_WIDTH as u32,
+            SCREEN_HEIGHT as u32,
             &window,
         );
         PixelsBuilder::new(
-            fantasy_cpc_display_controller::config::VIRTUAL_WIDTH as u32,
-            fantasy_cpc_display_controller::config::VIRTUAL_HEIGHT as u32,
+            VIRTUAL_WIDTH as u32,
+            VIRTUAL_HEIGHT as u32,
             surface_texture,
         )
         .enable_vsync(true)
