@@ -17,7 +17,7 @@ impl ShaderVariables {
             screen_width: SCREEN_WIDTH as f32,
             screen_height: SCREEN_HEIGHT as f32,
             mode: 0.0,
-            scanline_interval: 6.0,
+            scanline_interval: 0.0,
             mask_size: 3.0,
             mask_type: 3.0,
             horiz_distortion: 0.0,

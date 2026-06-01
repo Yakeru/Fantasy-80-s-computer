@@ -3,20 +3,20 @@ use fantasy_cpc_display_controller::color_palettes::*;
 use super::config::EMPTY_RATIO_TRIGGER;
 
 pub struct ColorTheme {
-    pub palette1: Vec<usize>,
-    pub palette2: Vec<usize>,
+    pub palette1: Vec<u8>,
+    pub palette2: Vec<u8>,
     pub palette_swap: bool,
-    pub empty_color: usize,
+    pub empty_color: u8,
     pub empty_ratio: f64,
     pub fuzzyness: f64,
 }
 
 impl ColorTheme {
-    pub fn get_palette_1(&mut self) -> &mut Vec<usize> {
+    pub fn get_palette_1(&mut self) -> &mut Vec<u8> {
         &mut self.palette1
     }
 
-    pub fn get_palette_2(&mut self) -> &mut Vec<usize> {
+    pub fn get_palette_2(&mut self) -> &mut Vec<u8> {
         &mut self.palette2
     }
 }

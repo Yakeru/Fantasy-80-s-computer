@@ -7,7 +7,7 @@ use std::time::Duration;
 use winit::event::VirtualKeyCode;
 use winit_input_helper::WinitInputHelper;
 
-use crate::sound::{notes::*, play::play};
+// use crate::sound::{notes::*, play::play};
 
 pub struct Boot {
     app_params: FantasyCppAppDefaultParams,
@@ -39,15 +39,15 @@ impl FantasyCpcApp for Boot {
         self.starting_time = system_clock.total_running_time;
 
         // ************************************************* SOUND TEST **********************************************
-        let track_1: Vec<(Option<f32>, f32)> = vec![
-            (None, 1.0),
-            (Some(C5), 1.0),
-            (None, 1.0),
-            (Some(C5), 1.0),
-            (Some(F5), 3.0),
-        ];
-        let track_2: Vec<(Option<f32>, f32)> = vec![(None, 4.0), (Some(A5), 3.0)];
-        play(480.0, track_1, track_2);
+        // let track_1: Vec<(Option<f32>, f32)> = vec![
+        //     (None, 1.0),
+        //     (Some(C5), 1.0),
+        //     (None, 1.0),
+        //     (Some(C5), 1.0),
+        //     (Some(F5), 3.0),
+        // ];
+        // let track_2: Vec<(Option<f32>, f32)> = vec![(None, 4.0), (Some(A5), 3.0)];
+        // play(480.0, track_1, track_2);
     }
 
     fn update_app(

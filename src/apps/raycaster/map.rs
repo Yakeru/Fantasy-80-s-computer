@@ -34,9 +34,9 @@ pub struct Map {
     pub player_start_dir: f32,
     pub fog_distance: isize,
     pub fog_range: isize,
-    pub fog_color: usize,
-    pub _ground_color: usize,
-    pub _sky_color: usize
+    pub fog_color: u8,
+    pub _ground_color: u8,
+    pub _sky_color: u8
 }
 
 impl Map {

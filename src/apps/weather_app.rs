@@ -6,11 +6,11 @@ use fantasy_cpc_display_controller::{
     DisplayController,
 };
 use openweathermap::{CurrentWeather, Receiver};
-use rand::Rng;
 use std::{
     f32::consts::PI,
     time::{Duration, Instant},
 };
+use rand::prelude::*;
 
 pub struct WeatherApp {
     app_params: FantasyCppAppDefaultParams,
@@ -317,27 +317,27 @@ impl WeatherApp {
 
     fn generate_cloud() -> Cloud {
         //Max box size containing circle centers
-        let box_width: isize = 64;
-        let box_height: isize = 16;
+        let box_width: i32 = 64;
+        let box_height: i32 = 16;
 
         //Min and Max cloud circles
-        let min_circle_r: usize = 8;
-        let max_circle_r: usize = 32;
+        let min_circle_r: u32 = 8;
+        let max_circle_r: u32 = 32;
 
         //Generate 5 random circles with random radius within box
-        let mut random = rand::thread_rng();
+        let mut random = rand::rng();
         let mut circles: [(isize, isize, usize); 5] = [(0, 0, 0); 5];
 
         for circle in circles.iter_mut().enumerate() {
-            circle.1 .0 = random.gen_range(
-                ((box_width / 5) * circle.0 as isize)..((box_width / 5) * (circle.0 as isize + 1)),
-            );
-            circle.1 .1 = random.gen_range(0..box_height);
-            circle.1 .2 = random.gen_range(min_circle_r..=max_circle_r);
+            circle.1 .0 = random.random_range(
+                ((box_width / 5) * circle.0 as i32)..((box_width / 5) * (circle.0 as i32 + 1)),
+            ) as isize;
+            circle.1 .1 = random.random_range(0..box_height) as isize;
+            circle.1 .2 = random.random_range(min_circle_r..=max_circle_r) as usize;
         }
 
-        let cloud_x = random.gen_range(-300..-100);
-        let cloud_y = random.gen_range(0..80);
+        let cloud_x = random.random_range(-300 as i32..-100 as i32) as isize;
+        let cloud_y = random.random_range(0 as u32..80 as u32) as isize;
 
         Cloud {
             circles,

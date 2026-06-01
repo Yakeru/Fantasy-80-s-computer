@@ -1,6 +1,10 @@
 use apps::{
-    boot::Boot, cli::shell::Shell, life::Life, mandelbrot::game::Mandelbrot,
-    raycaster::game::Raycaster, weather_app::WeatherApp,
+    boot::Boot, 
+    cli::shell::Shell, 
+    life::Life, 
+    mandelbrot::game::Mandelbrot,
+    raycaster::game::Raycaster, 
+    weather_app::WeatherApp,
 };
 use crt_shader_renderer::CrtRenderer;
 use fantasy_cpc_app::{AppResponse, AppStatus, FantasyCpcApp};
@@ -8,7 +12,7 @@ use fantasy_cpc_display_controller::{config::*, *};
 use pixels::{Error, PixelsBuilder, SurfaceTexture};
 use rodio::Source;
 use shader_variables::ShaderVariables;
-use sound::play;
+// use sound::play;
 use winit::{
     dpi::{PhysicalPosition, PhysicalSize, Position},
     event::Event,
@@ -22,23 +26,20 @@ use fantasy_cpc_clock::Clock;
 mod apps;
 mod crt_shader_renderer;
 mod shader_variables;
-mod sound;
+// mod sound;
 
 fn main() -> Result<(), Error> {
     // ************************************************ SOUND INIT ************************************************
     // First time sound is played, it takes a few seconds and gets de-sync'ed with the display
     // So here is a function to play an empty sound for 1/10 s to "init" rodio
-    play::init_sound();
+    // play::init_sound();
 
     // ************************************************ DISPLAY SETUP *********************************************
     // winit setup
     let event_loop = EventLoop::new();
     let window_builder = WindowBuilder::new()
         .with_decorations(true)
-        .with_inner_size(PhysicalSize::new(
-            fantasy_cpc_display_controller::config::SCREEN_WIDTH as i32,
-            fantasy_cpc_display_controller::config::SCREEN_HEIGHT as i32,
-        ))
+        .with_inner_size(PhysicalSize::new(SCREEN_WIDTH as i32, SCREEN_HEIGHT as i32))
         .with_title("Fantasy CPC")
         .with_resizable(false)
         .with_position(Position::Physical(PhysicalPosition::new(5, 5)));
@@ -67,13 +68,13 @@ fn main() -> Result<(), Error> {
     // pixels set-up
     let mut pixels = {
         let surface_texture = SurfaceTexture::new(
-            fantasy_cpc_display_controller::config::SCREEN_WIDTH as u32,
-            fantasy_cpc_display_controller::config::SCREEN_HEIGHT as u32,
+            SCREEN_WIDTH as u32,
+            SCREEN_HEIGHT as u32,
             &window,
         );
         PixelsBuilder::new(
-            fantasy_cpc_display_controller::config::VIRTUAL_WIDTH as u32,
-            fantasy_cpc_display_controller::config::VIRTUAL_HEIGHT as u32,
+            VIRTUAL_WIDTH as u32,
+            VIRTUAL_HEIGHT as u32,
             surface_texture,
         )
         .enable_vsync(true)
@@ -99,6 +100,7 @@ fn main() -> Result<(), Error> {
 
     // A crt renderer using pixels upscaler and a CRT shader in WGSL
     let mut shader_variables: ShaderVariables = ShaderVariables::new();
+    shader_variables.scanline_interval = fantasy_cpc_display_controller::config::SCANLINES_INTERVAL;
     let crt_renderer = CrtRenderer::new(&pixels, &shader_variables)?;
 
     // ****************************************************** APPS SETUP ***********************************************
@@ -173,7 +175,7 @@ fn main() -> Result<(), Error> {
         if input.update(&event) {
             system_clock.update();
 
-            // If user clicks on cross to close window for example
+            // If user closes window for example
             if input.close_requested() || input.destroyed() {
                 *control_flow = ControlFlow::Exit
             }

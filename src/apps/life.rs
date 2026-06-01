@@ -7,7 +7,7 @@ use fantasy_cpc_display_controller::{
     config::{TEXT_COLUMNS, TEXT_ROWS},
     DisplayController,
 };
-use rand::Rng;
+use rand::prelude::*;
 use winit::event::VirtualKeyCode;
 use winit_input_helper::WinitInputHelper;
 
@@ -22,10 +22,10 @@ pub struct Life {
     game: bool,
     menu: bool,
     alive: bool,
-    team_a_color: usize,
-    team_b_color: usize,
+    team_a_color: u8,
+    team_b_color: u8,
     random_game_mode: bool,
-    color_themes: Vec<Vec<usize>>,
+    color_themes: Vec<Vec<u8>>,
     current_theme: usize,
 }
 
@@ -96,7 +96,7 @@ impl Life {
             }; TEXT_COLUMNS]; TEXT_ROWS],
         );
 
-        let mut random = rand::thread_rng();
+        let mut random = rand::rng();
 
         //For each cell in gen_a, randomize life.
         //If game mode, cells on the left will be team A, on the right: team B
@@ -104,20 +104,20 @@ impl Life {
             for col in 0..TEXT_COLUMNS {
                 if self.random_game_mode {
                     self.gen_a[row][col] = Cell {
-                        alive: random.gen_range(0..2) != 0,
+                        alive: random.random_range(0..2) != 0,
                         age: 0,
                         team: Team::NA,
                     };
                 } else {
                     let cell: Cell = if col < TEXT_COLUMNS / 2 {
                         Cell {
-                            alive: random.gen_range(0..2) != 0,
+                            alive: random.random_range(0..2) != 0,
                             age: 0,
                             team: Team::A,
                         }
                     } else {
                         Cell {
-                            alive: random.gen_range(0..2) != 0,
+                            alive: random.random_range(0..2) != 0,
                             age: 0,
                             team: Team::B,
                         }
@@ -128,7 +128,7 @@ impl Life {
         }
         self.alive = true;
         self.toggle_gen = true;
-        self.current_theme = random.gen_range(0..self.color_themes.len());
+        self.current_theme = random.random_range(0..self.color_themes.len());
     }
 
     /*************************************************************************************************************
@@ -347,7 +347,7 @@ impl Life {
                 };
 
                 if cell.alive {
-                    let color: Option<usize>;
+                    let color: Option<u8>;
                     if self.random_game_mode {
                         let theme = self.color_themes.get(self.current_theme).unwrap();
                         let color_index = self.gen_a[row][col].age % theme.len() as u8;

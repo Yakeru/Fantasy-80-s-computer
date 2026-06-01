@@ -8,8 +8,8 @@ impl DisplayController {
         yc: isize,
         x: isize,
         y: isize,
-        color: usize,
-        fill_color: Option<usize>,
+        color: u8,
+        fill_color: Option<u8>,
     ) {
         self.set_pixel(xc + x, yc + y, color);
         self.set_pixel(xc - x, yc + y, color);
@@ -33,8 +33,8 @@ impl DisplayController {
         xc: isize,
         yc: isize,
         r: usize,
-        color: usize,
-        fill_color: Option<usize>,
+        color: u8,
+        fill_color: Option<u8>,
     ) {
         let mut x: isize = 0;
         let mut y: isize = r as isize;

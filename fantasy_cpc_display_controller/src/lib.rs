@@ -1,10 +1,10 @@
 use color_palettes::*;
 use config::*;
 use fantasy_cpc_clock::Clock;
-use rand::Rng;
+use rand::prelude::*;
 use sprite::Sprite;
 use std::{
-    ops::{Bound, RangeBounds},
+    ops::{Bound, RangeBounds}, time::Instant
 };
 
 use crate::text_layer::text_layer::TextLayer;
@@ -24,8 +24,8 @@ const ROUNDED_CORNER: [usize; 10] = [10, 8, 6, 5, 4, 3, 2, 2, 1, 1];
 /// This frame buffer is meant to contain a low resolution low color picure that
 /// will be upscaled into the final pixel 2D frame buffer.
 pub struct DisplayController {
-    frame: Box<[usize]>,
-    overscan: [usize; VIRTUAL_HEIGHT],
+    frame: Vec<u8>,
+    overscan: [u8; VIRTUAL_HEIGHT],
     brightness: u8,
     line_scroll_list: [isize; VIRTUAL_HEIGHT],
     text_layer: TextLayer,
@@ -44,7 +44,7 @@ impl DisplayController {
         //TODO init background_layers, tiles_layers, sprites_layers... and correesponding renderes
 
         DisplayController {
-            frame: Box::new([0; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]),
+            frame: vec![0; VIRTUAL_WIDTH * VIRTUAL_HEIGHT],
             overscan: [WHITE; VIRTUAL_HEIGHT],
             line_scroll_list: [0; VIRTUAL_HEIGHT],
             brightness: 255,
@@ -62,16 +62,16 @@ impl DisplayController {
         self.text_layer.get_dimensions_xy()
     }
 
-    pub fn get_frame_mut(&mut self) -> &mut Box<[usize]> {
+    pub fn get_frame_mut(&mut self) -> &mut Vec<u8> {
         &mut self.frame
     }
 
-    pub fn get_frame(&self) -> &[usize] {
+    pub fn get_frame(&self) -> &Vec<u8> {
         &self.frame
     }
 
-    pub fn get_pixel(&mut self, x: usize, y: usize) -> Option<usize> {
-        let index = frame_coord_to_index(x as isize, y as isize);
+    pub fn get_pixel(&mut self, x: isize, y: isize) -> Option<u8> {
+        let index = frame_coord_to_index(x, y);
 
         if let Some(i) = index {
             return Some(self.frame[i]);
@@ -80,10 +80,10 @@ impl DisplayController {
         None
     }
 
-    pub fn set_pixel(&mut self, x: isize, y: isize, color: usize) {
+    pub fn set_pixel(&mut self, x: isize, y: isize, color: u8) {
         let index = frame_coord_to_index(x, y);
-        if index.is_some() {
-            self.frame[index.unwrap()] = color
+        if let Some(i) = index {
+            self.frame[i] = color;
         }
     }
 
@@ -101,11 +101,11 @@ impl DisplayController {
         self.brightness = br;
     }
 
-    pub fn set_overscan_color(&mut self, color: usize) {
+    pub fn set_overscan_color(&mut self, color: u8) {
         self.set_overscan_color_range(color, 0..VIRTUAL_HEIGHT)
     }
 
-    pub fn set_overscan_color_range<R: RangeBounds<usize>>(&mut self, color: usize, range: R) {
+    pub fn set_overscan_color_range<R: RangeBounds<usize>>(&mut self, color: u8, range: R) {
         let start = match range.start_bound() {
             Bound::Unbounded => 0,
             Bound::Excluded(&s) => s + 1,
@@ -142,6 +142,42 @@ impl DisplayController {
         }
     }
 
+    pub fn rounded_corners_renderer(&mut self) {
+
+        for (line_index, nb_of_black_pixels) in ROUNDED_CORNER.iter().enumerate() {
+            
+            let top_line = self.frame.chunks_exact_mut(VIRTUAL_WIDTH).nth(line_index);
+            if let Some(line) = top_line {
+                let mut chunk_iter = line.chunks_exact_mut(*nb_of_black_pixels);
+
+                let first = chunk_iter.next();
+                if let Some(c) = first {
+                    c.fill(0);
+                }
+
+                let last = chunk_iter.last();
+                if let Some(c) = last {
+                    c.fill(0);
+                }
+            }
+
+            let bottom_line = self.frame.chunks_exact_mut(VIRTUAL_WIDTH).nth_back(line_index);
+            if let Some(line) = bottom_line {
+                let mut chunk_iter = line.chunks_exact_mut(*nb_of_black_pixels);
+
+                let first = chunk_iter.next();
+                if let Some(c) = first {
+                    c.fill(0);
+                }
+
+                let last = chunk_iter.last();
+                if let Some(c) = last {
+                    c.fill(0);
+                }
+            }
+        }
+    }
+
     pub fn is_inside_rounded_corner(&self, x: usize, y: usize) -> bool {
         if y < ROUNDED_CORNER.len()
             && (x < ROUNDED_CORNER[y] || x >= VIRTUAL_WIDTH - ROUNDED_CORNER[y])
@@ -162,9 +198,8 @@ impl DisplayController {
     /// Sets all the pixels to the specified color of the color palette
     /// Used to clear the screen between frames or set the background when
     /// redering only the text layer. Doesn't include the overscan.
-    pub fn clear(&mut self, color: usize) {
-        self.frame
-            .copy_from_slice(&[color; VIRTUAL_WIDTH * VIRTUAL_HEIGHT]);
+    pub fn clear(&mut self, color: u8) {
+        self.frame.fill(color);
         self.overscan.copy_from_slice(&[color; VIRTUAL_HEIGHT]);
     }
 
@@ -200,6 +235,8 @@ impl DisplayController {
     pub fn render(&mut self, output_frame: &mut [u8]) {
         self.clock.update();
 
+        let start = Instant::now();
+
         //Sprites
         self.sprite_layer_renderer();
 
@@ -217,9 +254,14 @@ impl DisplayController {
         //Overscan
         self.overscan_renderer();
 
+        //Rounded corners
+        self.rounded_corners_renderer();
+
         self.render_to_output_frame(output_frame);
 
         self.clock.count_frame();
+
+        dbg!(start.elapsed());
     }
 
     fn apply_line_scroll_effect(&mut self) {
@@ -241,11 +283,8 @@ impl DisplayController {
 
         for (frame_line_count, frame_line) in self.frame.chunks_exact(VIRTUAL_WIDTH).enumerate() {
             for frame_pixel in 0..VIRTUAL_WIDTH {
-                let mut rgb = unsafe { COLOR_PALETTE[frame_line[frame_pixel]] };
 
-                if self.is_inside_rounded_corner(frame_pixel, frame_line_count) {
-                    rgb = (0, 0, 0)
-                };
+                let rgb = unsafe { COLOR_PALETTE[frame_line[frame_pixel as usize] as usize] };
 
                 let screen_pixel_index = SUB_PIXEL_COUNT * frame_pixel;
 
@@ -273,10 +312,10 @@ impl DisplayController {
     }
 
     pub fn draw_loading_overscan_artefacts(&mut self) {
-        let mut random = rand::thread_rng();
-        let mut rgb_color: usize = random.gen_range(0..32);
+        let mut random = rand::rng();
+        let mut rgb_color: u8 = random.random_range(0..32);
         let mut line_count: usize = 0;
-        let mut band_height: usize = random.gen_range(4..20);
+        let mut band_height: usize = random.random_range(4..20);
 
         while line_count <= VIRTUAL_HEIGHT {
             let range_max = if line_count + band_height > VIRTUAL_HEIGHT {
@@ -286,13 +325,14 @@ impl DisplayController {
             };
             self.set_overscan_color_range(rgb_color, line_count..range_max);
             line_count += band_height;
-            rgb_color = random.gen_range(0..32);
-            band_height = random.gen_range(4..20);
+            rgb_color = random.random_range(0..32);
+            band_height = random.random_range(4..20);
         }
     }
 }
 
 pub const fn frame_coord_to_index(x: isize, y: isize) -> Option<usize> {
+
     if x < 0 {
         return None;
     }
