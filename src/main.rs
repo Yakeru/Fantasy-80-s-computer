@@ -175,7 +175,7 @@ fn main() -> Result<(), Error> {
         if input.update(&event) {
             system_clock.update();
 
-            // If user clicks on cross to close window for example
+            // If user closes window for example
             if input.close_requested() || input.destroyed() {
                 *control_flow = ControlFlow::Exit
             }

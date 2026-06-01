@@ -122,8 +122,8 @@ impl Renderer {
             Some(DARK_BROWN)
         );
 
-        for y in VIRTUAL_HEIGHT / 2..155 {
-            dc.line(0, y as isize, VIRTUAL_WIDTH as isize, y as isize, BLACK)
+        for y in 2..155 {
+            dc.line(0, (VIRTUAL_HEIGHT / y) as isize, VIRTUAL_WIDTH as isize, (VIRTUAL_HEIGHT / y) as isize, BLACK)
         }
 
         for y in 155..160 {

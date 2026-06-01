@@ -332,6 +332,7 @@ impl DisplayController {
 }
 
 pub const fn frame_coord_to_index(x: isize, y: isize) -> Option<usize> {
+
     if x < 0 {
         return None;
     }
