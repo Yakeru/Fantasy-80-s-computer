@@ -33,6 +33,17 @@ pub struct DisplayController {
     clock: Clock,
 }
 
+pub struct Point {
+    pub x: isize,
+    pub y: isize
+}
+
+pub struct Pixel {
+    pub x: isize,
+    pub y: isize,
+    pub color: u8
+}
+
 impl Default for DisplayController {
     fn default() -> Self {
         Self::new()
@@ -51,6 +62,13 @@ impl DisplayController {
             text_layer: TextLayer::new(),
             sprites: Vec::new(),
             clock: Clock::new(),
+        }
+    }
+
+    pub fn draw(&mut self, pixels: Vec<Pixel>) {
+
+        for pixel in pixels.iter() {
+            self.set_pixel(pixel.x, pixel.y, pixel.color);
         }
     }
 

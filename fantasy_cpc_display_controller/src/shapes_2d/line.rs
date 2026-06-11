@@ -1,8 +1,66 @@
 use std::cmp::{max, min};
 
-use crate::DisplayController;
+use crate::{DisplayController, Pixel, Point};
+
+pub fn line_test(start: Point, end: Point, color: u8) -> Vec<Pixel> {
+    
+    let mut line: Vec<Pixel> = Vec::new();
+    
+    if start.y == end.y {
+        for x in min(start.x, end.x)..=max(start.x, end.x) {
+            line.push(Pixel{x, y: start.y, color});
+        }
+        return line;
+    }
+
+    if start.x == end.x {
+        for y in min(start.y, end.y)..=max(start.y, end.y) {
+            line.push(Pixel{x: start.x, y, color});
+        }
+        return line;
+    }
+
+    let dx: isize = (end.x - start.x).abs();
+    let dy: isize = -(end.y - start.y).abs();
+    let sx: isize = if start.x < end.x { 1 } else { -1 };
+    let sy: isize = if start.y < end.y { 1 } else { -1 };
+    let mut error = dx + dy;
+
+    let mut x0 = start.x;
+    let mut y0 = start.y;
+    let x1 = end.x;
+    let y1 = end.y;
+
+    loop {
+        line.push(Pixel{x: x0, y: y0, color});
+
+        if x0 == x1 && y0 == y1 {
+            break;
+        };
+        let e2 = 2 * error;
+
+        if e2 >= dy {
+            if x0 == x1 {
+                break;
+            };
+            error += dy;
+            x0 += sx;
+        }
+
+        if e2 <= dx {
+            if y0 == y1 {
+                break;
+            };
+            error += dx;
+            y0 += sy;
+        }
+    }
+
+    line
+}
 
 impl DisplayController {
+
     pub fn line(&mut self, x1: isize, y1: isize, x2: isize, y2: isize, color: u8) {
         if y1 == y2 {
             for x in min(x1, x2)..=max(x1, x2) {
