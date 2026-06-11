@@ -16,7 +16,7 @@ pub struct TextLayerChar {
 pub struct TextLayer {
     pub default_color: u8,
     pub default_bkg_color: u8,
-    char_map: [Option<TextLayerChar>; TEXT_COLUMNS * TEXT_ROWS],
+    char_map: Vec<Option<TextLayerChar>>,
 }
 
 impl Default for TextLayer {
@@ -26,16 +26,16 @@ impl Default for TextLayer {
 }
 
 impl TextLayer {
-    pub const fn new() -> TextLayer {
+    pub fn new() -> TextLayer {
         TextLayer {
             default_color: DEFAULT_COLOR,
             default_bkg_color: DEFAULT_BKG_COLOR,
-            char_map: [None; TEXT_COLUMNS * TEXT_ROWS]
+            char_map: vec![None; TEXT_COLUMNS * TEXT_ROWS]
         }
     }
 
     pub fn clear(&mut self) {
-        self.char_map = [None; TEXT_COLUMNS * TEXT_ROWS];
+        self.char_map.fill(None);
     }
 
     /// Returns the dimensions in columns and rowns of the text layer map.
