@@ -148,30 +148,24 @@ impl DisplayController {
             
             let top_line = self.frame.chunks_exact_mut(VIRTUAL_WIDTH).nth(line_index);
             if let Some(line) = top_line {
-                let mut chunk_iter = line.chunks_exact_mut(*nb_of_black_pixels);
 
-                let first = chunk_iter.next();
-                if let Some(c) = first {
+                if let Some(c) = line.chunks_mut(*nb_of_black_pixels).next() {
                     c.fill(0);
                 }
 
-                let last = chunk_iter.last();
-                if let Some(c) = last {
+                if let Some(c) = line.rchunks_mut(*nb_of_black_pixels).next() {
                     c.fill(0);
                 }
             }
 
             let bottom_line = self.frame.chunks_exact_mut(VIRTUAL_WIDTH).nth_back(line_index);
             if let Some(line) = bottom_line {
-                let mut chunk_iter = line.chunks_exact_mut(*nb_of_black_pixels);
 
-                let first = chunk_iter.next();
-                if let Some(c) = first {
+                if let Some(c) = line.chunks_mut(*nb_of_black_pixels).next() {
                     c.fill(0);
                 }
 
-                let last = chunk_iter.last();
-                if let Some(c) = last {
+                if let Some(c) = line.rchunks_mut(*nb_of_black_pixels).next() {
                     c.fill(0);
                 }
             }
@@ -235,7 +229,7 @@ impl DisplayController {
     pub fn render(&mut self, output_frame: &mut [u8]) {
         self.clock.update();
 
-        let start = Instant::now();
+        // let start = Instant::now();
 
         //Sprites
         self.sprite_layer_renderer();
@@ -261,7 +255,7 @@ impl DisplayController {
 
         self.clock.count_frame();
 
-        dbg!(start.elapsed());
+        // dbg!(start.elapsed());
     }
 
     fn apply_line_scroll_effect(&mut self) {
